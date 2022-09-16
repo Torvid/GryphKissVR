@@ -1,16 +1,20 @@
 # Ignore everything
-*
+/*
 
+# Unignore the content folder
+!/content
+
+
+# Ignore all filetypes
+*.*
+# Unignore certain filetypes
+!*.cpp
+!*.h
+!*.txt
+!*.shader
+
+
+# Unignore github stuffs
 !.gitignore
 !README.md
 !LICENSE.txt
-
-# ???
-!*/
-
-# un-ignore things in content
-!/content/**/*.c
-!/content/**/*.cpp
-!/content/**/*.h
-!/content/**/*.txt
-!/content/**/*.shader
