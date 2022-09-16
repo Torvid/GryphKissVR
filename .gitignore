@@ -1,0 +1,16 @@
+# Ignore everything
+*
+
+!.gitignore
+!README.md
+!LICENSE.txt
+
+# ???
+!*/
+
+# un-ignore things in content
+!/content/**/*.c
+!/content/**/*.cpp
+!/content/**/*.h
+!/content/**/*.txt
+!/content/**/*.shader
