@@ -1,2 +1,2 @@
 # GryphKissVR
-Hello world
+Gryph Kiss VR version
