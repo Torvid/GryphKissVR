@@ -1,0 +1,28 @@
+Hello!
+
+this game is very moddable!
+
+All source and content are easily editable, common formats: 
+	.tga for images
+	.wav for sound
+	.obj for static meshes.
+	.cpp for source code (yep, all the source code is free, written by me, CC0 / Public Domain. Do whatever you want with it.)
+	.shader for shader code, bundling vertex and pixel shader into one file.
+	.mesh and .anim files contain skinned (animated) models and animations. These formats are custom and need to be exported from blender with a provided python script. (export.py)
+	
+Hotreloading assets:
+	Edit any .tga, .wav, .obj or .shader file while the game is running. Yep. That's it.
+
+Hotreloading code c++:
+	1. rename "build2.bat" to "build.bat"
+	2. install clang
+		Download is here: https://github.com/llvm/llvm-project/releases
+		The right one (on windows) is called something like "LLVM-14.0.6-win64.exe"
+	3. To test if installation was successfull, open cmd anywhere and type "clang --version". 
+		If you get any kind of error you should check your install, make sure clang was added to the system %path%.
+	4. Now any changes to .cpp file should hotreload!
+	
+BEWARE!
+Using mods made by others poses massive security risks! A modded DLL could easily get you hacked or break your windows install.
+Basically, by modding the game you are taking the seatbelt off. Proceed at your own risk. :)
+
