@@ -72,7 +72,7 @@ struct ShaderStructName
     };
 };
 
-void DrawMesh(GameMemory* memory, EngineState* engineState, ShaderStructName* command, bool text = false)
+void DrawMesh(EngineState* engineState, ShaderStructName* command, bool text = false)
 {
     
     ShaderStructName* temp;
@@ -85,13 +85,13 @@ void DrawMesh(GameMemory* memory, EngineState* engineState, ShaderStructName* co
     Parameters(SetStructPointer);
     temp->parameters = &temp->shaderParameters[0];
 
-    RenderCommand* result = ArrayAddNew(memory->renderCommands);
-    result->index = ArrayCount(memory->renderCommands);
+    RenderCommand* result = ArrayAddNew(engineState->renderCommands);
+    result->index = ArrayCount(engineState->renderCommands);
     result->type = RenderCommand_DrawMesh;
     result->material = &temp->mat;
 }
 
-void DrawMesh(GameMemory* memory, EngineState* engineState, ShaderStructName* command, Mesh* mesh, Transform transform, bool text = false)
+void DrawMesh(EngineState* engineState, ShaderStructName* command, Mesh* mesh, Transform transform, bool text = false)
 {
     ShaderStructName* temp;
     if (text)
@@ -109,14 +109,14 @@ void DrawMesh(GameMemory* memory, EngineState* engineState, ShaderStructName* co
         temp->boneTransforms = &temp->shaderBoneTransforms[0];
     }
     temp->transform = transform;
-    RenderCommand* result = ArrayAddNew(memory->renderCommands);
-    result->index = ArrayCount(memory->renderCommands);
+    RenderCommand* result = ArrayAddNew(engineState->renderCommands);
+    result->index = ArrayCount(engineState->renderCommands);
     result->type = RenderCommand_DrawMesh;
     result->material = &temp->mat;
 }
 
 
-void PASTE(SetupShader_, ShaderName)(GameMemory* memory, Shader* shader)
+void PASTE(SetupShader_, ShaderName)(Shader* shader)
 {
     shader->parameterCount = EnumCount2;
     shader->parameterNames = StringsName;

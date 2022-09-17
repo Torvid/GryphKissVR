@@ -524,7 +524,7 @@ typedef struct
 
     // Rendering/
     int renderCommands_count;
-    RenderCommand renderCommands[5000];
+    RenderCommand* renderCommands;// [5000] ;
 
     float* GlobalVariables;
 

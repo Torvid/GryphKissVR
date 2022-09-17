@@ -62,7 +62,7 @@ float2 GetFontPos(int index)
 {
     return float2(index % 32, index / 32);
 }
-void DrawText(GameMemory* memory, EngineState* engineState, char* text, float2* position, Transform transform, float3 color = { 1,1,1 })
+void DrawText(EngineState* engineState, char* text, float2* position, Transform transform, float3 color = { 1,1,1 })
 {
     int len = StringLength(text);
     float2 cellCount = float2(32, 4);
@@ -119,7 +119,7 @@ void DrawText(GameMemory* memory, EngineState* engineState, char* text, float2* 
 
 
 
-    DrawMesh(memory, engineState, command, true);
+    DrawMesh(engineState, command, true);
 
     *position += float2(0, newlineCount * 13 * fontScale);
 }
@@ -131,7 +131,7 @@ float2 GetTextSize(char* text)
     return float2(len, height + 1) * fontSpriteSize * fontScale;
 }
 
-bool DrawToggle(GameMemory* memory, Input* input, EngineState* engineState, char* text, float2* position, Transform transform, bool value)
+bool DrawToggle(EngineState* engineState, Input* input, char* text, float2* position, Transform transform, bool value)
 {
     char wat[100] = "[";
     StringAppend(wat, text);
@@ -142,7 +142,7 @@ bool DrawToggle(GameMemory* memory, Input* input, EngineState* engineState, char
     if (input->mousePos.x > position->x && input->mousePos.y > position->y &&
         input->mousePos.x < position->x + textSize.x && input->mousePos.y < position->y + textSize.y)
     {
-        DrawText(memory, engineState, wat, position, transform, float3(0.75, 0.75, 0.75));
+        DrawText(engineState, wat, position, transform, float3(0.75, 0.75, 0.75));
         if (input->mouseLeftDown)
         {
             return !value;
@@ -150,13 +150,13 @@ bool DrawToggle(GameMemory* memory, Input* input, EngineState* engineState, char
     }
     else
     {
-        DrawText(memory, engineState, wat, position, transform, float3(1, 1, 1));
+        DrawText(engineState, wat, position, transform, float3(1, 1, 1));
     }
 
     return value;
 }
 
-bool DrawButton(GameMemory* memory, Input* input, EngineState* engineState, char* text, float2* position, Transform transform)
+bool DrawButton(EngineState* engineState, Input* input, char* text, float2* position, Transform transform)
 {
     char wat[100] = "[";
     StringAppend(wat, text);
@@ -166,7 +166,7 @@ bool DrawButton(GameMemory* memory, Input* input, EngineState* engineState, char
     if (input->mousePos.x > position->x && input->mousePos.y > position->y &&
         input->mousePos.x < position->x + textSize.x && input->mousePos.y < position->y + textSize.y)
     {
-        DrawText(memory, engineState, wat, position, transform, float3(0.75, 0.75, 0.75));
+        DrawText(engineState, wat, position, transform, float3(0.75, 0.75, 0.75));
         if (input->mouseLeftDown)
         {
             return true;
@@ -174,7 +174,7 @@ bool DrawButton(GameMemory* memory, Input* input, EngineState* engineState, char
     }
     else
     {
-        DrawText(memory, engineState, wat, position, transform, float3(1, 1, 1));
+        DrawText(engineState, wat, position, transform, float3(1, 1, 1));
     }
 
     return false;
@@ -196,7 +196,7 @@ void DrawBox2(float2 position, float2 size, float3 color, float alpha, Anchor an
 
 }
 
-void DrawBox(GameMemory* memory, EngineState* engineState, float2 position, float2 size, float3 color, Transform transform)
+void DrawBox(EngineState* engineState, float2 position, float2 size, float3 color, Transform transform)
 {
     CreateMaterialLocal(command, engineState->UIShader, Material_UI);
     command->mesh = engineState->ui_quad;
@@ -213,5 +213,5 @@ void DrawBox(GameMemory* memory, EngineState* engineState, float2 position, floa
     command->Wireframe = false;
     command->DisableDepthTest = true;
 
-    DrawMesh(memory, engineState, command);
+    DrawMesh(engineState, command);
 }

@@ -80,11 +80,17 @@ struct GameState;
 struct EngineState
 {
     PlatformPrint* platformPrint;
+    Printf* printf;
+    sPrintf* sprintf;
+    PlatformTime* platformTime;
     PlatformReadFile* platformReadFile;
     PlatformWriteFile* platformWriteFile;
     PlatformGraphicsLoadTexture* platformGraphicsLoadTexture;
     PlatformGraphicsLoadMesh* platformGraphicsLoadMesh;
     PlatformGraphicsLoadShader* platformGraphicsLoadShader;
+    PlatformGraphicsCreateFramebufferTarget* platformGraphicsCreateFramebufferTarget;
+    PlatformGraphicsCreateTextureTarget* platformGraphicsCreateTextureTarget;
+
 
     ArrayCreate(Texture, textures, 100);
     ArrayCreate(Mesh, meshes, 100);
@@ -92,8 +98,7 @@ struct EngineState
     ArrayCreate(Sound, sounds, 100);
     ArrayCreate(Mesh, stringMeshes, 100);
     ArrayCreate(Animation, animations, 100);
-
-    //ArrayCreate(RenderCommand, renderCommands, 5000);
+    ArrayCreate(RenderCommand, renderCommands, 5000);
 
     Texture* missingTexture;
     Mesh* missingMesh;
@@ -178,6 +183,7 @@ struct EngineState
     int timeEnd;
 
     GameState* gameState;
+
 };
 
 #include "loadMesh.cpp"
@@ -198,8 +204,7 @@ struct EngineState
 #include "UI.shader"
 #include "unlit.shader"
 
-typedef void SetupShaderFunction(GameMemory* memory, Shader* shader);
-//typedef SetupShaderFunction void(GameMemory* memory, Shader* shader);
+typedef void SetupShaderFunction(Shader* shader);
 
 SetupShaderFunction* ShaderSetupFunctions[] = {
     SetupShader_defaultlit,
@@ -246,7 +251,7 @@ char* ShaderNames[] = {
     SetShaderDefaults(name);\
 
 
-void DrawClear(GameMemory* memory, float3 color = {0,0,0})
+void DrawClear(EngineState* memory, float3 color = {0,0,0})
 {
     RenderCommand* result = ArrayAddNew(memory->renderCommands);
     result->type = RenderCommand_Clear;
@@ -255,7 +260,7 @@ void DrawClear(GameMemory* memory, float3 color = {0,0,0})
     result->clearDepthEnabled = true;
 }
 
-void DrawClearDepth(GameMemory* memory)
+void DrawClearDepth(EngineState* memory)
 {
     RenderCommand* result = ArrayAddNew(memory->renderCommands);
     result->type = RenderCommand_Clear;
@@ -263,7 +268,7 @@ void DrawClearDepth(GameMemory* memory)
     result->clearColorEnabled = false;
     result->clearDepthEnabled = true;
 }
-void DrawClearColor(GameMemory* memory, float3 color = { 0,0,0 })
+void DrawClearColor(EngineState* memory, float3 color = { 0,0,0 })
 {
     RenderCommand* result = ArrayAddNew(memory->renderCommands);
     result->type = RenderCommand_Clear;
@@ -272,7 +277,7 @@ void DrawClearColor(GameMemory* memory, float3 color = { 0,0,0 })
     result->clearDepthEnabled = false;
 }
 
-void SetRenderTarget(GameMemory* memory, Texture* target)
+void SetRenderTarget(EngineState* memory, Texture* target)
 {
     RenderCommand result = {};
     if (target == 0)
@@ -300,29 +305,29 @@ void SetRenderTarget(GameMemory* memory, Texture* target)
     ArrayAdd(memory->renderCommands, result);
 }
 
-Texture* CreateFramebufferTarget(GameMemory* memory, EngineState* engineState)
+Texture* CreateFramebufferTarget(EngineState* engineState)
 {
     Texture* result = ArrayAddNew(engineState->textures);
     result->isFramebufferTarget = true;
-    memory->platformGraphicsCreateFramebufferTarget(result);
+    engineState->platformGraphicsCreateFramebufferTarget(result);
     return result;
 }
 
-Texture* CreateTextureTarget(GameMemory* memory, EngineState* engineState, int sizeX, int sizeY)
+Texture* CreateTextureTarget(EngineState* engineState, int sizeX, int sizeY)
 {
     Texture* result = ArrayAddNew(engineState->textures);
     result->isTextureTarget = true;
     result->width = sizeX;
     result->height = sizeY;
-    memory->platformGraphicsCreateTextureTarget(result);
+    engineState->platformGraphicsCreateTextureTarget(result);
     return result;
 }
 
 
-void printTransform(GameMemory* memory, Transform t2)
+void printTransform(EngineState* engineState, Transform t2)
 {
-    memory->printf("pos  : (%.2f, %.2f, %.2f)\n", t2.position.x, t2.position.y, t2.position.z);
-    memory->printf("right  : (%.2f, %.2f, %.2f)\nforward: (%.2f, %.2f, %.2f)\nup     : (%.2f, %.2f, %.2f)\n",
+    engineState->printf("pos  : (%.2f, %.2f, %.2f)\n", t2.position.x, t2.position.y, t2.position.z);
+    engineState->printf("right  : (%.2f, %.2f, %.2f)\nforward: (%.2f, %.2f, %.2f)\nup     : (%.2f, %.2f, %.2f)\n",
         t2.right.x, t2.right.y, t2.right.z,
         t2.forward.x, t2.forward.y, t2.forward.z,
         t2.up.x, t2.up.y, t2.up.z);
@@ -425,7 +430,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     engineState->timeStart = memory->platformTime();
     engineState->externalTime = ((engineState->timeStart - engineState->timeEnd) * 100) / 1000;
     ArrayClear(engineState->stringMeshes);
-    ArrayClear(memory->renderCommands);
+    //ArrayClear(memory->renderCommands);
+    ArrayClear(engineState->renderCommands);
     ArenaReset(&engineState->arenaDrawCommands);
     ArenaReset(&engineState->arenaDrawTextCommands);
     Input* input = &memory->input;
@@ -471,7 +477,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
             if (!EndsWith(&engineState->shaders[i].filename[0], ".shader"))
                 continue;
             LoadShader(engineState, &engineState->shaders[i]);
-            ShaderSetupFunctions[i](memory, &engineState->shaders[i]);
+            ShaderSetupFunctions[i](&engineState->shaders[i]);
             (&engineState->shaders[i])->GLID = memory->platformGraphicsLoadShader(&engineState->shaders[i]);
         }
         for (int i = 0; i < ArrayCount(engineState->sounds); i++)
@@ -493,7 +499,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
         ArenaInitialize(&engineState->arenaHotreload,           Megabytes(512), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(512),   "Hotreload",             true), "Hotreload");
         ArenaInitialize(&engineState->arenaDrawCommands,        Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Draw Commands",         true), "Draw Commands");
-        ArenaInitialize(&engineState->arenaDrawTextCommands,         Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Text Draw Commands",    true), "Text Draw Commands");
+        ArenaInitialize(&engineState->arenaDrawTextCommands,    Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Text Draw Commands",    true), "Text Draw Commands");
         ArenaInitialize(&engineState->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Global Draw Commands",  true), "Global Draw Commands");
         ArenaInitialize(&engineState->arenaGameState,           Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Game State",            true), "Game State");
 
@@ -502,12 +508,19 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
 
         engineState->platformPrint = memory->platformPrint;
+        engineState->printf = memory->printf;
+        engineState->sprintf = memory->sprintf;
+        engineState->platformTime = memory->platformTime;
         engineState->platformReadFile = memory->platformReadFile;
         engineState->platformWriteFile = memory->platformWriteFile;
+        engineState->platformGraphicsLoadTexture = memory->platformGraphicsLoadTexture;
         engineState->platformGraphicsLoadMesh = memory->platformGraphicsLoadMesh;
         engineState->platformGraphicsLoadShader = memory->platformGraphicsLoadShader;
-        engineState->platformGraphicsLoadTexture = memory->platformGraphicsLoadTexture;
-        //engineState->renderCommands = memory->renderCommands;
+        engineState->platformGraphicsCreateFramebufferTarget = memory->platformGraphicsCreateFramebufferTarget;
+        engineState->platformGraphicsCreateTextureTarget = memory->platformGraphicsCreateTextureTarget;
+
+
+        memory->renderCommands = engineState->renderCommands;
 
         Shader** shaders[] = {
             &engineState->defaultlit,
@@ -522,7 +535,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         for (size_t i = 0; i < ArrayCapacity(shaders); i++)
         {
             *shaders[i] = FileReadShader(engineState, ShaderNames[i]);
-            ShaderSetupFunctions[i](memory, *shaders[i]);
+            ShaderSetupFunctions[i](*shaders[i]);
             (*shaders[i])->GLID = memory->platformGraphicsLoadShader(*shaders[i]);
         }
 
@@ -610,9 +623,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         gameState->StrawPileMat->BackFaceCulling = false;
 
 
-        engineState->SwapBuffer0 = CreateFramebufferTarget(memory, engineState);
-        engineState->waterRipples0 = CreateTextureTarget(memory, engineState, 512, 512);
-        engineState->waterRipples1 = CreateTextureTarget(memory, engineState, 512, 512);
+        engineState->SwapBuffer0 = CreateFramebufferTarget(engineState);
+        engineState->waterRipples0 = CreateTextureTarget(engineState, 512, 512);
+        engineState->waterRipples1 = CreateTextureTarget(engineState, 512, 512);
 
         engineState->boneSphere = FileReadMesh(engineState, "bone_sphere.obj");
         engineState->bonePyramid = FileReadMesh(engineState, "bone_pyramid.obj");
@@ -691,32 +704,32 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         engineState->waterRipplesCurrent = engineState->waterRipples1;
 
         // setup
-        SetRenderTarget(memory, engineState->waterRipplesPrevious);
-        DrawClear(memory);
+        SetRenderTarget(engineState, engineState->waterRipplesPrevious);
+        DrawClear(engineState);
 
         CreateMaterialLocal(copyTexture, engineState->textureCopyShader, Material_textureCopy);
         copyTexture->mesh = engineState->ui_quad;
         copyTexture->ColorTexture = engineState->texture2;
-        DrawMesh(memory, engineState, copyTexture);
+        DrawMesh(engineState, copyTexture);
 
 
-        SetRenderTarget(memory, engineState->waterRipplesCurrent);
-        DrawClear(memory);
+        SetRenderTarget(engineState, engineState->waterRipplesCurrent);
+        DrawClear(engineState);
 
         copyTexture->ColorTexture = engineState->texture2;
-        DrawMesh(memory, engineState, copyTexture);
+        DrawMesh(engineState, copyTexture);
     }
 
     // draw
-    SetRenderTarget(memory, engineState->waterRipplesCurrent);
-    DrawClear(memory);
+    SetRenderTarget(engineState, engineState->waterRipplesCurrent);
+    DrawClear(engineState);
 
     
     CreateMaterialLocal(rippleSim, engineState->rippleSimShader, Material_rippleSim);
     rippleSim->mesh = engineState->ui_quad;
     rippleSim->TexPrevious = engineState->waterRipplesPrevious;
     rippleSim->mousePos = input->mousePos / memory->Resolution;
-    DrawMesh(memory, engineState, rippleSim);
+    DrawMesh(engineState, rippleSim);
 
 
     // swap
@@ -725,8 +738,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     engineState->waterRipplesPrevious = engineState->waterRipplesCurrent;
     engineState->waterRipplesCurrent = temp;
 
-    SetRenderTarget(memory, engineState->SwapBuffer0);
-    DrawClear(memory, float3(0.5,0,0));
+    SetRenderTarget(engineState, engineState->SwapBuffer0);
+    DrawClear(engineState, float3(0.5,0,0));
 
     
     
@@ -741,15 +754,15 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     input->aimLeft.scale = { 0.1f, 0.1f, 0.1f };
     if (engineState->editor)
     {
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->axes, input->handRight);
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->axes, input->handLeft);
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->axes, input->aimRight);
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->axes, input->aimLeft);
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->axes, input->playspaceStage);
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageLeft);
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageRight);
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageLeftRotated);
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageRightRotated);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->handRight);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->handLeft);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->aimRight);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->aimLeft);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStage);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageLeft);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageRight);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageLeftRotated);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageRightRotated);
     }
 
     float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
@@ -772,7 +785,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     waterPlane->mesh = engineState->ui_quad;
     waterPlane->BackFaceCulling = true;
     waterPlane->transform = identity;
-    DrawMesh(memory, engineState, waterPlane);
+    DrawMesh(engineState, waterPlane);
 
 
     float animationFPS = 25.0f;
@@ -789,17 +802,17 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
     if (engineState->editor)
     {
-        DrawMesh(memory, engineState, gameState->red, engineState->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
-        DrawMesh(memory, engineState, gameState->green, engineState->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
-        DrawMesh(memory, engineState, gameState->blue, engineState->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
+        DrawMesh(engineState, gameState->red, engineState->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
+        DrawMesh(engineState, gameState->green, engineState->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
+        DrawMesh(engineState, gameState->blue, engineState->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
 
 
         Transform monkeyRotation2 = { center + float3(0, -6, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->monkey, monkeyRotation2);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->monkey, monkeyRotation2);
         monkeyRotation2 = { center + float3(3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-        DrawMesh(memory, engineState, gameState->axesMaterial, engineState->monkey, monkeyRotation2);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->monkey, monkeyRotation2);
         monkeyRotation2 = { center + float3(-3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-        DrawMesh(memory, engineState, gameState->StrawPileMat, engineState->monkey, monkeyRotation2);
+        DrawMesh(engineState, gameState->StrawPileMat, engineState->monkey, monkeyRotation2);
     }
 
     // Set up bones
@@ -812,12 +825,12 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     }
 
     // Draw torvid
-    DrawMesh(memory, engineState, gameState->StrawPileMat, engineState->torvidTest, monkeyRotation);
+    DrawMesh(engineState, gameState->StrawPileMat, engineState->torvidTest, monkeyRotation);
 
 
     if (engineState->editor)
     {
-        DrawClearDepth(memory);
+        DrawClearDepth(engineState);
         // Draw transforms
         for (int i = 0; i < engineState->torvidTestAnimation->boneCount; i++)
         {
@@ -826,7 +839,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
             float distanceToParent = 0.5f;
             float boneRadius = 0.03f;
             t.scale = vectorOne * boneRadius;
-            DrawMesh(memory, engineState, gameState->boneMaterial, engineState->boneSphere, ApplyTransform(t, monkeyRotation));
+            DrawMesh(engineState, gameState->boneMaterial, engineState->boneSphere, ApplyTransform(t, monkeyRotation));
             if (!engineState->torvidTest->boneHierarchy[i].parent)
                 continue;
     
@@ -840,7 +853,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
             t2.position = parentPos + t2.forward * boneRadius;
             t2.scale = float3(boneRadius, distanceToParent - boneRadius * 2, boneRadius);
     
-            DrawMesh(memory, engineState, gameState->boneMaterial, engineState->bonePyramid, ApplyTransform(t2, monkeyRotation));
+            DrawMesh(engineState, gameState->boneMaterial, engineState->bonePyramid, ApplyTransform(t2, monkeyRotation));
         }
     
     }
@@ -856,7 +869,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
 
 
-    DrawClearDepth(memory);
+    DrawClearDepth(engineState);
 
     // Mouse cursor
     CreateMaterialLocal(mouseCursorCommand, engineState->UIShader, Material_UI);
@@ -873,11 +886,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
     mouseCursorCommand->Color = float3(0, 0, 0);
     mouseCursorCommand->Size = float2(9, 9);
-    DrawMesh(memory, engineState, mouseCursorCommand);
+    DrawMesh(engineState, mouseCursorCommand);
 
     mouseCursorCommand->Color = float3(1, 1, 1);
     mouseCursorCommand->Size = float2(6, 6);
-    DrawMesh(memory, engineState, mouseCursorCommand);
+    DrawMesh(engineState, mouseCursorCommand);
 
     // Draw UI
     float2 pos = float2(0, 0);
@@ -886,7 +899,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     textTransform.position += textTransform.up * 0.25;
     textTransform.position += textTransform.right * -0.25;
 
-    DrawBox(memory, engineState, float2(200, 500), float2(500, 500), float3(0.0, 0.5f, 0.0f), textTransform);
+    DrawBox(engineState, float2(200, 500), float2(300, 300), float3(0.5, 0.2, 0.2), textTransform);
+    DrawBox(engineState, float2(300, 600), float2(300, 300), float3(0.2, 0.5, 0.2), textTransform);
+    DrawBox(engineState, float2(400, 700), float2(300, 300), float3(0.2, 0.2, 0.5), textTransform);
 
     // Update text
     const int tempStringSize = 2048;
@@ -894,7 +909,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     Clear((uint8*)text, tempStringSize);
     StringAppend(text, "G: toggle info");
     StringAppend(text, "\nP: toggle profiling");
-    DrawText(memory, engineState, text, &pos, textTransform);
+    DrawText(engineState, text, &pos, textTransform);
     Clear((uint8*)text, tempStringSize);
 
     if (engineState->profiling)
@@ -905,17 +920,17 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         StringAppend(text, "\n    Internal Time: ", (int)engineState->internalTime, " microseconds");
         StringAppend(text, "\n    External Time: ", (int)engineState->externalTime, " microseconds");
         StringAppend(text, "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds");
-        DrawText(memory, engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos, textTransform);
 
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "\n\nMEMORY:");
-        DrawText(memory, engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos, textTransform);
 
         //DrawArena(memory, engineState, &pos, &engineState->arenaHotreload, textTransform);
-        DrawArena(memory, engineState, &pos, &engineState->arenaDrawCommands, textTransform);
-        DrawArena(memory, engineState, &pos, &engineState->arenaGlobalDrawCommands, textTransform);
-        DrawArena(memory, engineState, &pos, &engineState->arenaGameState, textTransform);
+        DrawArena(engineState, &pos, &engineState->arenaDrawCommands, textTransform);
+        DrawArena(engineState, &pos, &engineState->arenaGlobalDrawCommands, textTransform);
+        DrawArena(engineState, &pos, &engineState->arenaGameState, textTransform);
     }
 
     if (engineState->editor)
@@ -924,7 +939,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         StringAppend(text, "\n\nINPUT: ");
         StringAppend(text, "\n    Mouse pos: ", input->mousePos);
         StringAppend(text, "\n    Eye pos: ", input->eyeLeft.position);
-        DrawText(memory, engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos, textTransform);
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "    Left Controller:\n");
@@ -932,7 +947,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         StringAppend(text, "\n        Trigger: ", input->triggerLeft);
         StringAppend(text, "\n        Thumbstick: ", input->thumbstickLeft);
         StringAppend(text, "\n        Face Button: ", input->faceButtonLeft);
-        DrawText(memory, engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos, textTransform);
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "    Right Controller:\n");
@@ -940,11 +955,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         StringAppend(text, "\n        Trigger: ", input->triggerRight);
         StringAppend(text, "\n        Thumbstick: ", input->thumbstickRight);
         StringAppend(text, "\n        Face Button: ", input->faceButtonRight);
-        DrawText(memory, engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos, textTransform);
 
-        engineState->headsetView = DrawToggle(memory, input, engineState, "Headset View: ", &pos, textTransform, engineState->headsetView);
+        engineState->headsetView = DrawToggle(engineState, input, "Headset View: ", &pos, textTransform, engineState->headsetView);
 
-        if (DrawButton(memory, input, engineState, "Play a sound", &pos, textTransform) || input->faceButtonLeftDown)
+        if (DrawButton(engineState, input, "Play a sound", &pos, textTransform) || input->faceButtonLeftDown)
         {
             PlaySound(engineState, engineState->TestSound_22k_mono, 1.0f, false);
         }
@@ -963,7 +978,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
                 StringAppend(text, ((float)channel->currentSample / (float)channel->sound->sampleCount), "\n");
             }
         }
-        DrawText(memory, engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos, textTransform);
 
 
     }
@@ -972,8 +987,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
 
 
-    SetRenderTarget(memory, 0);
-    DrawClear(memory);
+    SetRenderTarget(engineState, 0);
+    DrawClear(engineState);
 
     CreateMaterialLocal(finalOutputCommand, engineState->postProcessShader, Material_PostProcessTest);
     finalOutputCommand->mesh = engineState->ui_quad;
@@ -981,10 +996,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     finalOutputCommand->ColorTexture = engineState->SwapBuffer0;
     finalOutputCommand->TexRipples = engineState->waterRipplesCurrent;
 
-    DrawMesh(memory, engineState, finalOutputCommand);
+    DrawMesh(engineState, finalOutputCommand);
 
-    engineState->timeEnd = memory->platformTime();
+    engineState->timeEnd = engineState->platformTime();
 
     engineState->internalTime = ((engineState->timeEnd - engineState->timeStart) * 100) / 1000;
 
+    memory->renderCommands_count = engineState->renderCommands_count;
 }

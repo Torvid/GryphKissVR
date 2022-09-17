@@ -4,7 +4,7 @@
 //#include "memory.cpp"
 
 
-void DrawArena(GameMemory* memory, EngineState* engineState, float2* pos,  MemoryArena* arena, Transform textTransform)
+void DrawArena(EngineState* engineState, float2* pos,  MemoryArena* arena, Transform textTransform)
 {
     
     const int tempStringSize = 2500;
@@ -16,7 +16,7 @@ void DrawArena(GameMemory* memory, EngineState* engineState, float2* pos,  Memor
     StringAppend(text, " MB - ", (int)arena->usedPercentage, "%");
     bool checkedEntries[ArrayCapacity(arena->memoryArenaEntrys)] = {};
 
-    DrawText(memory, engineState, text, pos, textTransform);
+    DrawText(engineState, text, pos, textTransform);
     Clear((uint8*)text, tempStringSize);
 
     for (int i = 0; i < ArrayCount(arena->memoryArenaEntrys); i++)
@@ -55,9 +55,9 @@ void DrawArena(GameMemory* memory, EngineState* engineState, float2* pos,  Memor
         StringAppend(text, "\n");
         if (StringLength(text) > (tempStringSize - 500))
         {
-            DrawText(memory, engineState, text, pos, textTransform);
+            DrawText(engineState, text, pos, textTransform);
             Clear((uint8*)text, tempStringSize);
         }
     }
-    DrawText(memory, engineState, text, pos, textTransform);
+    DrawText(engineState, text, pos, textTransform);
 }
