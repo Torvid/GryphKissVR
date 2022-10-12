@@ -1,7 +1,17 @@
+#pragma once
 
+#include "haven.cpp"
 
-static const float fontScale = 2.0f;
+static const float fontScale = 1.0f;
 static const float2 fontSpriteSize = { 6, 13 };
+
+const int quadCountMax = 5000;
+struct UIMeshData
+{
+    int quadCount;
+    Vertex vertexes[quadCountMax * 3];
+    uint32 indexes[quadCountMax * 6];
+};
 
 
 int GetFontIndex(char c)
@@ -62,16 +72,57 @@ float2 GetFontPos(int index)
 {
     return float2(index % 32, index / 32);
 }
-void DrawText(EngineState* engineState, char* text, float2* position, Transform transform, float3 color = { 1,1,1 })
+
+void AppendQuadToUI(EngineState* engineState, float2 position, float2 size, float2 UVpos, float2 UVsize, float3 color, float opacity)
+{
+    int quadCount = engineState->uiMeshData->quadCount;
+
+    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float2(0, 0) * UVsize + UVpos };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float2(1, 0) * UVsize + UVpos };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(1, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float2(1, 1) * UVsize + UVpos };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(0, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float2(0, 1) * UVsize + UVpos };
+
+    engineState->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    engineState->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    engineState->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    engineState->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    engineState->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    engineState->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+
+    engineState->uiMeshData->quadCount++;
+
+    Assert(engineState->uiMeshData->quadCount < quadCountMax);
+}
+
+void AppendSquareShapetoUI(EngineState* engineState, float2 pos0, float2 pos1, float2 pos2, float2 pos3, float3 color, float opacity)
+{
+    int quadCount = engineState->uiMeshData->quadCount;
+
+    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(pos0.x, pos0.y, opacity), color, float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01) };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(pos1.x, pos1.y, opacity), color, float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01) };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(pos2.x, pos2.y, opacity), color, float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01) };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(pos3.x, pos3.y, opacity), color, float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01) };
+
+    engineState->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    engineState->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    engineState->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    engineState->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    engineState->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    engineState->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+
+    engineState->uiMeshData->quadCount++;
+
+    Assert(engineState->uiMeshData->quadCount < quadCountMax);
+}
+
+void DrawText(EngineState* engineState, char* text, float2* position, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
     int len = StringLength(text);
-    float2 cellCount = float2(32, 4);
-    Vertex* vertexes = (Vertex*)engineState->scratchBuffer;
-    uint32* indexes = (uint32*)engineState->scratchBuffer + len * 4 * sizeof(Vertex);
+    float2 atlasSize = float2(32, 4);
+    float2 glyphSize = float2(6, 13);
 
     int newlineCount = 1;
-    int quadCount = 0;
-    float3 offset = float3(0, 0, 0);
+    float2 offset = float2(0, 0);
     for (int i = 0; i < len; i++)
     {
         int index = GetFontIndex(text[i]);
@@ -84,44 +135,17 @@ void DrawText(EngineState* engineState, char* text, float2* position, Transform 
             newlineCount++;
             continue;
         }
-        vertexes[quadCount * 4 + 0] = { (float3(0, 0, 0) + offset) * float3(6, 13, 0), float3(0, 0, 0), (float2(0, 0) + pos) / cellCount };
-        vertexes[quadCount * 4 + 1] = { (float3(1, 0, 0) + offset) * float3(6, 13, 0), float3(0, 0, 0), (float2(1, 0) + pos) / cellCount };
-        vertexes[quadCount * 4 + 2] = { (float3(1, 1, 0) + offset) * float3(6, 13, 0), float3(0, 0, 0), (float2(1, 1) + pos) / cellCount };
-        vertexes[quadCount * 4 + 3] = { (float3(0, 1, 0) + offset) * float3(6, 13, 0), float3(0, 0, 0), (float2(0, 1) + pos) / cellCount };
+        
+        AppendQuadToUI(engineState, offset * glyphSize + floor(*position), glyphSize, pos / atlasSize, float2(1, 1) / atlasSize, color, opacity);
 
-        indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
-        indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
-        indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
-        indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
-        indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
-        indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
-        quadCount++;
         offset.x++;
     }
-    Mesh* mesh = ArrayAddNewNoClear(engineState->stringMeshes);
-    UpdateMesh(engineState, mesh, vertexes, quadCount * 4, indexes, quadCount * 6);
-
-    Clear(engineState->scratchBuffer, Kilobytes(1));
-
-    // Draw text mesh
-
-    CreateMaterialLocal(command, engineState->UIShader, Material_UI);
-    command->mesh = mesh;
-    command->transform = transform;
-    command->BackFaceCulling = false;
-    command->Wireframe = false;
-    command->DisableDepthTest = true;
-
-    command->ColorTexture = engineState->fontTexture;
-    command->Position = *position;
-    command->Size = float2(1, 1) * fontScale;
-    command->Color = color;
-
-
-
-    DrawMesh(engineState, command, true);
 
     *position += float2(0, newlineCount * 13 * fontScale);
+}
+void DrawText(EngineState* engineState, char* text, float2 position, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    DrawText(engineState, text, &position, color, opacity);
 }
 
 float2 GetTextSize(char* text)
@@ -131,7 +155,8 @@ float2 GetTextSize(char* text)
     return float2(len, height + 1) * fontSpriteSize * fontScale;
 }
 
-bool DrawToggle(EngineState* engineState, Input* input, char* text, float2* position, Transform transform, bool value)
+
+bool DrawToggle(EngineState* engineState, Input* input, char* text, float2* position, bool value)
 {
     char wat[100] = "[";
     StringAppend(wat, text);
@@ -142,7 +167,7 @@ bool DrawToggle(EngineState* engineState, Input* input, char* text, float2* posi
     if (input->mousePos.x > position->x && input->mousePos.y > position->y &&
         input->mousePos.x < position->x + textSize.x && input->mousePos.y < position->y + textSize.y)
     {
-        DrawText(engineState, wat, position, transform, float3(0.75, 0.75, 0.75));
+        DrawText(engineState, wat, position, float3(0.75, 0.75, 0.75));
         if (input->mouseLeftDown)
         {
             return !value;
@@ -150,13 +175,13 @@ bool DrawToggle(EngineState* engineState, Input* input, char* text, float2* posi
     }
     else
     {
-        DrawText(engineState, wat, position, transform, float3(1, 1, 1));
+        DrawText(engineState, wat, position, float3(1, 1, 1));
     }
 
     return value;
 }
 
-bool DrawButton(EngineState* engineState, Input* input, char* text, float2* position, Transform transform)
+bool DrawButton(EngineState* engineState, Input* input, char* text, float2* position)
 {
     char wat[100] = "[";
     StringAppend(wat, text);
@@ -166,7 +191,7 @@ bool DrawButton(EngineState* engineState, Input* input, char* text, float2* posi
     if (input->mousePos.x > position->x && input->mousePos.y > position->y &&
         input->mousePos.x < position->x + textSize.x && input->mousePos.y < position->y + textSize.y)
     {
-        DrawText(engineState, wat, position, transform, float3(0.75, 0.75, 0.75));
+        DrawText(engineState, wat, position, float3(0.75, 0.75, 0.75));
         if (input->mouseLeftDown)
         {
             return true;
@@ -174,44 +199,24 @@ bool DrawButton(EngineState* engineState, Input* input, char* text, float2* posi
     }
     else
     {
-        DrawText(engineState, wat, position, transform, float3(1, 1, 1));
+        DrawText(engineState, wat, position, float3(1, 1, 1));
     }
 
     return false;
 }
 
-enum Anchor
+void DrawBox(EngineState* engineState, float2 position, float2 size, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
-    Anchor_TopLeft,
-    Anchor_TopRight,
-    Anchor_BottomLeft,
-    Anchor_BottomRight,
-    Anchor_Left,
-    Anchor_Right,
-    Anchor_Top,
-    Anchor_Down,
-};
-void DrawBox2(float2 position, float2 size, float3 color, float alpha, Anchor anchor)
-{
-
+    AppendQuadToUI(engineState, position, size, float2(0.95, 0.01), float2(0.01, 0.1), color, opacity);
 }
-
-void DrawBox(EngineState* engineState, float2 position, float2 size, float3 color, Transform transform)
+void DrawLine(EngineState* engineState, float2 start, float2 end, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
-    CreateMaterialLocal(command, engineState->UIShader, Material_UI);
-    command->mesh = engineState->ui_quad;
-    command->Color = color;
-    command->ColorTexture = engineState->texWhite;
-    command->Opacity = 0.5f;
+    float2 side = normalize(rotate90CW(start - end)) * width * 0.5f;
     
+    float2 pos0 = start - side;
+    float2 pos1 = start + side;
+    float2 pos2 = end + side;
+    float2 pos3 = end - side;
 
-    command->blendMode = BlendMode_Alpha;
-    command->Position = position;
-    command->Size = size;
-    command->transform = transform;
-    command->BackFaceCulling = false;
-    command->Wireframe = false;
-    command->DisableDepthTest = true;
-
-    DrawMesh(engineState, command);
+    AppendSquareShapetoUI(engineState, pos0, pos1, pos2, pos3, color, opacity);
 }

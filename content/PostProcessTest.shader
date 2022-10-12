@@ -70,8 +70,8 @@ void main()
 	uv = float2(radius * cos(angle), radius * sin(angle)) + center;
 
 
-	float4 Ripples = SampleClamp(TexRipples, PSVertexUV);
-	float4 M1 = SamplePointClamp(ColorTexture, PSVertexUV);
+	float4 Ripples = Sample(TexRipples, PSVertexUV);
+	float4 M1 = Sample(ColorTexture, PSVertexUV);
 
 	if (IsSpectatorView < 0.5)
 	{

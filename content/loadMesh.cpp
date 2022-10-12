@@ -287,7 +287,7 @@ void LoadMesh(EngineState* engineState, Mesh* mesh)
             bone->index = i;
             bone->name = metadatas[i].name;
             
-            if (metadatas[i].parent == 0)
+            if (metadatas[i].parent == -1)
             {
                 bone->parent = 0;
             }

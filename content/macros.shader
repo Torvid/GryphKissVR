@@ -56,29 +56,29 @@ uniform float3 CameraForward;
 //	float4 ambient;
 //};
 
-float4 SamplePoint(sampler2D Texture, float2 UV)
-{
-	float2 size = float2(textureSize(Texture, 0)) - 1.0;
-	float2 delta = (size) / (size + 1.0);
-	float2 resizedUVs = ((floor((UV / delta) * size) + 0.5) * delta) / size;
-	return texture(Texture, resizedUVs);
-}
+//float4 SamplePoint(sampler2D Texture, float2 UV)
+//{
+//	float2 size = float2(textureSize(Texture, 0)) - 1.0;
+//	float2 delta = (size) / (size + 1.0);
+//	float2 resizedUVs = ((floor((UV / delta) * size) + 0.5) * delta) / size;
+//	return texture(Texture, resizedUVs);
+//}
 float4 Sample(sampler2D Texture, float2 UV)
 {
 	return texture(Texture, UV);
 }
-float4 SampleClamp(sampler2D Texture, float2 UV)
-{
-	float2 size = float2(textureSize(Texture, 0)) - 1.0;
-	float2 delta = (size) / (size + 1.0);
-	float2 resizedUVs = (((saturate(UV) * size) + 0.5) * delta) / size;
-	return texture(Texture, resizedUVs);
-}
-float4 SamplePointClamp(sampler2D Texture, float2 UV)
-{
-	float2 size = float2(textureSize(Texture, 0)) - 1.0;
-	float2 delta = (size) / (size + 1.0);
-	float2 resizedUVs = ((floor(saturate((UV) / delta) * size) + 0.5) * delta) / size;
-	return texture(Texture, resizedUVs);
-}
+//float4 SampleClamp(sampler2D Texture, float2 UV)
+//{
+//	float2 size = float2(textureSize(Texture, 0)) - 1.0;
+//	float2 delta = (size) / (size + 1.0);
+//	float2 resizedUVs = (((saturate(UV) * size) + 0.5) * delta) / size;
+//	return texture(Texture, resizedUVs);
+//}
+//float4 SamplePointClamp(sampler2D Texture, float2 UV)
+//{
+//	float2 size = float2(textureSize(Texture, 0)) - 1.0;
+//	float2 delta = (size) / (size + 1.0);
+//	float2 resizedUVs = ((floor(saturate((UV) / delta) * size) + 0.5) * delta) / size;
+//	return texture(Texture, resizedUVs);
+//}
 #endif

@@ -1,7 +1,7 @@
-
+#pragma once
 struct GameState
 {
-    Material_defaultlit* StrawPileMat;
+    Material_defaultlit* torvidMat;
     Material_unlit* axesMaterial;
     Material_unlit* boneMaterial;
     Material_unlit* red;

@@ -1,5 +1,38 @@
 
 #pragma once
+// Include guard
+#ifndef havenIncluded
+#define havenIncluded
+
+
+/*
+// functions needed for LLVM/CLANG/LLD to be happy :)
+extern "C" __declspec(dllexport) bool _DllMainCRTStartup(void* hInstance, unsigned long dwReason, void* lpReserved)
+{
+	return true;
+}
+extern "C" __declspec(dllexport) void* memcpy(void *dest, const void *src, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        ((char*)dest)[i] = ((char*)src)[i];
+    }
+	return dest;
+}
+
+extern "C" __declspec(dllexport) void* memset(void* dest, int ch, size_t n)
+{
+    for (size_t i = 0; i < n; i++)
+    {
+        ((int*)dest)[i] = ch;
+    }
+    return dest;
+}
+
+// is this important?
+extern "C" __declspec(dllexport) void __chkstk(){}
+extern "C" { int _fltused = 0; }
+*/
 
 #include "haven_platform.h"
 
@@ -76,6 +109,8 @@ struct RatData
 };
 
 struct GameState;
+struct ProfilingData;
+struct UIMeshData;
 
 struct EngineState
 {
@@ -96,9 +131,10 @@ struct EngineState
     ArrayCreate(Mesh, meshes, 100);
     ArrayCreate(Shader, shaders, 100);
     ArrayCreate(Sound, sounds, 100);
-    ArrayCreate(Mesh, stringMeshes, 100);
+    //ArrayCreate(Mesh, stringMeshes, 100);
     ArrayCreate(Animation, animations, 100);
     ArrayCreate(RenderCommand, renderCommands, 5000);
+    Mesh* stringMesh;
 
     Texture* missingTexture;
     Mesh* missingMesh;
@@ -183,7 +219,16 @@ struct EngineState
     int timeEnd;
 
     GameState* gameState;
+    
+    Transform textTransform;
 
+    float2 Resolution;
+
+    ProfilingData* profilingData;
+
+    UIMeshData* uiMeshData;
+
+    int coutner;
 };
 
 #include "loadMesh.cpp"
@@ -229,9 +274,6 @@ char* ShaderNames[] = {
 
 
 
-
-#define float2(x, y) ctor_float2((x), (y))
-#define float3(x, y, z) ctor_float3((x), (y), (z))
 
 #define CreateMaterialGlobal(engineState, name, _shader, type) \
     name = (type*)ArenaPushStruct(&engineState->arenaGlobalDrawCommands, type, ""); \
@@ -323,7 +365,6 @@ Texture* CreateTextureTarget(EngineState* engineState, int sizeX, int sizeY)
     return result;
 }
 
-
 void printTransform(EngineState* engineState, Transform t2)
 {
     engineState->printf("pos  : (%.2f, %.2f, %.2f)\n", t2.position.x, t2.position.y, t2.position.z);
@@ -394,7 +435,6 @@ void UpdateEditorCamera(EngineState* engineState, Input* input)
     engineState->spectatorCamera.position += Movement * input->deltaTime * speed;
 }
 
-
 Transform ApplyTransform(Transform t, Transform monkeyRotation)
 {
     Transform t2 = {};
@@ -424,13 +464,38 @@ Transform ApplyTransform(Transform t, Transform monkeyRotation)
 #include "gryphkiss.cpp"
 
 
+static EngineState* globalEngineState;
+void engineProfilerBeingSample()
+{
+    if (!globalEngineState)
+        return;
+    ProfilerBeingSample(globalEngineState);
+}
+void engineProfilerEndSample(char* name)
+{
+    if (!globalEngineState)
+        return;
+    ProfilerEndSample(globalEngineState, name);
+}
+
 extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 {
+    memory->engineProfilerBeingSample = &engineProfilerBeingSample;
+    memory->engineProfilerEndSample = &engineProfilerEndSample;
+
     EngineState* engineState = (EngineState*)(&(memory->memory));
+    globalEngineState = engineState;
     engineState->timeStart = memory->platformTime();
     engineState->externalTime = ((engineState->timeStart - engineState->timeEnd) * 100) / 1000;
-    ArrayClear(engineState->stringMeshes);
-    //ArrayClear(memory->renderCommands);
+    if (memory->initialized)
+    {
+        ProfilerStart(engineState);
+        ProfilerBeingSample(engineState);
+    }
+
+    engineState->Resolution = memory->Resolution;
+    //ArrayClear(engineState->stringMeshes);
+
     ArrayClear(engineState->renderCommands);
     ArenaReset(&engineState->arenaDrawCommands);
     ArenaReset(&engineState->arenaDrawTextCommands);
@@ -440,14 +505,16 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     if (input->spaceDown)
     {
         memory->initialized = false;
-        StructClear(engineState);
+        //StructClear(engineState);
+        memory->reloadNow = true;
     }
 
+    //memory->reloadNow = true;
     if (memory->reloadNow)
     {
         memory->reloadNow = false;
         ArenaReset(&engineState->arenaHotreload);
-
+        engineState->coutner++;
         for (int i = 0; i < ArrayCount(engineState->meshes); i++)
         {
             if (engineState->meshes[i].filename[0] == 0)
@@ -492,9 +559,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     GameState* gameState = engineState->gameState;
     if (!memory->initialized)
     {
+        engineState->coutner = 0;
         memory->initialized = true;
 
-        
         ArenaInitialize(&engineState->arenasArena, sizeof(engineState->arenasArenaData), engineState->arenasArenaData);
 
         ArenaInitialize(&engineState->arenaHotreload,           Megabytes(512), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(512),   "Hotreload",             true), "Hotreload");
@@ -503,8 +570,12 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         ArenaInitialize(&engineState->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Global Draw Commands",  true), "Global Draw Commands");
         ArenaInitialize(&engineState->arenaGameState,           Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Game State",            true), "Game State");
 
-        engineState->gameState = ArenaPushStruct(&engineState->arenaGameState, GameState, "");
+        engineState->gameState = ArenaPushStruct(&engineState->arenaGameState, GameState, "GameState");
         gameState = engineState->gameState;
+
+
+        engineState->profilingData = ArenaPushStruct(&engineState->arenaGameState, ProfilingData, "ProfilingData");
+        engineState->uiMeshData = ArenaPushStruct(&engineState->arenaGameState, UIMeshData, "uiMeshData");
 
 
         engineState->platformPrint = memory->platformPrint;
@@ -553,8 +624,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         engineState->TestSound_22k_mono = FileReadSound(engineState, "HitWoodDome_22k_mono.wav");
         //engineState->TestSound_44k_stereo = FileReadSound(engineState, "MusicTheme_44k_stereo.wav");
 
-
-        
 
         engineState->texture0 = FileReadTexture(engineState, "axes.tga");
         engineState->texture1 = FileReadTexture(engineState, "wuff.tga");
@@ -613,15 +682,13 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         gameState->blue->BackFaceCulling = true;
 
         // Load StrawPile
-        CreateMaterialGlobal(engineState, gameState->StrawPileMat, engineState->defaultlit, Material_defaultlit);
-        gameState->StrawPileMat->texM1 = FileReadTexture(engineState, "TorvidM1.tga");
-        gameState->StrawPileMat->texM2 = FileReadTexture(engineState, "TorvidM2.tga");
-        gameState->StrawPileMat->texM3 = FileReadTexture(engineState, "TorvidM3.tga");
-        gameState->StrawPileMat->texM1Extra = FileReadTexture(engineState, "TorvidFeathersM1.tga");
-        gameState->StrawPileMat->texM2Extra = FileReadTexture(engineState, "TorvidFeathersM2.tga");
-        gameState->StrawPileMat->texM3Extra = FileReadTexture(engineState, "TorvidFeathersM3.tga");
-        gameState->StrawPileMat->BackFaceCulling = false;
-
+        CreateMaterialGlobal(engineState, gameState->torvidMat, engineState->defaultlit, Material_defaultlit);
+        gameState->torvidMat->texM1 = FileReadTexture(engineState, "TorvidM1.tga");
+        gameState->torvidMat->texM2 = FileReadTexture(engineState, "TorvidM2.tga");
+        gameState->torvidMat->texM1Extra = FileReadTexture(engineState, "TorvidFeathersM1.tga");
+        gameState->torvidMat->texM2Extra = FileReadTexture(engineState, "TorvidFeathersM2.tga");
+        gameState->torvidMat->BackFaceCulling = true;
+        
 
         engineState->SwapBuffer0 = CreateFramebufferTarget(engineState);
         engineState->waterRipples0 = CreateTextureTarget(engineState, 512, 512);
@@ -630,12 +697,14 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         engineState->boneSphere = FileReadMesh(engineState, "bone_sphere.obj");
         engineState->bonePyramid = FileReadMesh(engineState, "bone_pyramid.obj");
 
-
+        engineState->stringMesh = ArrayAddNew(engineState->meshes);
 
         engineState->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
 
         return;
     }
+
+
     UpdateEditorCamera(engineState, &memory->input);
     memory->spectatorCamera = engineState->spectatorCamera;
 
@@ -728,7 +797,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     CreateMaterialLocal(rippleSim, engineState->rippleSimShader, Material_rippleSim);
     rippleSim->mesh = engineState->ui_quad;
     rippleSim->TexPrevious = engineState->waterRipplesPrevious;
-    rippleSim->mousePos = input->mousePos / memory->Resolution;
+    rippleSim->mousePos = input->mousePos / engineState->Resolution;
     DrawMesh(engineState, rippleSim);
 
 
@@ -768,7 +837,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
     Transform monkeyRotation = { center +
         float3(-1, 0, 0),
-        //float3(-0.1, -1.5f, 0.7f),
         input->playspaceStageLeft.right,
         input->playspaceStageLeft.forward,
         input->playspaceStageLeft.up,
@@ -806,13 +874,12 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         DrawMesh(engineState, gameState->green, engineState->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
         DrawMesh(engineState, gameState->blue, engineState->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
 
-
         Transform monkeyRotation2 = { center + float3(0, -6, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
         DrawMesh(engineState, gameState->axesMaterial, engineState->monkey, monkeyRotation2);
         monkeyRotation2 = { center + float3(3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-        DrawMesh(engineState, gameState->axesMaterial, engineState->monkey, monkeyRotation2);
+        DrawMesh(engineState, gameState->axesMaterial, engineState->ui_quad, monkeyRotation2);
         monkeyRotation2 = { center + float3(-3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-        DrawMesh(engineState, gameState->StrawPileMat, engineState->monkey, monkeyRotation2);
+        DrawMesh(engineState, gameState->torvidMat, engineState->monkey, monkeyRotation2);
     }
 
     // Set up bones
@@ -821,12 +888,19 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         int frameOffset = ((int)engineState->torvidFrame) * engineState->torvidTestAnimation->boneCount;
         Transform t = engineState->torvidTestAnimation->transforms[i + frameOffset];
         // TODO: fix this
-        gameState->StrawPileMat->shaderBoneTransforms[i] = t;
+        gameState->torvidMat->shaderBoneTransforms[i] = t;
     }
 
-    // Draw torvid
-    DrawMesh(engineState, gameState->StrawPileMat, engineState->torvidTest, monkeyRotation);
 
+
+
+    // Draw torvid
+    monkeyRotation = engineState->textTransform;
+    monkeyRotation.position += -monkeyRotation.up * 0.9;
+    monkeyRotation.position += monkeyRotation.right * 1.3;
+    monkeyRotation.position += -monkeyRotation.forward * 1.5;
+    monkeyRotation = rotate(monkeyRotation, monkeyRotation.up, -45);
+    DrawMesh(engineState, gameState->torvidMat, engineState->torvidTest, monkeyRotation);
 
     if (engineState->editor)
     {
@@ -855,7 +929,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     
             DrawMesh(engineState, gameState->boneMaterial, engineState->bonePyramid, ApplyTransform(t2, monkeyRotation));
         }
-    
     }
 
     if (input->faceButtonLeftDown || input->faceButtonRightDown || input->gDown)
@@ -880,28 +953,27 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     mouseCursorCommand->Wireframe = false;
     mouseCursorCommand->DisableDepthTest = true;
 
-    mouseCursorCommand->Position = input->mousePos;
-    mouseCursorCommand->ColorTexture = engineState->texWhite;
-
-
-    mouseCursorCommand->Color = float3(0, 0, 0);
-    mouseCursorCommand->Size = float2(9, 9);
-    DrawMesh(engineState, mouseCursorCommand);
-
-    mouseCursorCommand->Color = float3(1, 1, 1);
-    mouseCursorCommand->Size = float2(6, 6);
-    DrawMesh(engineState, mouseCursorCommand);
+    //mouseCursorCommand->Position = input->mousePos;
+    //mouseCursorCommand->FontTexture = engineState->texWhite;
+    //mouseCursorCommand->Color = float3(0, 0, 0);
+    //mouseCursorCommand->Size = float2(9, 9);
+    //DrawMesh(engineState, mouseCursorCommand);
+    //mouseCursorCommand->Color = float3(1, 1, 1);
+    //mouseCursorCommand->Size = float2(6, 6);
+    //DrawMesh(engineState, mouseCursorCommand);
 
     // Draw UI
     float2 pos = float2(0, 0);
-    Transform textTransform = input->head;
-    textTransform.position += textTransform.forward * 3;
-    textTransform.position += textTransform.up * 0.25;
-    textTransform.position += textTransform.right * -0.25;
+    engineState->textTransform = input->head;
+    engineState->textTransform.position += engineState->textTransform.forward * 3;
+    engineState->textTransform.position += engineState->textTransform.up * 0.25;
+    engineState->textTransform.position += engineState->textTransform.right * -0.25;
 
-    DrawBox(engineState, float2(200, 500), float2(300, 300), float3(0.5, 0.2, 0.2), textTransform);
-    DrawBox(engineState, float2(300, 600), float2(300, 300), float3(0.2, 0.5, 0.2), textTransform);
-    DrawBox(engineState, float2(400, 700), float2(300, 300), float3(0.2, 0.2, 0.5), textTransform);
+    DrawBox(engineState, float2(200, 500), float2(300, 300), float3(0.5, 0.2, 0.2), 0.5);
+    DrawBox(engineState, float2(300, 600), float2(300, 300), float3(0.2, 0.5, 0.2), 0.5);
+    DrawBox(engineState, float2(400, 700), float2(300, 300), float3(0.2, 0.2, 0.5), 0.5);
+
+    DrawBox(engineState, float2(0, 0), float2(300, 300), float3(0.2, 0.2, 0.5), 0.5);
 
     // Update text
     const int tempStringSize = 2048;
@@ -909,7 +981,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     Clear((uint8*)text, tempStringSize);
     StringAppend(text, "G: toggle info");
     StringAppend(text, "\nP: toggle profiling");
-    DrawText(engineState, text, &pos, textTransform);
+    DrawText(engineState, text, &pos);
     Clear((uint8*)text, tempStringSize);
 
     if (engineState->profiling)
@@ -920,17 +992,18 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         StringAppend(text, "\n    Internal Time: ", (int)engineState->internalTime, " microseconds");
         StringAppend(text, "\n    External Time: ", (int)engineState->externalTime, " microseconds");
         StringAppend(text, "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds");
-        DrawText(engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos);
 
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "\n\nMEMORY:");
-        DrawText(engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos);
 
-        //DrawArena(memory, engineState, &pos, &engineState->arenaHotreload, textTransform);
-        DrawArena(engineState, &pos, &engineState->arenaDrawCommands, textTransform);
-        DrawArena(engineState, &pos, &engineState->arenaGlobalDrawCommands, textTransform);
-        DrawArena(engineState, &pos, &engineState->arenaGameState, textTransform);
+        //DrawArena(engineState, &pos, &engineState->arenaGlobalDrawCommands, textTransform);
+        //DrawArena(engineState, &pos, &engineState->arenaGameState, textTransform);
+        DrawArena(engineState, &pos, &engineState->arenaHotreload);
+
+        //DrawArena(engineState, &pos, &engineState->arenaDrawCommands);
     }
 
     if (engineState->editor)
@@ -939,7 +1012,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         StringAppend(text, "\n\nINPUT: ");
         StringAppend(text, "\n    Mouse pos: ", input->mousePos);
         StringAppend(text, "\n    Eye pos: ", input->eyeLeft.position);
-        DrawText(engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos);
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "    Left Controller:\n");
@@ -947,7 +1020,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         StringAppend(text, "\n        Trigger: ", input->triggerLeft);
         StringAppend(text, "\n        Thumbstick: ", input->thumbstickLeft);
         StringAppend(text, "\n        Face Button: ", input->faceButtonLeft);
-        DrawText(engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos);
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "    Right Controller:\n");
@@ -955,11 +1028,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         StringAppend(text, "\n        Trigger: ", input->triggerRight);
         StringAppend(text, "\n        Thumbstick: ", input->thumbstickRight);
         StringAppend(text, "\n        Face Button: ", input->faceButtonRight);
-        DrawText(engineState, text, &pos, textTransform);
+        DrawText(engineState, text, &pos);
 
-        engineState->headsetView = DrawToggle(engineState, input, "Headset View: ", &pos, textTransform, engineState->headsetView);
+        engineState->headsetView = DrawToggle(engineState, input, "Headset View: ", &pos, engineState->headsetView);
 
-        if (DrawButton(engineState, input, "Play a sound", &pos, textTransform) || input->faceButtonLeftDown)
+        if (DrawButton(engineState, input, "Play a sound", &pos) || input->faceButtonLeftDown)
         {
             PlaySound(engineState, engineState->TestSound_22k_mono, 1.0f, false);
         }
@@ -978,14 +1051,79 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
                 StringAppend(text, ((float)channel->currentSample / (float)channel->sound->sampleCount), "\n");
             }
         }
-        DrawText(engineState, text, &pos, textTransform);
-
-
+        DrawText(engineState, text, &pos);
     }
 
 
+    // Draw the UI
+
+    //Mesh* mesh = ArrayAddNewNoClear(engineState->stringMeshes);
+    
+    UpdateMesh(engineState, engineState->stringMesh,
+        engineState->uiMeshData->vertexes,
+        engineState->uiMeshData->quadCount * 4, 
+        engineState->uiMeshData->indexes, 
+        engineState->uiMeshData->quadCount * 6);
+    //Clear(engineState->scratchBuffer, Kilobytes(1));
+    CreateMaterialLocal(command, engineState->UIShader, Material_UI);
+    command->mesh = engineState->stringMesh;
+    command->transform = engineState->textTransform;
+    command->BackFaceCulling = false;
+    command->Wireframe = false;
+    command->DisableDepthTest = true;
+    command->blendMode = BlendMode_Alpha;
+    command->FontTexture = engineState->fontTexture;
+    //command->Position = float2(0, 0);// *position;
+    //command->Size = float2(1, 1);// *fontScale;
+    //command->Color = float3(1, 1, 1);
+    DrawMesh(engineState, command, false);
+    engineState->uiMeshData->quadCount = 0;
 
 
+    //ProfilerBeingSample(engineState);
+    //uint64 what;
+    //ProfilerBeingSample(engineState);
+    //for (uint64 i = 0; i < 1000000; i++)
+    //{
+    //    what += i;
+    //}
+    //ProfilerEndSample(engineState, "a");
+    //for (uint64 i = 0; i < 1000000; i++)
+    //{
+    //    what += i;
+    //}
+    //ProfilerBeingSample(engineState);
+    //for (uint64 i = 0; i < 1000000; i++)
+    //{
+    //    what += i;
+    //}
+    //for (uint64 i = 0; i < 1000000; i++)
+    //{
+    //    what += i;
+    //}
+    //ProfilerEndSample(engineState, "b");
+    //for (uint64 i = 0; i < 1000000; i++)
+    //{
+    //    what += i;
+    //}
+    //ProfilerEndSample(engineState, "do_work");
+    //
+    //ProfilerBeingSample(engineState);
+    //ProfilerEndSample(engineState, "c");
+
+    ProfilerEndSample(engineState, "GryphKissVR");
+
+    //ProfilerBeingSample(engineState);
+    //ProfilerEndSample(engineState, "Outside");
+    //data->enterTime[data->index - 1][data->frameNumber] = data->outsideStart;
+    //data->exitTime[data->index - 1][data->frameNumber] = data->outsideEnd;
+
+    ProfilerDrawTimeChart(engineState, input, engineState->profilingData);
+    ProfilerDrawFlameChart(engineState, input, engineState->profilingData);
+
+    ProfilerEnd(engineState);
+    engineState->timeEnd = engineState->platformTime();
+    engineState->internalTime = ((engineState->timeEnd - engineState->timeStart) * 100) / 1000;
 
     SetRenderTarget(engineState, 0);
     DrawClear(engineState);
@@ -998,9 +1136,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
     DrawMesh(engineState, finalOutputCommand);
 
-    engineState->timeEnd = engineState->platformTime();
-
-    engineState->internalTime = ((engineState->timeEnd - engineState->timeStart) * 100) / 1000;
-
     memory->renderCommands_count = engineState->renderCommands_count;
 }
+
+#endif

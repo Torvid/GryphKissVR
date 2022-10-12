@@ -7,10 +7,8 @@
 	X(float3, Color)\
 	X(sampler2D, texM1)\
 	X(sampler2D, texM2)\
-	X(sampler2D, texM3)\
 	X(sampler2D, texM1Extra)\
 	X(sampler2D, texM2Extra)\
-	X(sampler2D, texM3Extra)
 
 #define addBoneTransforms 1
 
@@ -40,12 +38,11 @@ in float2 VertexUV0;
 in float2 VertexUV1;
 in int MaterialID;
 in float4 BoneWeights;
-in float4 BoneIndexes;
+in int4 BoneIndexes;
 
 out float3 PSVertexPos;
 out float3 PSVertexNormal;
 out float2 PSVertexUV;
-out float3 PSVertexColor;
 out int PSMaterialID;
 
 void main()
@@ -55,12 +52,13 @@ void main()
 	if (IsSkinned > 0.5)
 	{
 		float4x4 skinning = float4x4(0);
-		float sum = BoneWeights.x + BoneWeights.y + BoneWeights.z + BoneWeights.w;
-	
-		skinning += boneTransforms[int(round(BoneIndexes.x))] * (BoneWeights.x / sum);
-		skinning += boneTransforms[int(round(BoneIndexes.y))] * (BoneWeights.y / sum);
-		skinning += boneTransforms[int(round(BoneIndexes.z))] * (BoneWeights.z / sum);
-		skinning += boneTransforms[int(round(BoneIndexes.w))] * (BoneWeights.w / sum);
+		//float sum = BoneWeights.x + BoneWeights.y + BoneWeights.z + BoneWeights.w;
+		float sum = float(BoneWeights.x + BoneWeights.y + BoneWeights.z + BoneWeights.w);
+		
+		skinning += boneTransforms[BoneIndexes.x] * (BoneWeights.x);
+		skinning += boneTransforms[BoneIndexes.y] * (BoneWeights.y);
+		skinning += boneTransforms[BoneIndexes.z] * (BoneWeights.z);
+		skinning += boneTransforms[BoneIndexes.w] * (BoneWeights.w);
 	
 		pos = (float4(VertexPos, 1.0) * skinning).xyz;
 		normal = (float4(VertexNormal, 0.0) * skinning).xyz;
@@ -68,10 +66,17 @@ void main()
 
 	gl_Position = ModelViewProjection * float4(pos, 1.0);
 
-	PSVertexPos = pos;
-	PSVertexNormal = normal;
+	// Global stuff
+	float3 worldNormal = (WorldToModel * float4(normal, 0.0f)).xyz;
+	float3 worldPos = (WorldToModel * float4(pos, 1.0)).xyz;
+
+	worldPos = float3(worldPos.x, -worldPos.z, worldPos.y);
+	worldNormal = float3(worldNormal.x, -worldNormal.z, worldNormal.y);
+	worldNormal = (worldNormal);
+
+	PSVertexPos = worldPos;
+	PSVertexNormal = worldNormal;
 	PSVertexUV = VertexUV0;
-	PSVertexColor = float3(MaterialID);
 	PSMaterialID = MaterialID;
 }
 
@@ -80,7 +85,8 @@ void main()
 
 #ifdef pixelShader
 
-mat3 cotangent_frame(vec3 N, vec3 p, vec2 uv) {
+mat3 cotangent_frame(vec3 N, vec3 p, vec2 uv)
+{
 	// get edge vectors of the pixel triangle
 	vec3 dp1 = dFdx(p);
 	vec3 dp2 = dFdy(p);
@@ -95,57 +101,71 @@ mat3 cotangent_frame(vec3 N, vec3 p, vec2 uv) {
 
 	// construct a scale-invariant frame 
 	float invmax = 1.0 / sqrt(max(dot(T, T), dot(B, B)));
-	return mat3(normalize(T * invmax), normalize(B * invmax), N);
+	return mat3((T * invmax), (B * invmax), N);
 }
 
 vec3 perturb_normal(vec3 N, vec2 texcoord, vec3 map, vec3 V)
 {
-	mat3 TBN = cotangent_frame(N, -V, texcoord);
-	return normalize(TBN * map);
+	mat3 TBN = cotangent_frame(N, V, texcoord);
+	return (TBN * map);
 }
 
 
 in float3 PSVertexPos;
 in float3 PSVertexNormal;
 in float2 PSVertexUV;
-in float3 PSVertexColor;
 flat in int PSMaterialID;
 
 out float4 FragColor;
 
 void main()
 {
-	FragColor.a = 1.0;
-
+	//float2 UV = PSVertexUV;
+	//float3 worldNormal = PSVertexNormal;
+	//float3 worldPos = PSVertexPos;
+	//
+	//float4 M1 = float4(0.0, 0.0, 0.0, 0.0);
+	//float4 M2 = float4(0.0, 0.0, 0.0, 0.0);
+	//if (PSMaterialID == 1)
+	//{
+	//	M1 = texture(texM1, UV);
+	//	M2 = texture(texM2, UV);
+	//}
+	//else
+	//{
+	//	M1 = texture(texM1Extra, UV);
+	//	M2 = texture(texM2Extra, UV);
+	//}
+	//
+	//FragColor.a = 1.0;
+	//FragColor.rgb = M1.rgb * saturate(dot(normalize(M2.rgb - 0.5f), worldNormal)) + (frac(worldPos) * 0.1f);
+	//
+	//if (M2.a < 0.5)
+	//	discard;
+	//
+	//return;
 	float2 UV = PSVertexUV;
-
-	// Global stuff
-	float3 worldNormal = (WorldToModel * float4(PSVertexNormal, 0.0f)).xyz;
-	float3 worldPos = (WorldToModel * float4(PSVertexPos, 1.0)).xyz;
-
-	worldPos = float3(worldPos.x, -worldPos.z, worldPos.y);
-	worldNormal = float3(worldNormal.x, -worldNormal.z, worldNormal.y);
-	worldNormal = normalize(worldNormal);
-
-	float3 cameraVector = normalize(worldPos - CameraPosition);
-	FragColor.rgb = frac(worldPos);
-
+	float3 worldNormal = PSVertexNormal;
+	float3 worldPos = PSVertexPos;
+	
+	float3 cameraVector = (worldPos - CameraPosition);
+	
 	// Sample and  pick texture
-	float3 M1 = texture(texM1Extra, UV).rgb;
-	float3 M2 = texture(texM2Extra, UV).rgb;
-	float3 M3 = texture(texM3Extra, UV).rgb;
+	float4 M1 = texture(texM1Extra, UV);
+	float4 M2 = texture(texM2Extra, UV);
 	if (PSMaterialID == 1)
 	{
-		M1 = texture(texM1, UV).rgb;
-		M2 = texture(texM2, UV).rgb;
-		M3 = texture(texM3, UV).rgb;
+		M1 = texture(texM1, UV);
+		M2 = texture(texM2, UV);
 	}
 	
 	// Tangent-Space Normal mapping
 	M2.rg = M2.rg * 2.0 - 1.0;
 	M2.g = -M2.g;
-	float3 normal = float3(M2.rg, sqrt(saturate(1.0f - dot(M2.rg, M2.rg))));
-	worldNormal = perturb_normal(worldNormal, UV, normalize(normal), -(cameraVector));
+	
+	//float3 normal = float3(M2.rg, sqrt(saturate(1.0f - dot(M2.rg, M2.rg))));
+	float3 normal = float3(M2.rg, 1);
+	worldNormal = perturb_normal(worldNormal, UV, normal, cameraVector);
 	
 	// Lighting
 	float NdotL = dot(worldNormal, float3(0, 0, 1));
@@ -153,14 +173,12 @@ void main()
 	
 	float3 lighting = float3(saturate(NdotL)) + float3(0.4, 0.3, 0.2);
 	
-	FragColor.rgb = M1 * lighting;
+	FragColor.rgb = M1.rgb * lighting;
 	
-	if (M3.r < 0.5)
+	if (M2.a < 0.5)
 		discard;
-
-
+	
 	// Ensure it never goes below 0, headset colors are abs'd?
 	FragColor.rgb = max(FragColor.rgb, float3(0, 0, 0));
-
 }
 #endif

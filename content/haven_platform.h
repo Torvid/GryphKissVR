@@ -45,6 +45,13 @@ typedef struct
     float z;
     float w;
 } float4;
+typedef struct
+{
+    uint8 x;
+    uint8 y;
+    uint8 z;
+    uint8 w;
+} byte4;
 typedef struct 
 {
     int x;
@@ -296,8 +303,12 @@ typedef struct
     float2 uv0;
     float2 uv1;
     int materialID;
+    //float4 boneWeights;
     float4 boneWeights;
-    float4 boneIndexes;
+    byte4 boneIndexes;
+    //byte4 boneIndexesPadding0;
+    //byte4 boneIndexesPadding1;
+    //byte4 boneIndexesPadding2;
 } VertexSkinned;
 
 //struct Bone;
@@ -363,6 +374,8 @@ typedef struct
     int width;
     int height;
     uint8* data;
+    int dataSize;
+    bool ASTC;
 
     bool isFramebufferTarget;
     int GLID_left; // left eye
@@ -450,6 +463,8 @@ typedef struct
 {
     int index;
 
+    bool profile;
+
     RenderCommandType type; // 32
 
     // RenderCommand_DrawMesh
@@ -484,6 +499,10 @@ typedef uint32 PlatformGraphicsLoadShader(Shader* shader); // Compile and upload
 typedef void PlatformGraphicsCreateFramebufferTarget(Texture* texture); // Create a framebuffer, these are special because they contain up to three textures. (left eye, right eye, spectator view)
 typedef void PlatformGraphicsCreateTextureTarget(Texture* texture); // Create a texture target for drawing to. use for GPU sim and such.
 
+typedef void EngineProfilerBeingSample();
+typedef void EngineProfilerEndSample(char* name);
+
+
 typedef struct 
 {
     bool initialized;
@@ -501,7 +520,10 @@ typedef struct
     PlatformGraphicsLoadShader* platformGraphicsLoadShader;
     PlatformGraphicsCreateFramebufferTarget* platformGraphicsCreateFramebufferTarget;
     PlatformGraphicsCreateTextureTarget* platformGraphicsCreateTextureTarget;
-    
+
+    EngineProfilerBeingSample* engineProfilerBeingSample;
+    EngineProfilerEndSample* engineProfilerEndSample;
+
     Transform spectatorCamera;
     float spectatorCameraMatrix[16];
 
@@ -528,6 +550,16 @@ typedef struct
 
     float* GlobalVariables;
 
+
+    bool first;
+    //int currentShader;
+    //int currentMesh;
+    bool currentBackFaceCulling;
+    BlendMode currentBlendMode;
+    bool currentWireframe;
+    bool currentDisableDepthTest;
+    bool currentSkinned;
+    Shader* currentShader;
 
     uint8 memory;
 } GameMemory;

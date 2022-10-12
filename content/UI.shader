@@ -4,13 +4,16 @@
 #define ShaderName UI
 
 #define Parameters(X) \
-	X(float2, Position)\
-	X(float2, Size)\
-	X(float2, SubUVPosition)\
-	X(float2, SubUVSize)\
-	X(float3, Color)\
-	X(float, Opacity)\
-	X(sampler2D, ColorTexture)
+	X(sampler2D, FontTexture) \
+	X(sampler2D, Texture0) \
+	X(sampler2D, Texture1) \
+	X(sampler2D, Texture2) \
+	X(sampler2D, Texture3) \
+	X(sampler2D, Texture4) \
+	X(sampler2D, Texture5) \
+	X(sampler2D, Texture6) \
+	X(sampler2D, Texture7) \
+
 
 #include "shaderMacros.cpp"
 #include "shaderMacros.shader"
@@ -20,10 +23,14 @@
 in float3 VertexPos;
 in float3 VertexNormal;
 in float2 VertexUV0;
+in int MaterialID;
 
 out float3 PSVertexPos;
 out float3 PSVertexNormal;
 out float2 PSVertexUV;
+out int PSMaterialID;
+
+
 
 float2 pixelPosToScreenPos(float2 localPos, float2 res)
 {
@@ -33,6 +40,7 @@ float2 pixelPosToScreenPos(float2 localPos, float2 res)
 	return pos;
 }
 
+
 void main()
 {
 	float2 res = Resolution;
@@ -40,43 +48,40 @@ void main()
 	{
 		res = float2(1080, 1080) * 0.5;
 	}
-	float2 p1 = pixelPosToScreenPos(Position, res);
-	float2 p2 = pixelPosToScreenPos(Position + Size, res);
-	float2 pos = lerp(p1, p2, VertexPos.xy);
+
+	float2 pos = pixelPosToScreenPos(VertexPos.xy, res);
+
 	gl_Position = float4(pos, 0.00001f, 1.0);
+	//gl_Position = float4(pos, 1, 1.0);
 
 	if (IsSpectatorView < 0.5)
 	{
 		gl_Position = ModelViewProjection * float4(pos.x, 0.0f, pos.y, 1.0);
 	}
 
+
 	PSVertexPos = VertexPos;
 	PSVertexNormal = VertexNormal;
 	PSVertexUV = float2(VertexUV0.x, 1.0 - VertexUV0.y);
+	PSMaterialID = MaterialID;
 }
 
 #endif
-
 
 #ifdef pixelShader
 
 in float3 PSVertexPos;
 in float3 PSVertexNormal;
 in float2 PSVertexUV;
+flat in int PSMaterialID;
 
 out float4 FragColor;
 
-
 void main()
 {
-	float4 M1 = SamplePoint(ColorTexture, PSVertexUV);
-	
-	float Alpha = M1.a;
+	float4 M1 = Sample(FontTexture, PSVertexUV);
 
-	if (Alpha < 0.5f)
-		discard;
-
-	FragColor.rgb = Color;
-	FragColor.a = Opacity;
+	FragColor.rgb = M1.rgb * PSVertexNormal;
+	FragColor.a = M1.a * PSVertexPos.z;
 }
 #endif

@@ -1,3 +1,4 @@
+
 #define MakeStructVariable(type, name, ...) type name;
 #define MakeStructPointer(type, name, ...) uint8* name##Ptr;
 
@@ -45,6 +46,9 @@ int TypesName[EnumCount] = \
 #undef sampler2D
 #undef float4x4
 
+#define float2(x, y) ctor_float2((x), (y))
+#define float3(x, y, z) ctor_float3((x), (y), (z))
+
 #define sampler2D Texture*
 
 struct ShaderStructName
@@ -72,14 +76,13 @@ struct ShaderStructName
     };
 };
 
-void DrawMesh(EngineState* engineState, ShaderStructName* command, bool text = false)
+void DrawMesh(EngineState* engineState, ShaderStructName* command, bool profile = true)
 {
-    
     ShaderStructName* temp;
-    if (text)
-        temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawTextCommands, ShaderStructName, command->mesh->filename);
-    else
-        temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawCommands, ShaderStructName, command->mesh->filename);
+    //if (text)
+    //    temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawTextCommands, ShaderStructName, command->mesh->filename);
+    //else
+    temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawCommands, ShaderStructName, command->mesh->filename);
     *temp = *command;
 
     Parameters(SetStructPointer);
@@ -88,16 +91,17 @@ void DrawMesh(EngineState* engineState, ShaderStructName* command, bool text = f
     RenderCommand* result = ArrayAddNew(engineState->renderCommands);
     result->index = ArrayCount(engineState->renderCommands);
     result->type = RenderCommand_DrawMesh;
+    result->profile = profile;
     result->material = &temp->mat;
 }
 
-void DrawMesh(EngineState* engineState, ShaderStructName* command, Mesh* mesh, Transform transform, bool text = false)
+void DrawMesh(EngineState* engineState, ShaderStructName* command, Mesh* mesh, Transform transform, bool profile = true)
 {
     ShaderStructName* temp;
-    if (text)
-        temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawTextCommands, ShaderStructName, mesh->filename);
-    else
-        temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawCommands, ShaderStructName, mesh->filename);
+    //if (text)
+    //    temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawTextCommands, ShaderStructName, mesh->filename);
+    //else
+    temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawCommands, ShaderStructName, mesh->filename);
     *temp = *command;
 
     Parameters(SetStructPointer)
@@ -112,6 +116,7 @@ void DrawMesh(EngineState* engineState, ShaderStructName* command, Mesh* mesh, T
     RenderCommand* result = ArrayAddNew(engineState->renderCommands);
     result->index = ArrayCount(engineState->renderCommands);
     result->type = RenderCommand_DrawMesh;
+    result->profile = profile;
     result->material = &temp->mat;
 }
 
@@ -123,6 +128,7 @@ void PASTE(SetupShader_, ShaderName)(Shader* shader)
     shader->parameterTypes = TypesName;
 }
 
+// variable arguments macro
 #define GET_MACRO2(_0, _1, _2, _3, NAME, ...) NAME
 #define MakeSetDefault(...) GET_MACRO2(_0, ##__VA_ARGS__, \
         MakeSetDefault3, \

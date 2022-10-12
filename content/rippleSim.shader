@@ -51,11 +51,11 @@ void main()
 
 	float force = saturate((0.05 - length(PSVertexUV - pos))*5.0);
 
-	float4 center	= SampleClamp(TexPrevious, PSVertexUV + float2(0, 0));
-	float4 left		= SampleClamp(TexPrevious, PSVertexUV + float2(offset, 0));
-	float4 right	= SampleClamp(TexPrevious, PSVertexUV + float2(-offset, 0));
-	float4 up		= SampleClamp(TexPrevious, PSVertexUV + float2(0, offset));
-	float4 down		= SampleClamp(TexPrevious, PSVertexUV + float2(0, -offset));
+	float4 center	= Sample(TexPrevious, PSVertexUV + float2(0, 0));
+	float4 left		= Sample(TexPrevious, PSVertexUV + float2(offset, 0));
+	float4 right	= Sample(TexPrevious, PSVertexUV + float2(-offset, 0));
+	float4 up		= Sample(TexPrevious, PSVertexUV + float2(0, offset));
+	float4 down		= Sample(TexPrevious, PSVertexUV + float2(0, -offset));
 
 	float targetHeight = (left.x + right.x + up.x + down.x) * 0.25f;
 	float currentHeight = center.x;

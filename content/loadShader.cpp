@@ -1,3 +1,4 @@
+#pragma once
 
 char* ShaderReadFile(EngineState* engineState, Shader* shader, char* destination, char* scratchBufferFilesDepth, char* filename, char* pixelShader, bool isPixelShader)
 {
@@ -64,7 +65,10 @@ char* ShaderReadFile(EngineState* engineState, Shader* shader, char* destination
         {
             char* type = fileStep + IndexOf(fileStep, '(')+1;
             char* name = type + IndexOf(type, ',')+1;
-            char* end = name + IndexOf(name, ')');
+            char* end0 = name + IndexOf(name, ')');
+            char* end1 = name + IndexOf(name, ',');
+            char* end = end0 < end1 ? end0 : end1;
+
 
             destination = StringCopyLength(destination, "uniform ", 8);
             destination = StringCopyLength(destination, type, name - type-1);
@@ -139,7 +143,13 @@ void LoadShader(EngineState* memory, Shader* shader)
 }
 Shader* FileReadShader(EngineState* memory, const char* filename)
 {
+    //Shader* shader = &memory->shaders[ArrayCount(memory->shaders)];
+    //ArrayCount(memory->shaders)++;
+    //Assert(IsInArray(memory->shaders, ArrayCount(memory->shaders) - 1), "Array is out of capacity.");
+    //memory->shaders[ArrayCount(memory->shaders) - 1] = {};
+
     Shader* shader = ArrayAddNew(memory->shaders);
+
     StringCopy(shader->filename, filename);
     LoadShader(memory, shader);
     return shader;

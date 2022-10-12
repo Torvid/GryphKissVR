@@ -279,11 +279,11 @@ static const float pi = 3.14159265358979323926264338327;
 
         return lerppp(lowerPow, higherPow, fractionpart * fractionpart);
     }
-    float pow(float a, float b) { return game_pow(a, b); }
+    //float pow(float a, float b) { return game_pow(a, b); }
 
     float game_fminf(float a, float b) { return a < b ? a : b; }
     float game_fmaxf(float a, float b) { return a > b ? a : b; }
-    float game_roundf(float a) { return game_floorf(a + 0.5f); } 
+    float game_roundf(float a) { return game_floorf(a + 0.5f); }
     float game_exp2f(float a) { return a; } // not implemented
     float game_acosf(float a) { return a; } // not implemented
     bool  game_isfinite(float a) { return true; } // not implemented
@@ -1251,6 +1251,15 @@ Transform LookRotation(Transform t, float3 forward, float3 up)
     return t;
 }
 
+float2 rotate90CW(float2 a)
+{
+    return float2(-a.y, a.x);
+}
+float2 rotate90CXW(float2 a)
+{
+    return float2(a.y, -a.x);
+}
+
 
 float DragBlend(float x, float d)
 {
@@ -1376,4 +1385,20 @@ float3 CatmullRom(float3 p0, float3 p1, float3 p2, float3 p3, float t, float alp
     float3 B2 = (t3 - t) / (t3 - t1) * A2 + (t - t1) / (t3 - t1) * A3;
 
     return (t2 - t) / (t2 - t1) * B1 + (t - t1) / (t2 - t1) * B2;
+}
+
+
+
+float GetSmoothedValue(float data[100], int* index, float newTime, int count)
+{
+    (*index)++;
+    (*index) %= count;
+    data[*index] = newTime;
+    float accumulatedDelta = 0;
+    for (int i = 0; i < count; i++)
+    {
+        accumulatedDelta += data[i];
+    }
+    accumulatedDelta /= count;
+    return accumulatedDelta;
 }

@@ -46,7 +46,7 @@ out float4 FragColor;
 
 void main()
 {
-	FragColor = SampleClamp(ColorTexture, PSVertexUV);
+	FragColor = Sample(ColorTexture, PSVertexUV);
 	if (Color.x != 0.0f && Color.y != 0.0f && Color.z != 0.0f)
 	{
 		FragColor.rgb *= Color;
