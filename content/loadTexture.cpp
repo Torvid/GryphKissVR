@@ -28,46 +28,105 @@ struct ASTC_HEADER
 };
 #pragma pack(pop)
 
-void LoadASTC(EngineState* engineState, Texture* texture, int fileSize)
+struct unpackedASTC
 {
-    ASTC_HEADER* astc = (ASTC_HEADER*)engineState->scratchBuffer;
-    texture->ASTC = true;
+    int sizeX;
+    int sizeY;
+    ASTC_HEADER* header;
+    uint8* dataStart;
+    int dataSize;
+};
 
-    texture->width = astc->dim_x[0] + (astc->dim_x[1] << 8) + (astc->dim_x[2] << 16);
-    texture->height = astc->dim_y[0] + (astc->dim_y[1] << 8) + (astc->dim_y[2] << 16);
+bool isASTC(uint8* fileData)
+{
+    ASTC_HEADER* astc = (ASTC_HEADER*)fileData;
+    return (astc->magic[0] == 0x13 &&
+        astc->magic[1] == 0xAB &&
+        astc->magic[2] == 0xA1 &&
+        astc->magic[3] == 0x5C);
+}
 
-    int xdim = astc->block_x;
-    int ydim = astc->block_y;
-    int zdim = astc->block_z;
+unpackedASTC unpackASTCHeader(uint8* fileData)
+{
+    unpackedASTC Result;
+    ASTC_HEADER* astc = (ASTC_HEADER*)fileData;
+
+    Assert(isASTC(fileData), "Error, not a valid ASTC file.");
+
     int xsize = astc->dim_x[0] + 256 * astc->dim_x[1] + 65536 * astc->dim_x[2];
     int ysize = astc->dim_y[0] + 256 * astc->dim_y[1] + 65536 * astc->dim_y[2];
     int zsize = astc->dim_z[0] + 256 * astc->dim_z[1] + 65536 * astc->dim_z[2];
-    int xblocks = (xsize + xdim - 1) / xdim;
-    int yblocks = (ysize + ydim - 1) / ydim;
-    int zblocks = (zsize + zdim - 1) / zdim;
-    int size = xblocks * yblocks * zblocks * 16;
+    int xblocks = (xsize + astc->block_x - 1) / astc->block_x;
+    int yblocks = (ysize + astc->block_y - 1) / astc->block_y;
+    int zblocks = (zsize + astc->block_z - 1) / astc->block_z;
 
-    int size2 = ceil(xsize / 8.0f) * ceil(ysize / 8.0f) * 16;
 
-    texture->width = xsize;
-    texture->height = ysize;
+    Result.sizeX = xsize;// astc->dim_x[0] + (astc->dim_x[1] << 8) + (astc->dim_x[2] << 16);
+    Result.sizeY = ysize;// astc->dim_y[0] + (astc->dim_y[1] << 8) + (astc->dim_y[2] << 16);
+    Result.header = astc;
 
-    texture->dataSize = size;
-    texture->data = (uint8*)ArenaPushBytes(&engineState->arenaHotreload, texture->dataSize, texture->filename);
+    Result.dataStart = (uint8*)(astc + 1);
+    Result.dataSize = xblocks * yblocks * zblocks * 16;
+
+    return Result;
+}
+
+void LoadASTC(EngineState* engineState, Texture* texture, int fileSize)
+{
+    texture->ASTC = true;
+
+    uint8* currentMip = engineState->scratchBuffer;
 
     // copy the raw bytes
-    Copy((uint8*)(astc + 1), texture->data, texture->dataSize);
+    int i = 0;
+    while (isASTC(currentMip))
+    {
+        unpackedASTC astc = unpackASTCHeader(currentMip);
+        if (i == 0)
+        {
+            texture->width = astc.sizeX;
+            texture->height = astc.sizeY;
+        }
+        texture->mipSizeX[i] = astc.sizeX;
+        texture->mipSizeY[i] = astc.sizeY;
 
+        texture->mips[i] = (uint8*)ArenaPushBytes(&engineState->arenaHotreload, astc.dataSize, texture->filename);
+        Copy(astc.dataStart, texture->mips[i], astc.dataSize);
+        texture->mipSize[i] = astc.dataSize;
+
+        i++;
+        currentMip += sizeof(ASTC_HEADER) + astc.dataSize;
+    }
+
+    texture->mipCount = i;
     texture->GLID = engineState->platformGraphicsLoadTexture(texture);
-
 }
 
 void LoadTexture(EngineState* engineState, Texture* texture)
 {
     uint8* end = engineState->platformReadFile(engineState->scratchBuffer, texture->filename);
     
+    if (!end)
+    {
+        Texture* missing = engineState->missingTexture;
+        texture->width          = missing->width;
+        texture->height         = missing->height;
+        texture->mips[0]        = missing->mips[0];
+        texture->mipCount       = missing->mipCount;
+        texture->mipSizeX[0]    = missing->mipSizeX[0];
+        texture->mipSizeY[0]    = missing->mipSizeY[0];
+        texture->GLID           = missing->GLID;
+        return;
+    }
     // File failed to read!
-    Assert(end);
+    //Assert(end);
+
+    texture->mipCount = 0;
+    for (int i = 0; i < ArrayCapacity(texture->mips); i++)
+    {
+        texture->mips[i] = 0;
+        texture->mipSize[i] = 0;
+    }
 
     // Check if it's an ASTC compressed texture (android). If it is, load it that way.
     ASTC_HEADER* astc = (ASTC_HEADER*)engineState->scratchBuffer;
@@ -84,10 +143,13 @@ void LoadTexture(EngineState* engineState, Texture* texture)
     bool flipUpDown = tga->imagedescriptor & 1 << 5;
     bool flipLeftRight = tga->imagedescriptor & 1 << 4;
 
-    texture->dataSize = tga->width * tga->height * 4;
-    texture->data = (uint8*)ArenaPushBytes(&engineState->arenaHotreload, texture->dataSize, texture->filename);
+    texture->mipSize[0] = tga->width * tga->height * 4;
+    
+    texture->mips[0] = (uint8*)ArenaPushBytes(&engineState->arenaHotreload, texture->mipSize[0], texture->filename);
     texture->width = tga->width;
     texture->height = tga->height;
+    texture->mipSizeX[0] = tga->width;
+    texture->mipSizeY[0] = tga->height;
 
     for (int y = 0; y < tga->height; y++)
     {
@@ -102,10 +164,10 @@ void LoadTexture(EngineState* engineState, Texture* texture)
             else if(flipUpDown)
                 j = x + (tga->height - y - 1) * tga->width;
 
-            texture->data[i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
-            texture->data[i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
-            texture->data[i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
-            texture->data[i * 4 + 3] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 3);
+            texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
+            texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
+            texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
+            texture->mips[0][i * 4 + 3] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 3);
         }
     }
 

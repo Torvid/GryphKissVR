@@ -13,6 +13,7 @@ X(float3,Color)
 
 in float3 VertexPos;
 in float3 VertexNormal;
+in float3 PSVertexTangent;
 in float2 VertexUV0;
 
 out float3 PSVertexPos;
@@ -34,6 +35,7 @@ void main()
 
 in float3 PSVertexPos;
 in float3 PSVertexNormal;
+in float3 PSVertexTangent;
 in float2 PSVertexUV;
 
 out float4 FragColor;

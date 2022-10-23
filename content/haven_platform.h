@@ -291,6 +291,7 @@ typedef struct
 {
     float3 position;
     float3 normal;
+    float3 tangent;
     float2 uv0;
     float2 uv1;
     int materialID;
@@ -300,15 +301,12 @@ typedef struct
 {
     float3 position;
     float3 normal;
+    float3 tangent;
     float2 uv0;
     float2 uv1;
     int materialID;
-    //float4 boneWeights;
     float4 boneWeights;
     byte4 boneIndexes;
-    //byte4 boneIndexesPadding0;
-    //byte4 boneIndexesPadding1;
-    //byte4 boneIndexesPadding2;
 } VertexSkinned;
 
 //struct Bone;
@@ -373,8 +371,13 @@ typedef struct
     int GLID; // OpenGL ID
     int width;
     int height;
-    uint8* data;
-    int dataSize;
+
+    int mipCount;
+    uint8* mips[13];
+    int mipSize[13];
+    int mipSizeX[13];
+    int mipSizeY[13];
+
     bool ASTC;
 
     bool isFramebufferTarget;
@@ -384,12 +387,6 @@ typedef struct
 
     bool isTextureTarget;
 } Texture;
-
-//typedef struct
-//{
-//    int GLLocation;
-//    char name[50];
-//} ShaderParameter;
 
 typedef struct 
 {
@@ -407,6 +404,7 @@ typedef struct
 
     int m_vertexAttribCoords;
     int m_vertexAttribNormal;
+    int m_vertexAttribTangent;
     int m_vertexAttribUV0;
     int m_vertexAttribUV1;
     int m_materialID;

@@ -72,6 +72,7 @@ void main()
 
 in float3 PSVertexPos;
 in float3 PSVertexNormal;
+in float3 PSVertexTangent;
 in float2 PSVertexUV;
 flat in int PSMaterialID;
 

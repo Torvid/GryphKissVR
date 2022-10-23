@@ -67,6 +67,14 @@ float4 Sample(sampler2D Texture, float2 UV)
 {
 	return texture(Texture, UV);
 }
+float4 SampleLod(sampler2D Texture, float2 UV, float lod)
+{
+	return textureLod(Texture, UV, lod);
+}
+float4 SampleBias(sampler2D Texture, float2 UV, float bias)
+{
+	return texture(Texture, UV, bias);
+}
 //float4 SampleClamp(sampler2D Texture, float2 UV)
 //{
 //	float2 size = float2(textureSize(Texture, 0)) - 1.0;

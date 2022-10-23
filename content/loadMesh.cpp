@@ -245,6 +245,9 @@ void LoadMesh(EngineState* engineState, Mesh* mesh)
     // Push file into the hoterload arena
     MESH_HEADER* header = (MESH_HEADER*)(engineState->arenaHotreload.base + engineState->arenaHotreload.used);
     uint8* end = (uint8*)engineState->platformReadFile((uint8*)header, mesh->filename);
+    
+    Assert(end, "File not found");
+    
     ArenaPushBytes(&engineState->arenaHotreload, (uint8*)end - (uint8*)header, mesh->filename);
 
     // Crash if we read the wrong file

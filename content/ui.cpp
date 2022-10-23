@@ -77,10 +77,10 @@ void AppendQuadToUI(EngineState* engineState, float2 position, float2 size, floa
 {
     int quadCount = engineState->uiMeshData->quadCount;
 
-    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float2(0, 0) * UVsize + UVpos };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float2(1, 0) * UVsize + UVpos };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(1, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float2(1, 1) * UVsize + UVpos };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(0, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float2(0, 1) * UVsize + UVpos };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float3(1, 0, 0), float2(0, 0) * UVsize + UVpos };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float3(1, 0, 0), float2(1, 0) * UVsize + UVpos };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(1, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float3(1, 0, 0), float2(1, 1) * UVsize + UVpos };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(0, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float3(1, 0, 0), float2(0, 1) * UVsize + UVpos };
 
     engineState->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
     engineState->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
@@ -98,10 +98,10 @@ void AppendSquareShapetoUI(EngineState* engineState, float2 pos0, float2 pos1, f
 {
     int quadCount = engineState->uiMeshData->quadCount;
 
-    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(pos0.x, pos0.y, opacity), color, float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01) };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(pos1.x, pos1.y, opacity), color, float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01) };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(pos2.x, pos2.y, opacity), color, float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01) };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(pos3.x, pos3.y, opacity), color, float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01) };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(pos0.x, pos0.y, opacity), color, float3(1, 0, 0), float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01) };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(pos1.x, pos1.y, opacity), color, float3(1, 0, 0), float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01) };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(pos2.x, pos2.y, opacity), color, float3(1, 0, 0), float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01) };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(pos3.x, pos3.y, opacity), color, float3(1, 0, 0), float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01) };
 
     engineState->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
     engineState->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;

@@ -145,39 +145,27 @@ struct EngineState
     Sound* TestSound_22k_mono;
     Sound* TestSound_44k_stereo;
 
-    Texture* texture0;
-    Texture* texture1;
-    Texture* texture2;
     Texture* texWhite;
     Texture* fontTexture;
     Texture* testImage;
-
-    Mesh* StrawPileMesh;
-
-    Texture* SwapBuffer0;
-    Texture* SwapBuffer1;
+    Texture* SwapBuffer;
 
     Texture* waterRipples0;
     Texture* waterRipples1;
 
+    Texture* texture0;
+    Texture* texture1;
+    Texture* texture2;
 
     Texture* waterRipplesPrevious;
     Texture* waterRipplesCurrent;
-
-
-    Mesh* monkey;
-    Mesh* bendyMonkey;
-    Animation* bendyMonkeyAnimation;
-
-    Mesh* torvidTest;
-    Animation* torvidTestAnimation;
-
-    Sound* torvidSound;
 
     Mesh* box;
     Mesh* axes;
     Shader* unlit;
     Shader* defaultlit;
+
+    Mesh* monkey;
 
     Shader* UIShader;
     Mesh* ui_circle;
@@ -207,9 +195,7 @@ struct EngineState
 
     uint8 scratchBuffer[Megabytes(256)];
 
-    RatData ratData;
-    int monkeyFrame;
-    float torvidFrame;
+
     bool editor;
     bool profiling;
 
@@ -504,7 +490,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     // hit space = smash game memory to 0 = restart game
     if (input->spaceDown)
     {
-        memory->initialized = false;
+        //memory->initialized = false;
         //StructClear(engineState);
         memory->reloadNow = true;
     }
@@ -556,9 +542,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
             LoadWav(engineState, &engineState->sounds[i]);
         }
     }
+    bool firstFrame = false;
     GameState* gameState = engineState->gameState;
     if (!memory->initialized)
     {
+        firstFrame = true;
         engineState->coutner = 0;
         memory->initialized = true;
 
@@ -631,25 +619,14 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         engineState->texWhite = FileReadTexture(engineState, "white.tga");
         engineState->fontTexture = FileReadTexture(engineState, "font.tga");
         engineState->testImage = FileReadTexture(engineState, "testImage.tga");
-
         engineState->axes = FileReadMesh(engineState, "axes.obj");
         engineState->monkey = FileReadMesh(engineState, "monkey.obj");
-        
-
-        engineState->torvidTest = FileReadMesh(engineState, "torvidTest.mesh");
-        engineState->torvidTestAnimation = FileReadAnimation(engineState, "torvidTest.anim");
-        engineState->torvidSound = FileReadSound(engineState, "Torvid_Gryphon.wav");
-
-
         engineState->box = FileReadMesh(engineState, "box.obj");
-        engineState->StrawPileMesh = FileReadMesh(engineState, "barn/StrawPile.obj");
-
         engineState->ui_circle = FileReadMesh(engineState, "ui_circle.obj");
         engineState->ui_quad = FileReadMesh(engineState, "ui_quad.obj");
 
 
         CreateMaterialGlobal(engineState, gameState->axesMaterial, engineState->unlit,  Material_unlit);
-
         gameState->axesMaterial->ColorTexture = engineState->texture0;
         gameState->axesMaterial->Color = float3(1, 1, 1);
 
@@ -665,34 +642,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         gameState->boneMaterial->BackFaceCulling = false;
 
 
-        CreateMaterialGlobal(engineState, gameState->red, engineState->unlit, Material_unlit);
-
-        gameState->red->ColorTexture = engineState->texWhite;
-        gameState->red->Color = float3(1, 0, 0);
-        gameState->red->BackFaceCulling = true;
-
-        CreateMaterialGlobal(engineState, gameState->green, engineState->unlit, Material_unlit);
-        gameState->green->ColorTexture = engineState->texWhite;
-        gameState->green->Color = float3(0, 1, 0);
-        gameState->green->BackFaceCulling = true;
-
-        CreateMaterialGlobal(engineState, gameState->blue, engineState->unlit, Material_unlit);
-        gameState->blue->ColorTexture = engineState->texWhite;
-        gameState->blue->Color = float3(0, 0, 1);
-        gameState->blue->BackFaceCulling = true;
-
-        // Load StrawPile
-        CreateMaterialGlobal(engineState, gameState->torvidMat, engineState->defaultlit, Material_defaultlit);
-        gameState->torvidMat->texM1 = FileReadTexture(engineState, "TorvidM1.tga");
-        gameState->torvidMat->texM2 = FileReadTexture(engineState, "TorvidM2.tga");
-        gameState->torvidMat->texM1Extra = FileReadTexture(engineState, "TorvidFeathersM1.tga");
-        gameState->torvidMat->texM2Extra = FileReadTexture(engineState, "TorvidFeathersM2.tga");
-        gameState->torvidMat->BackFaceCulling = true;
-        
-
-        engineState->SwapBuffer0 = CreateFramebufferTarget(engineState);
-        engineState->waterRipples0 = CreateTextureTarget(engineState, 512, 512);
-        engineState->waterRipples1 = CreateTextureTarget(engineState, 512, 512);
+        engineState->SwapBuffer = CreateFramebufferTarget(engineState);
+        engineState->waterRipples0 = CreateTextureTarget(engineState, 16, 16);
+        engineState->waterRipples1 = CreateTextureTarget(engineState, 16, 16);
 
         engineState->boneSphere = FileReadMesh(engineState, "bone_sphere.obj");
         engineState->bonePyramid = FileReadMesh(engineState, "bone_pyramid.obj");
@@ -700,6 +652,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         engineState->stringMesh = ArrayAddNew(engineState->meshes);
 
         engineState->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
+
+
+        gryphkissStart(engineState, gameState, input);
 
         return;
     }
@@ -767,7 +722,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     input->head.position *= 0.5f;
 
 
-    if (input->mouseLeftDown || input->faceButtonRight)
+    if (input->mouseLeftDown || input->faceButtonRight || firstFrame)
     {
         engineState->waterRipplesPrevious = engineState->waterRipples0;
         engineState->waterRipplesCurrent = engineState->waterRipples1;
@@ -793,7 +748,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     SetRenderTarget(engineState, engineState->waterRipplesCurrent);
     DrawClear(engineState);
 
-    
     CreateMaterialLocal(rippleSim, engineState->rippleSimShader, Material_rippleSim);
     rippleSim->mesh = engineState->ui_quad;
     rippleSim->TexPrevious = engineState->waterRipplesPrevious;
@@ -807,8 +761,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     engineState->waterRipplesPrevious = engineState->waterRipplesCurrent;
     engineState->waterRipplesCurrent = temp;
 
-    SetRenderTarget(engineState, engineState->SwapBuffer0);
-    DrawClear(engineState, float3(0.5,0,0));
+    SetRenderTarget(engineState, engineState->SwapBuffer);
+    DrawClear(engineState, float3(0.5, 0, 0));
 
     
     
@@ -845,7 +799,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     
 
     // Simulation plane
-
     Transform identity = Transform(vectorDown * 2.0, vectorForward, vectorUp, vectorOne);
     CreateMaterialLocal(waterPlane, engineState->unlit, Material_unlit);
     waterPlane->ColorTexture = engineState->waterRipplesCurrent;
@@ -856,23 +809,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     DrawMesh(engineState, waterPlane);
 
 
-    float animationFPS = 25.0f;
-    if (engineState->torvidFrame == 0.0f)
-    {
-        PlaySound(engineState, engineState->torvidSound, 0.25f);
-    }
-    engineState->torvidFrame += animationFPS * input->deltaTime;
-    if (engineState->torvidFrame > 180.0f)
-    {
-        engineState->torvidFrame = 0.0f;
-    }
-
-
     if (engineState->editor)
     {
-        DrawMesh(engineState, gameState->red, engineState->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
+        DrawMesh(engineState, gameState->red,   engineState->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
         DrawMesh(engineState, gameState->green, engineState->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
-        DrawMesh(engineState, gameState->blue, engineState->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
+        DrawMesh(engineState, gameState->blue,  engineState->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
 
         Transform monkeyRotation2 = { center + float3(0, -6, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
         DrawMesh(engineState, gameState->axesMaterial, engineState->monkey, monkeyRotation2);
@@ -882,54 +823,36 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         DrawMesh(engineState, gameState->torvidMat, engineState->monkey, monkeyRotation2);
     }
 
-    // Set up bones
-    for (int i = 0; i < engineState->torvidTestAnimation->boneCount; i++)
-    {
-        int frameOffset = ((int)engineState->torvidFrame) * engineState->torvidTestAnimation->boneCount;
-        Transform t = engineState->torvidTestAnimation->transforms[i + frameOffset];
-        // TODO: fix this
-        gameState->torvidMat->shaderBoneTransforms[i] = t;
-    }
+    gryphkissUpdate(engineState, gameState, input);
 
-
-
-
-    // Draw torvid
-    monkeyRotation = engineState->textTransform;
-    monkeyRotation.position += -monkeyRotation.up * 0.9;
-    monkeyRotation.position += monkeyRotation.right * 1.3;
-    monkeyRotation.position += -monkeyRotation.forward * 1.5;
-    monkeyRotation = rotate(monkeyRotation, monkeyRotation.up, -45);
-    DrawMesh(engineState, gameState->torvidMat, engineState->torvidTest, monkeyRotation);
-
-    if (engineState->editor)
-    {
-        DrawClearDepth(engineState);
-        // Draw transforms
-        for (int i = 0; i < engineState->torvidTestAnimation->boneCount; i++)
-        {
-            int frameOffset = ((int)engineState->torvidFrame) * engineState->torvidTestAnimation->boneCount;
-            Transform t = engineState->torvidTestAnimation->transforms[i + frameOffset];
-            float distanceToParent = 0.5f;
-            float boneRadius = 0.03f;
-            t.scale = vectorOne * boneRadius;
-            DrawMesh(engineState, gameState->boneMaterial, engineState->boneSphere, ApplyTransform(t, monkeyRotation));
-            if (!engineState->torvidTest->boneHierarchy[i].parent)
-                continue;
-    
-            Transform t2 = t;
-            int parentIndex = engineState->torvidTest->boneHierarchy[i].parent->index;
-            float3 parentPos = engineState->torvidTestAnimation->transforms[parentIndex + frameOffset].position;
-            distanceToParent = distance(parentPos, t2.position);
-            t2.forward = normalize(t2.position - parentPos);
-            t2.right = normalize(cross(t2.forward, t2.up));
-            t2.up = normalize(cross(t2.forward, t2.right));
-            t2.position = parentPos + t2.forward * boneRadius;
-            t2.scale = float3(boneRadius, distanceToParent - boneRadius * 2, boneRadius);
-    
-            DrawMesh(engineState, gameState->boneMaterial, engineState->bonePyramid, ApplyTransform(t2, monkeyRotation));
-        }
-    }
+    //if (engineState->editor)
+    //{
+    //    DrawClearDepth(engineState);
+    //    // Draw transforms
+    //    for (int i = 0; i < engineState->torvidTestAnimation->boneCount; i++)
+    //    {
+    //        int frameOffset = ((int)engineState->torvidFrame) * engineState->torvidTestAnimation->boneCount;
+    //        Transform t = engineState->torvidTestAnimation->transforms[i + frameOffset];
+    //        float distanceToParent = 0.5f;
+    //        float boneRadius = 0.03f;
+    //        t.scale = vectorOne * boneRadius;
+    //        DrawMesh(engineState, gameState->boneMaterial, engineState->boneSphere, ApplyTransform(t, monkeyRotation));
+    //        if (!engineState->torvidTest->boneHierarchy[i].parent)
+    //            continue;
+    //
+    //        Transform t2 = t;
+    //        int parentIndex = engineState->torvidTest->boneHierarchy[i].parent->index;
+    //        float3 parentPos = engineState->torvidTestAnimation->transforms[parentIndex + frameOffset].position;
+    //        distanceToParent = distance(parentPos, t2.position);
+    //        t2.forward = normalize(t2.position - parentPos);
+    //        t2.right = normalize(cross(t2.forward, t2.up));
+    //        t2.up = normalize(cross(t2.forward, t2.right));
+    //        t2.position = parentPos + t2.forward * boneRadius;
+    //        t2.scale = float3(boneRadius, distanceToParent - boneRadius * 2, boneRadius);
+    //
+    //        DrawMesh(engineState, gameState->boneMaterial, engineState->bonePyramid, ApplyTransform(t2, monkeyRotation));
+    //    }
+    //}
 
     if (input->faceButtonLeftDown || input->faceButtonRightDown || input->gDown)
     {
@@ -942,25 +865,13 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
 
 
-    DrawClearDepth(engineState);
-
     // Mouse cursor
     CreateMaterialLocal(mouseCursorCommand, engineState->UIShader, Material_UI);
-
     mouseCursorCommand->transform = {};
     mouseCursorCommand->mesh = engineState->ui_circle;
     mouseCursorCommand->BackFaceCulling = false;
     mouseCursorCommand->Wireframe = false;
     mouseCursorCommand->DisableDepthTest = true;
-
-    //mouseCursorCommand->Position = input->mousePos;
-    //mouseCursorCommand->FontTexture = engineState->texWhite;
-    //mouseCursorCommand->Color = float3(0, 0, 0);
-    //mouseCursorCommand->Size = float2(9, 9);
-    //DrawMesh(engineState, mouseCursorCommand);
-    //mouseCursorCommand->Color = float3(1, 1, 1);
-    //mouseCursorCommand->Size = float2(6, 6);
-    //DrawMesh(engineState, mouseCursorCommand);
 
     // Draw UI
     float2 pos = float2(0, 0);
@@ -969,11 +880,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     engineState->textTransform.position += engineState->textTransform.up * 0.25;
     engineState->textTransform.position += engineState->textTransform.right * -0.25;
 
-    DrawBox(engineState, float2(200, 500), float2(300, 300), float3(0.5, 0.2, 0.2), 0.5);
-    DrawBox(engineState, float2(300, 600), float2(300, 300), float3(0.2, 0.5, 0.2), 0.5);
-    DrawBox(engineState, float2(400, 700), float2(300, 300), float3(0.2, 0.2, 0.5), 0.5);
-
-    DrawBox(engineState, float2(0, 0), float2(300, 300), float3(0.2, 0.2, 0.5), 0.5);
+    //DrawBox(engineState, float2(200, 500), float2(300, 300), float3(0.5, 0.2, 0.2), 0.5);
+    //DrawBox(engineState, float2(300, 600), float2(300, 300), float3(0.2, 0.5, 0.2), 0.5);
+    //DrawBox(engineState, float2(400, 700), float2(300, 300), float3(0.2, 0.2, 0.5), 0.5);
+    //
+    //DrawBox(engineState, float2(0, 0), float2(300, 300), float3(0.2, 0.2, 0.5), 0.5);
 
     // Update text
     const int tempStringSize = 2048;
@@ -1056,15 +967,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
 
     // Draw the UI
-
-    //Mesh* mesh = ArrayAddNewNoClear(engineState->stringMeshes);
-    
     UpdateMesh(engineState, engineState->stringMesh,
         engineState->uiMeshData->vertexes,
         engineState->uiMeshData->quadCount * 4, 
         engineState->uiMeshData->indexes, 
         engineState->uiMeshData->quadCount * 6);
-    //Clear(engineState->scratchBuffer, Kilobytes(1));
     CreateMaterialLocal(command, engineState->UIShader, Material_UI);
     command->mesh = engineState->stringMesh;
     command->transform = engineState->textTransform;
@@ -1073,50 +980,15 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     command->DisableDepthTest = true;
     command->blendMode = BlendMode_Alpha;
     command->FontTexture = engineState->fontTexture;
-    //command->Position = float2(0, 0);// *position;
-    //command->Size = float2(1, 1);// *fontScale;
-    //command->Color = float3(1, 1, 1);
+
+    // Clear depth so UI is drawn on top.
+    DrawClearDepth(engineState);
     DrawMesh(engineState, command, false);
     engineState->uiMeshData->quadCount = 0;
 
 
-    //ProfilerBeingSample(engineState);
-    //uint64 what;
-    //ProfilerBeingSample(engineState);
-    //for (uint64 i = 0; i < 1000000; i++)
-    //{
-    //    what += i;
-    //}
-    //ProfilerEndSample(engineState, "a");
-    //for (uint64 i = 0; i < 1000000; i++)
-    //{
-    //    what += i;
-    //}
-    //ProfilerBeingSample(engineState);
-    //for (uint64 i = 0; i < 1000000; i++)
-    //{
-    //    what += i;
-    //}
-    //for (uint64 i = 0; i < 1000000; i++)
-    //{
-    //    what += i;
-    //}
-    //ProfilerEndSample(engineState, "b");
-    //for (uint64 i = 0; i < 1000000; i++)
-    //{
-    //    what += i;
-    //}
-    //ProfilerEndSample(engineState, "do_work");
-    //
-    //ProfilerBeingSample(engineState);
-    //ProfilerEndSample(engineState, "c");
-
     ProfilerEndSample(engineState, "GryphKissVR");
 
-    //ProfilerBeingSample(engineState);
-    //ProfilerEndSample(engineState, "Outside");
-    //data->enterTime[data->index - 1][data->frameNumber] = data->outsideStart;
-    //data->exitTime[data->index - 1][data->frameNumber] = data->outsideEnd;
 
     ProfilerDrawTimeChart(engineState, input, engineState->profilingData);
     ProfilerDrawFlameChart(engineState, input, engineState->profilingData);
@@ -1131,7 +1003,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     CreateMaterialLocal(finalOutputCommand, engineState->postProcessShader, Material_PostProcessTest);
     finalOutputCommand->mesh = engineState->ui_quad;
 
-    finalOutputCommand->ColorTexture = engineState->SwapBuffer0;
+    finalOutputCommand->ColorTexture = engineState->SwapBuffer;
     finalOutputCommand->TexRipples = engineState->waterRipplesCurrent;
 
     DrawMesh(engineState, finalOutputCommand);

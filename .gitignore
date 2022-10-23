@@ -12,6 +12,7 @@
 !*.h
 !*.txt
 !*.shader
+!*.py
 
 
 # Unignore github stuffs
