@@ -3,6 +3,7 @@
 #include "haven_platform.h"
 
 static const float pi = 3.14159265358979323926264338327;
+static const float tau = 6.283185307179586;
 
 #if PLATFORM == WIN32
     // Windows.
@@ -849,6 +850,8 @@ float round(float x) { return game_roundf(x); }
 float acos(float x) { return game_acosf(x); }
 float sin(float x) { return game_sinf(x); }
 float cos(float x) { return game_cosf(x); }
+float sin_turns(float x) { return game_sinf(x * 3.14152128f * 2.0f); }
+float cos_turns(float x) { return game_cosf(x * 3.14152128f * 2.0f); }
 float sqrt(float x) { return game_sqrtf(x); }
 float atan2(float x, float y)
 {
@@ -986,8 +989,8 @@ float rand(float2 co)
 
 float2 rotate(float2 v, float angle)
 {
-    float x = v.x * cos(angle) - v.y * sin(angle);
-    float y = v.x * sin(angle) + v.y * cos(angle);
+    float x = v.x * cos(angle * tau) - v.y * sin(angle * tau);
+    float y = v.x * sin(angle * tau) + v.y * cos(angle * tau);
     return float2(x, y);
 }
 
@@ -996,7 +999,7 @@ fixed3 cross(fixed3 a, fixed3 b) { return fixed3(a.y * b.z - a.z * b.y, a.z * b.
 
 float3 RotateAroundAxis(float3 v, float3 k, float a)
 {
-    return v * cos(a) + cross(k, v) * sin(a) + k * dot(k, v) * (1 - cos(a));
+    return v * cos(a * tau) + cross(k, v) * sin(a * tau) + k * dot(k, v) * (1 - cos(a * tau));
 }
 float3 reflect(float3 v, float3 normal)
 {
@@ -1091,8 +1094,7 @@ Transform ctor_transform(float3 position, float3 forward, float3 up, float3 scal
     result.scale = scale;
     return result;
 }
-#define Transform(position, forward, up, scale) ctor_transform((position), (forward), (up), (scale))
-#define Transform_pos(position) ctor_transform((position), (float3(0,1,0)), (float3(0,0,1)), (float3(1,1,1)))
+
 
 float3 LocalToWorld(Transform Trans, float3 position)
 {
@@ -1242,6 +1244,24 @@ Transform rotate(Transform t, float X, float Y, float Z)
     t = rotate(t, t.up, Z);
     return t;
 }
+Transform transform(float3 position)
+{
+    return ctor_transform(position, float3(0, 1, 0), float3(0, 0, 1), float3(1, 1, 1));
+}
+Transform transform(float3 position, float3 scale)
+{
+    return ctor_transform(position, float3(0, 1, 0), float3(0, 0, 1), scale);
+}
+Transform transform(float3 position, float x, float y, float z)
+{
+    return rotate(ctor_transform(position, float3(0, 1, 0), float3(0, 0, 1), float3(1, 1, 1)), x, y, z);
+}
+Transform transform(float3 position, float x, float y, float z, float3 scale)
+{
+    return rotate(ctor_transform(position, float3(0, 1, 0), float3(0, 0, 1), scale), x, y, z);
+}
+#define Transform(position, forward, up, scale) ctor_transform((position), (forward), (up), (scale))
+
 
 Transform LookRotation(Transform t, float3 forward, float3 up)
 {

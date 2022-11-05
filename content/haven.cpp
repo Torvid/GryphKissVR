@@ -40,7 +40,6 @@ extern "C" { int _fltused = 0; }
 #include "memory.cpp"
 #include "string.cpp"
 
-
 // X Macro for generating enums and strings
 #define ENUM(name, a) name##_##a,
 #define STRINGS(name, a) #a,
@@ -205,8 +204,6 @@ struct EngineState
     int timeEnd;
 
     GameState* gameState;
-    
-    Transform textTransform;
 
     float2 Resolution;
 
@@ -215,6 +212,9 @@ struct EngineState
     UIMeshData* uiMeshData;
 
     int coutner;
+    float2 uiPos;
+
+    Transform textTransform;
 };
 
 #include "loadMesh.cpp"
@@ -390,6 +390,8 @@ void PlaySound(EngineState* engineState, Sound* sound, float volume = 1.0f, bool
 
 void UpdateEditorCamera(EngineState* engineState, Input* input)
 {
+    float mouseSensitivity = 0.1f;
+
     if (!input->mouseRight)
         return;
 
@@ -399,8 +401,8 @@ void UpdateEditorCamera(EngineState* engineState, Input* input)
     {
         mouseDeltaX = -mouseDeltaX;
     }
-    engineState->spectatorCamera = rotate(engineState->spectatorCamera, float3(0, 0, 1), -mouseDeltaX * 0.005f);
-    engineState->spectatorCamera = rotate(engineState->spectatorCamera, engineState->spectatorCamera.right, -mouseDeltaY * 0.005f);
+    engineState->spectatorCamera = rotate(engineState->spectatorCamera, float3(0, 0, 1), -mouseDeltaX * 0.005f * mouseSensitivity);
+    engineState->spectatorCamera = rotate(engineState->spectatorCamera, engineState->spectatorCamera.right, -mouseDeltaY * 0.005f * mouseSensitivity);
 
     int x = input->w ? 1 : 0 + input->s ? -1 : 0;
     int y = input->d ? 1 : 0 + input->a ? -1 : 0;
@@ -448,6 +450,7 @@ Transform ApplyTransform(Transform t, Transform monkeyRotation)
 }
 
 #include "gryphkiss.cpp"
+#include "editor.cpp"
 
 
 static EngineState* globalEngineState;
@@ -480,7 +483,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     }
 
     engineState->Resolution = memory->Resolution;
-    //ArrayClear(engineState->stringMeshes);
 
     ArrayClear(engineState->renderCommands);
     ArenaReset(&engineState->arenaDrawCommands);
@@ -495,7 +497,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         memory->reloadNow = true;
     }
 
-    //memory->reloadNow = true;
     if (memory->reloadNow)
     {
         memory->reloadNow = false;
@@ -653,15 +654,13 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
         engineState->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
 
-
+        editorStart(engineState, gameState, input);
+        
         gryphkissStart(engineState, gameState, input);
 
         return;
     }
 
-
-    UpdateEditorCamera(engineState, &memory->input);
-    memory->spectatorCamera = engineState->spectatorCamera;
 
     if (engineState->headsetView)
         memory->spectatorCamera = input->head;
@@ -754,7 +753,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     rippleSim->mousePos = input->mousePos / engineState->Resolution;
     DrawMesh(engineState, rippleSim);
 
-
     // swap
     Texture* temp;
     temp = engineState->waterRipplesPrevious;
@@ -764,8 +762,10 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     SetRenderTarget(engineState, engineState->SwapBuffer);
     DrawClear(engineState, float3(0.5, 0, 0));
 
-    
-    
+
+
+    float2 pos = float2(0, 0);
+    engineState->uiPos = float2(0, 0);
     
 
     input->vibrationAmplitudeRight = input->grabRight;
@@ -775,18 +775,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     input->handLeft.scale = { 0.1f, 0.1f, 0.1f };
     input->aimRight.scale = { 0.1f, 0.1f, 0.1f };
     input->aimLeft.scale = { 0.1f, 0.1f, 0.1f };
-    if (engineState->editor)
-    {
-        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->handRight);
-        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->handLeft);
-        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->aimRight);
-        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->aimLeft);
-        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStage);
-        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageLeft);
-        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageRight);
-        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageLeftRotated);
-        DrawMesh(engineState, gameState->axesMaterial, engineState->axes, input->playspaceStageRightRotated);
-    }
 
     float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
     Transform monkeyRotation = { center +
@@ -796,7 +784,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         input->playspaceStageLeft.up,
         { 1, 1, 1 } };
     monkeyRotation = rotate(monkeyRotation, 0, 0, 0.0f);
-    
+
 
     // Simulation plane
     Transform identity = Transform(vectorDown * 2.0, vectorForward, vectorUp, vectorOne);
@@ -806,53 +794,15 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     waterPlane->mesh = engineState->ui_quad;
     waterPlane->BackFaceCulling = true;
     waterPlane->transform = identity;
-    DrawMesh(engineState, waterPlane);
+    DrawMesh(engineState, waterPlane, engineState->ui_quad, transform(center));
 
-
-    if (engineState->editor)
-    {
-        DrawMesh(engineState, gameState->red,   engineState->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
-        DrawMesh(engineState, gameState->green, engineState->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
-        DrawMesh(engineState, gameState->blue,  engineState->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
-
-        Transform monkeyRotation2 = { center + float3(0, -6, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-        DrawMesh(engineState, gameState->axesMaterial, engineState->monkey, monkeyRotation2);
-        monkeyRotation2 = { center + float3(3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-        DrawMesh(engineState, gameState->axesMaterial, engineState->ui_quad, monkeyRotation2);
-        monkeyRotation2 = { center + float3(-3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-        DrawMesh(engineState, gameState->torvidMat, engineState->monkey, monkeyRotation2);
-    }
-
+    DrawText(engineState, "G: toggle editor");
+    DrawText(engineState, "P: toggle profiling");
+    editorUpdate(engineState, gameState, input);
+    memory->spectatorCamera = engineState->spectatorCamera;
+    
+    profilerUpdate(engineState, gameState, input);
     gryphkissUpdate(engineState, gameState, input);
-
-    //if (engineState->editor)
-    //{
-    //    DrawClearDepth(engineState);
-    //    // Draw transforms
-    //    for (int i = 0; i < engineState->torvidTestAnimation->boneCount; i++)
-    //    {
-    //        int frameOffset = ((int)engineState->torvidFrame) * engineState->torvidTestAnimation->boneCount;
-    //        Transform t = engineState->torvidTestAnimation->transforms[i + frameOffset];
-    //        float distanceToParent = 0.5f;
-    //        float boneRadius = 0.03f;
-    //        t.scale = vectorOne * boneRadius;
-    //        DrawMesh(engineState, gameState->boneMaterial, engineState->boneSphere, ApplyTransform(t, monkeyRotation));
-    //        if (!engineState->torvidTest->boneHierarchy[i].parent)
-    //            continue;
-    //
-    //        Transform t2 = t;
-    //        int parentIndex = engineState->torvidTest->boneHierarchy[i].parent->index;
-    //        float3 parentPos = engineState->torvidTestAnimation->transforms[parentIndex + frameOffset].position;
-    //        distanceToParent = distance(parentPos, t2.position);
-    //        t2.forward = normalize(t2.position - parentPos);
-    //        t2.right = normalize(cross(t2.forward, t2.up));
-    //        t2.up = normalize(cross(t2.forward, t2.right));
-    //        t2.position = parentPos + t2.forward * boneRadius;
-    //        t2.scale = float3(boneRadius, distanceToParent - boneRadius * 2, boneRadius);
-    //
-    //        DrawMesh(engineState, gameState->boneMaterial, engineState->bonePyramid, ApplyTransform(t2, monkeyRotation));
-    //    }
-    //}
 
     if (input->faceButtonLeftDown || input->faceButtonRightDown || input->gDown)
     {
@@ -874,97 +824,10 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     mouseCursorCommand->DisableDepthTest = true;
 
     // Draw UI
-    float2 pos = float2(0, 0);
     engineState->textTransform = input->head;
     engineState->textTransform.position += engineState->textTransform.forward * 3;
     engineState->textTransform.position += engineState->textTransform.up * 0.25;
     engineState->textTransform.position += engineState->textTransform.right * -0.25;
-
-    //DrawBox(engineState, float2(200, 500), float2(300, 300), float3(0.5, 0.2, 0.2), 0.5);
-    //DrawBox(engineState, float2(300, 600), float2(300, 300), float3(0.2, 0.5, 0.2), 0.5);
-    //DrawBox(engineState, float2(400, 700), float2(300, 300), float3(0.2, 0.2, 0.5), 0.5);
-    //
-    //DrawBox(engineState, float2(0, 0), float2(300, 300), float3(0.2, 0.2, 0.5), 0.5);
-
-    // Update text
-    const int tempStringSize = 2048;
-    char text[tempStringSize] = {};
-    Clear((uint8*)text, tempStringSize);
-    StringAppend(text, "G: toggle info");
-    StringAppend(text, "\nP: toggle profiling");
-    DrawText(engineState, text, &pos);
-    Clear((uint8*)text, tempStringSize);
-
-    if (engineState->profiling)
-    {
-        StringAppend(text, "\nPERFORMANCE:");
-        StringAppend(text, "\n    Time: ", input->time);
-        StringAppend(text, "\n    FPS: ", 1.0f / input->deltaTime);
-        StringAppend(text, "\n    Internal Time: ", (int)engineState->internalTime, " microseconds");
-        StringAppend(text, "\n    External Time: ", (int)engineState->externalTime, " microseconds");
-        StringAppend(text, "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds");
-        DrawText(engineState, text, &pos);
-
-
-        Clear((uint8*)text, tempStringSize);
-        StringAppend(text, "\n\nMEMORY:");
-        DrawText(engineState, text, &pos);
-
-        //DrawArena(engineState, &pos, &engineState->arenaGlobalDrawCommands, textTransform);
-        //DrawArena(engineState, &pos, &engineState->arenaGameState, textTransform);
-        DrawArena(engineState, &pos, &engineState->arenaHotreload);
-
-        //DrawArena(engineState, &pos, &engineState->arenaDrawCommands);
-    }
-
-    if (engineState->editor)
-    {
-        Clear((uint8*)text, tempStringSize);
-        StringAppend(text, "\n\nINPUT: ");
-        StringAppend(text, "\n    Mouse pos: ", input->mousePos);
-        StringAppend(text, "\n    Eye pos: ", input->eyeLeft.position);
-        DrawText(engineState, text, &pos);
-
-        Clear((uint8*)text, tempStringSize);
-        StringAppend(text, "    Left Controller:\n");
-        StringAppend(text, "        Pos: ", input->handLeft.position);
-        StringAppend(text, "\n        Trigger: ", input->triggerLeft);
-        StringAppend(text, "\n        Thumbstick: ", input->thumbstickLeft);
-        StringAppend(text, "\n        Face Button: ", input->faceButtonLeft);
-        DrawText(engineState, text, &pos);
-
-        Clear((uint8*)text, tempStringSize);
-        StringAppend(text, "    Right Controller:\n");
-        StringAppend(text, "        Pos: ", input->handRight.position);
-        StringAppend(text, "\n        Trigger: ", input->triggerRight);
-        StringAppend(text, "\n        Thumbstick: ", input->thumbstickRight);
-        StringAppend(text, "\n        Face Button: ", input->faceButtonRight);
-        DrawText(engineState, text, &pos);
-
-        engineState->headsetView = DrawToggle(engineState, input, "Headset View: ", &pos, engineState->headsetView);
-
-        if (DrawButton(engineState, input, "Play a sound", &pos) || input->faceButtonLeftDown)
-        {
-            PlaySound(engineState, engineState->TestSound_22k_mono, 1.0f, false);
-        }
-
-
-        Clear((uint8*)text, tempStringSize);
-        StringAppend(text, "\n\nSOUND: \n");
-        for (int i = 0; i < ArrayCapacity(engineState->soundChannels); i++)
-        {
-            SoundChannel* channel = &engineState->soundChannels[i];
-
-            if (channel->playing)
-            {
-                StringAppend(text, "    ", (int)i, ", ");
-                StringAppend(text, channel->sound->filename, ", ");
-                StringAppend(text, ((float)channel->currentSample / (float)channel->sound->sampleCount), "\n");
-            }
-        }
-        DrawText(engineState, text, &pos);
-    }
-
 
     // Draw the UI
     UpdateMesh(engineState, engineState->stringMesh,
@@ -972,27 +835,32 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         engineState->uiMeshData->quadCount * 4, 
         engineState->uiMeshData->indexes, 
         engineState->uiMeshData->quadCount * 6);
+
     CreateMaterialLocal(command, engineState->UIShader, Material_UI);
     command->mesh = engineState->stringMesh;
-    command->transform = engineState->textTransform;
+    command->transform = transformIdentity;
     command->BackFaceCulling = false;
-    command->Wireframe = false;
-    command->DisableDepthTest = true;
+    //command->Wireframe = false;
+    //command->DisableDepthTest = true;
     command->blendMode = BlendMode_Alpha;
     command->FontTexture = engineState->fontTexture;
 
+    command->VRCameraPosition = engineState->textTransform.position;
+    command->VRCameraForward = engineState->textTransform.forward;
+    command->VRCameraUp = engineState->textTransform.up;
+    command->VRCameraRight = engineState->textTransform.right;
+
+    command->SpectatorCameraPosition = engineState->spectatorCamera.position;
+    command->SpectatorCameraForward = engineState->spectatorCamera.forward;
+    command->SpectatorCameraUp = engineState->spectatorCamera.up;
+    command->SpectatorCameraRight = engineState->spectatorCamera.right;
+
     // Clear depth so UI is drawn on top.
-    DrawClearDepth(engineState);
     DrawMesh(engineState, command, false);
     engineState->uiMeshData->quadCount = 0;
 
-
     ProfilerEndSample(engineState, "GryphKissVR");
-
-
-    ProfilerDrawTimeChart(engineState, input, engineState->profilingData);
-    ProfilerDrawFlameChart(engineState, input, engineState->profilingData);
-
+    
     ProfilerEnd(engineState);
     engineState->timeEnd = engineState->platformTime();
     engineState->internalTime = ((engineState->timeEnd - engineState->timeStart) * 100) / 1000;

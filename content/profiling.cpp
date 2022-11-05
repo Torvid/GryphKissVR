@@ -94,7 +94,10 @@ void DrawArena(EngineState* engineState, float2* pos,  MemoryArena* arena)
     }
     DrawText(engineState, text, pos);
 }
-
+void DrawArena(EngineState* engineState, MemoryArena* arena)
+{
+    DrawArena(engineState, &engineState->uiPos, arena);
+}
 // Call this to start a profile region
 void ProfilerBeingSample(EngineState* engineState)
 {
@@ -198,17 +201,17 @@ void ProfilerDrawFlameChart(EngineState* engineState, Input* input, ProfilingDat
     
     float flipOffset = 80;
 
-    DrawBox(engineState, float2(rightOffset, flipOffset - 80), float2(engineState->Resolution.x - rightOffset, 80), float3(0.0, 0.0, 0.0), 0.5);
+    DrawBox2D(engineState, float2(rightOffset, flipOffset - 80), float2(engineState->Resolution.x - rightOffset, 80), float3(0.0, 0.0, 0.0), 0.5);
     
-    DrawLine(engineState, float2(rightOffset, flipOffset), float2(engineState->Resolution.x, flipOffset), 1);
-    //DrawLine(videoBuffer, float2(rightOffset, videoBuffer->Height - 1), float2(videoBuffer->Width, videoBuffer->Height - 1));
+    DrawLine2D(engineState, float2(rightOffset, flipOffset), float2(engineState->Resolution.x, flipOffset), 1);
+    //DrawLine2D(videoBuffer, float2(rightOffset, videoBuffer->Height - 1), float2(videoBuffer->Width, videoBuffer->Height - 1));
     for (int i = 0; i < 21; i++)
     {
         int point = (((float)i * 10000 * q) / ((float)sampleCount)) * engineState->Resolution.x + rightOffset;
-        DrawLine(engineState, float2(point,     flipOffset), float2(point,     flipOffset - 8), 1);
-        DrawLine(engineState, float2(point + 1, flipOffset), float2(point + 1, flipOffset - 8), 1);
-        //DrawLine(videoBuffer, float2(point, videoBuffer->Height - 0), float2(point, videoBuffer->Height - 8));
-        //DrawLine(videoBuffer, float2(point + 1, videoBuffer->Height - 0), float2(point + 1, videoBuffer->Height - 8));
+        DrawLine2D(engineState, float2(point,     flipOffset), float2(point,     flipOffset - 8), 1);
+        DrawLine2D(engineState, float2(point + 1, flipOffset), float2(point + 1, flipOffset - 8), 1);
+        //DrawLine2D(videoBuffer, float2(point, videoBuffer->Height - 0), float2(point, videoBuffer->Height - 8));
+        //DrawLine2D(videoBuffer, float2(point + 1, videoBuffer->Height - 0), float2(point + 1, videoBuffer->Height - 8));
         char time[100] = {};
         StringAppend(time, (int)(i * q));
         StringAppend(time, "ms");
@@ -238,7 +241,7 @@ void ProfilerDrawFlameChart(EngineState* engineState, Input* input, ProfilingDat
         float height = flipOffset - (17 * profilingData->depth[i]);
         float2 pos = float2(round(startNormalized), height) + float2(rightOffset, 0);
         float2 size = float2(round(endNormalized - startNormalized) - 1, 16);
-        DrawBox(engineState, pos, size, float3(0.5, 0.5, 0.5), 1.0f);
+        DrawBox2D(engineState, pos, size, float3(0.5, 0.5, 0.5), 1.0f);
         char time[100] = {};
         StringAppend(time, name);
         StringAppend(time, ": ");
@@ -253,7 +256,7 @@ void ProfilerDrawTimeChart(EngineState* engineState, Input* input, ProfilingData
 {
     ProfilingData* profilingData = data;
 
-    DrawBox(engineState, float2(0, engineState->Resolution.y - 200), float2(200, 200), float3(0.0, 0.0, 0.0), 0.5);
+    DrawBox2D(engineState, float2(0, engineState->Resolution.y - 200), float2(200, 200), float3(0.0, 0.0, 0.0), 0.5);
 
     float FPS = (float)(1.0f / input->deltaTime);
     float Delta = (float)(profilingData->Delta) / 10000000;
@@ -270,7 +273,7 @@ void ProfilerDrawTimeChart(EngineState* engineState, Input* input, ProfilingData
         int h = (i + profilingData->deltas2Index) % 100;
         float a = profilingData->deltas2[h] * HeightMultiplier;
         float height = engineState->Resolution.y - a;
-        //DrawLine(videoBuffer, float2(i * 2 - 2, LastHeight), float2(i * 2, height));
+        //DrawLine2D(videoBuffer, float2(i * 2 - 2, LastHeight), float2(i * 2, height));
 
         LastHeight = height;
     }
@@ -281,4 +284,44 @@ void ProfilerDrawTimeChart(EngineState* engineState, Input* input, ProfilingData
     StringAppend(text, TotalTimeDelta * 1000);
     StringAppend(text, "ms");
     DrawText(engineState, text, float2(200, fpscurrentheight));
+}
+
+void profilerStart(EngineState* engineState, GameState* gameState, Input* input)
+{
+
+}
+
+void profilerUpdate(EngineState* engineState, GameState* gameState, Input* input)
+{
+    // Update text
+    const int tempStringSize = 2048;
+    char text[tempStringSize] = {};
+    Clear((uint8*)text, tempStringSize);
+
+    if (engineState->profiling)
+    {
+        StringAppend(text, "\nPERFORMANCE:");
+        StringAppend(text, "\n    Time: ", input->time);
+        StringAppend(text, "\n    FPS: ", 1.0f / input->deltaTime);
+        StringAppend(text, "\n    Internal Time: ", (int)engineState->internalTime, " microseconds");
+        StringAppend(text, "\n    External Time: ", (int)engineState->externalTime, " microseconds");
+        StringAppend(text, "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds");
+        DrawText(engineState, text);
+
+        DrawBox2D(engineState, float2(200, 200), float2(300, 300), float3(0.5f, 0.0f, 0.0f), 0.5f);
+        DrawBox2D(engineState, float2(300, 300), float2(300, 300), float3(0.0f, 0.5f, 0.0f), 0.5f);
+        DrawBox2D(engineState, float2(400, 400), float2(300, 300), float3(0.0f, 0.0f, 0.5f), 0.5f);
+
+        Clear((uint8*)text, tempStringSize);
+        StringAppend(text, "\n\nMEMORY:");
+        DrawText(engineState, text);
+
+        //DrawArena(engineState, &pos, &engineState->arenaGlobalDrawCommands, textTransform);
+        //DrawArena(engineState, &pos, &engineState->arenaGameState, textTransform);
+        DrawArena(engineState, &engineState->arenaHotreload);
+
+        //DrawArena(engineState, &pos, &engineState->arenaDrawCommands);
+        ProfilerDrawTimeChart(engineState, input, engineState->profilingData);
+        ProfilerDrawFlameChart(engineState, input, engineState->profilingData);
+    }
 }

@@ -1,0 +1,2 @@
+LINK : program database C:\Users\Stinger\Dropbox\Stinger\projects\furry\GryphKiss\desktop\OpenXR-SDK-Source-main\build\win64\src\tests\hello_xr\content\haven.pdb missing; performing full link
+   Creating library haven.lib and object haven.exp

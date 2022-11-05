@@ -4,6 +4,8 @@
 
 static const float fontScale = 1.0f;
 static const float2 fontSpriteSize = { 6, 13 };
+static const float2 atlasSize = { 32, 4 };
+static const float2 glyphSize = { 6, 13 };
 
 const int quadCountMax = 5000;
 struct UIMeshData
@@ -73,14 +75,56 @@ float2 GetFontPos(int index)
     return float2(index % 32, index / 32);
 }
 
+void AppendQuadToUI3D(EngineState* engineState, float3 pivot, float3 position, float3 size, float2 UVpos, float2 UVsize, float3 color, float opacity)
+{
+    int quadCount = engineState->uiMeshData->quadCount;
+
+    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0,  0,  0) * size + position, color, pivot, float2(0, 0) * UVsize + UVpos, float2(opacity, 1), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1,  0,  0) * size + position, color, pivot, float2(1, 0) * UVsize + UVpos, float2(opacity, 1), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(1,  0,  1) * size + position, color, pivot, float2(1, 1) * UVsize + UVpos, float2(opacity, 1), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(0,  0,  1) * size + position, color, pivot, float2(0, 1) * UVsize + UVpos, float2(opacity, 1), 0 };
+
+    engineState->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    engineState->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    engineState->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    engineState->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    engineState->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    engineState->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+
+    engineState->uiMeshData->quadCount++;
+
+    Assert(engineState->uiMeshData->quadCount < quadCountMax);
+}
+
 void AppendQuadToUI(EngineState* engineState, float2 position, float2 size, float2 UVpos, float2 UVsize, float3 color, float opacity)
 {
     int quadCount = engineState->uiMeshData->quadCount;
 
-    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float3(1, 0, 0), float2(0, 0) * UVsize + UVpos };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float3(1, 0, 0), float2(1, 0) * UVsize + UVpos };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(1, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float3(1, 0, 0), float2(1, 1) * UVsize + UVpos };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(0, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, opacity), color, float3(1, 0, 0), float2(0, 1) * UVsize + UVpos };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(0, 0) * UVsize + UVpos, float2(opacity, 0), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(1, 0) * UVsize + UVpos, float2(opacity, 0), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(1, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(1, 1) * UVsize + UVpos, float2(opacity, 0), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(0, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(0, 1) * UVsize + UVpos, float2(opacity, 0), 0 };
+
+    engineState->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    engineState->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    engineState->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    engineState->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    engineState->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    engineState->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+
+    engineState->uiMeshData->quadCount++;
+
+    Assert(engineState->uiMeshData->quadCount < quadCountMax);
+}
+
+void AppendSquareShapetoUI3D(EngineState* engineState, float3 pos0, float3 pos1, float3 pos2, float3 pos3, float3 color, float opacity)
+{
+    int quadCount = engineState->uiMeshData->quadCount;
+
+    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { pos0, color, float3(1, 0, 0), float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { pos1, color, float3(1, 0, 0), float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { pos2, color, float3(1, 0, 0), float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { pos3, color, float3(1, 0, 0), float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), 0 };
 
     engineState->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
     engineState->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
@@ -98,10 +142,10 @@ void AppendSquareShapetoUI(EngineState* engineState, float2 pos0, float2 pos1, f
 {
     int quadCount = engineState->uiMeshData->quadCount;
 
-    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(pos0.x, pos0.y, opacity), color, float3(1, 0, 0), float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01) };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(pos1.x, pos1.y, opacity), color, float3(1, 0, 0), float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01) };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(pos2.x, pos2.y, opacity), color, float3(1, 0, 0), float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01) };
-    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(pos3.x, pos3.y, opacity), color, float3(1, 0, 0), float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01) };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(pos0.x, pos0.y, 0), color, float3(1, 0, 0), float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(pos1.x, pos1.y, 0), color, float3(1, 0, 0), float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(pos2.x, pos2.y, 0), color, float3(1, 0, 0), float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), 0 };
+    engineState->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(pos3.x, pos3.y, 0), color, float3(1, 0, 0), float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), 0 };
 
     engineState->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
     engineState->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
@@ -115,15 +159,36 @@ void AppendSquareShapetoUI(EngineState* engineState, float2 pos0, float2 pos1, f
     Assert(engineState->uiMeshData->quadCount < quadCountMax);
 }
 
-void DrawText(EngineState* engineState, char* text, float2* position, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    int len = StringLength(text);
-    float2 atlasSize = float2(32, 4);
-    float2 glyphSize = float2(6, 13);
 
+void DrawText3D(EngineState* engineState, char* text, float3 position, float scale = 1.0f, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
     int newlineCount = 1;
     float2 offset = float2(0, 0);
-    for (int i = 0; i < len; i++)
+    float totalLength = StringLength(text) * 0.5f;
+    for (int i = 0; i < StringLength(text); i++)
+    {
+        int index = GetFontIndex(text[i]);
+        float2 pos = GetFontPos(index);
+
+        if (index == -1) // newline
+        {
+            offset.x = 0;
+            offset.y += 1;
+            continue;
+        }
+        float3 size = float3(glyphSize.x, glyphSize.y, glyphSize.y) * 0.01f * scale;
+        float3 offsetSize = float3(offset.x- totalLength, offset.y - 0.5f, offset.y - 0.5f);
+        AppendQuadToUI3D(engineState, position, (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
+
+        offset.x++;
+    }
+}
+
+void DrawText(EngineState* engineState, char* text, float2* position, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    int newlineCount = 1;
+    float2 offset = float2(0, 0);
+    for (int i = 0; i < StringLength(text); i++)
     {
         int index = GetFontIndex(text[i]);
         float2 pos = GetFontPos(index);
@@ -146,6 +211,10 @@ void DrawText(EngineState* engineState, char* text, float2* position, float3 col
 void DrawText(EngineState* engineState, char* text, float2 position, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
     DrawText(engineState, text, &position, color, opacity);
+}
+void DrawText(EngineState* engineState, char* text, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    DrawText(engineState, text, &engineState->uiPos, color, opacity);
 }
 
 float2 GetTextSize(char* text)
@@ -180,6 +249,10 @@ bool DrawToggle(EngineState* engineState, Input* input, char* text, float2* posi
 
     return value;
 }
+bool DrawToggle(EngineState* engineState, Input* input, char* text, bool value)
+{
+    return DrawToggle(engineState, input, text, &engineState->uiPos, value);
+}
 
 bool DrawButton(EngineState* engineState, Input* input, char* text, float2* position)
 {
@@ -204,12 +277,16 @@ bool DrawButton(EngineState* engineState, Input* input, char* text, float2* posi
 
     return false;
 }
+bool DrawButton(EngineState* engineState, Input* input, char* text)
+{
+    return DrawButton(engineState, input, text, &engineState->uiPos);
+}
 
-void DrawBox(EngineState* engineState, float2 position, float2 size, float3 color = { 1, 1, 1 }, float opacity = 1)
+void DrawBox2D(EngineState* engineState, float2 position, float2 size, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
     AppendQuadToUI(engineState, position, size, float2(0.95, 0.01), float2(0.01, 0.1), color, opacity);
 }
-void DrawLine(EngineState* engineState, float2 start, float2 end, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+void DrawLine2D(EngineState* engineState, float2 start, float2 end, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
     float2 side = normalize(rotate90CW(start - end)) * width * 0.5f;
     
@@ -219,4 +296,147 @@ void DrawLine(EngineState* engineState, float2 start, float2 end, float width, f
     float2 pos3 = end - side;
 
     AppendSquareShapetoUI(engineState, pos0, pos1, pos2, pos3, color, opacity);
+}
+
+
+void DrawLine(EngineState* engineState, float3 start, float3 end, float width = 0.01f, float3 color = {1, 1, 1}, float opacity = 1)
+{
+    float3 direction = (end - start);
+    float3 q = cross(direction, float3(0, 0, 1));
+    float3 offangle = ((q.x + q.y + q.z) == 0) ? float3(0, 1, 0) : float3(0, 0, 1);
+    float3 right = normalize(cross(direction, offangle)) * width * 0.5;
+    float3 left = normalize(cross(right, direction)) * width * 0.5;
+
+    float3 pos0 = end + left;
+    float3 pos1 = start + left; 
+    float3 pos2 = start - left;
+    float3 pos3 = end - left; 
+
+    AppendSquareShapetoUI3D(engineState, pos0, pos1, pos2, pos3, color, opacity);
+
+    pos0 = end + right;
+    pos1 = start + right;
+    pos2 = start - right;
+    pos3 = end - right;
+    AppendSquareShapetoUI3D(engineState, pos0, pos1, pos2, pos3, color, opacity);
+
+}
+
+void DrawRay(EngineState* engineState, float3 start, float3 direction, float len, float width = 0.01f, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    DrawLine(engineState, start, start + normalize(direction) * len, width, color, opacity);
+}
+
+float3 AngleToVector(float angle, float3 left, float3 right)
+{
+    return sin_turns(angle) * left + cos_turns(angle) * right;
+}
+
+void DrawCircle(EngineState* engineState, float3 center, float3 normal, float radius, float width, float3 color = { 1, 1, 1 }, float opacity = 1, int detail = 32)
+{
+    float3 direction = normalize(normal);
+    float3 offangle = direction == float3(0, 0, 1) ? float3(0, 1, 0) : float3(0, 0, 1);
+    float3 right = normalize(cross(direction, offangle));
+    float3 left = normalize(cross(right, direction));
+    width *= 0.5;
+    //int detail = 32;
+    for (int i = 1; i < detail+1; i++)
+    {
+        float angleStart = (i-1) / (float)detail;
+        float angleEnd = i / (float)detail;
+
+        float3 offsetStart = AngleToVector(angleStart, left, right);
+        float3 offsetEnd   = AngleToVector(angleEnd, left, right);
+
+        float3 pos0 = center + offsetStart * radius - offsetEnd   * width;
+        float3 pos1 = center + offsetEnd   * radius - offsetStart * width;
+        float3 pos2 = center + offsetEnd   * radius + offsetEnd   * width;
+        float3 pos3 = center + offsetStart * radius + offsetStart * width;
+        AppendSquareShapetoUI3D(engineState, pos0, pos1, pos2, pos3, color, opacity);
+
+        pos0 = center + offsetStart * radius - direction * width;
+        pos1 = center + offsetEnd   * radius - direction * width;
+        pos2 = center + offsetEnd   * radius + direction * width;
+        pos3 = center + offsetStart * radius + direction * width;
+        AppendSquareShapetoUI3D(engineState, pos0, pos1, pos2, pos3, color, opacity);
+    }
+}
+
+void DrawSphere(EngineState* engineState, float3 center, float radius, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    for (int i = 0; i < 8; i++)
+    {
+        float3 a = AngleToVector(i / 8.0f, float3(1, 0, 0), float3(0, 1, 0));
+        DrawCircle(engineState, center, a, radius, width, color, opacity, 8);
+    }
+    DrawCircle(engineState, center + float3(0, 0, radius * 0.707), float3(0, 0, 1), radius* 0.707, width, color, opacity, 8);
+    DrawCircle(engineState, center, float3(0, 0, 1), radius, width, color, opacity, 8);
+    DrawCircle(engineState, center + float3(0, 0, -radius * 0.707), float3(0, 0, 1), radius * 0.707, width, color, opacity, 8);
+}
+
+void DrawAxisSphere(EngineState* engineState, float3 center, float radius, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    DrawCircle(engineState, center, float3(1, 0, 0), radius, width, color, opacity, 8);
+    DrawCircle(engineState, center, float3(0, 1, 0), radius, width, color, opacity, 8);
+    DrawCircle(engineState, center, float3(0, 0, 1), radius, width, color, opacity, 8);
+}
+
+void DrawTransform(EngineState* engineState, Transform transform, float width)
+{
+    DrawRay(engineState, transform.position, transform.right,   transform.scale.x, width, float3(1, 0, 0));
+    DrawRay(engineState, transform.position, transform.forward, transform.scale.y, width, float3(0, 1, 0));
+    DrawRay(engineState, transform.position, transform.up,      transform.scale.z, width, float3(0, 0, 1));
+}
+
+void DrawPoint(EngineState* engineState, float3 position, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    DrawLine(engineState, position - float3(width * 0.5, 0, 0), position + float3(width * 0.5, 0, 0), width, color, opacity);
+    DrawLine(engineState, position - float3(0, width * 0.5, 0), position + float3(0, width * 0.5, 0), width, color, opacity);
+}
+
+void DrawAABB(EngineState* engineState, float3 center, float3 size, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    DrawLine(engineState, center + size * float3( 1,  1,  1), center + size * float3( 1,  1, -1), width, color, opacity);
+    DrawLine(engineState, center + size * float3(-1,  1,  1), center + size * float3(-1,  1, -1), width, color, opacity);
+    DrawLine(engineState, center + size * float3( 1, -1,  1), center + size * float3( 1, -1, -1), width, color, opacity);
+    DrawLine(engineState, center + size * float3(-1, -1,  1), center + size * float3(-1, -1, -1), width, color, opacity);
+
+    DrawLine(engineState, center + size * float3( 1,  1,  1), center + size * float3( 1, -1,  1), width, color, opacity);
+    DrawLine(engineState, center + size * float3(-1,  1,  1), center + size * float3(-1, -1,  1), width, color, opacity);
+    DrawLine(engineState, center + size * float3( 1,  1, -1), center + size * float3( 1, -1, -1), width, color, opacity);
+    DrawLine(engineState, center + size * float3(-1,  1, -1), center + size * float3(-1, -1, -1), width, color, opacity);
+
+    DrawLine(engineState, center + size * float3(1,  1,   1), center + size * float3(-1,  1,  1), width, color, opacity);
+    DrawLine(engineState, center + size * float3(1, -1,   1), center + size * float3(-1, -1,  1), width, color, opacity);
+    DrawLine(engineState, center + size * float3(1,  1,  -1), center + size * float3(-1,  1, -1), width, color, opacity);
+    DrawLine(engineState, center + size * float3(1, -1,  -1), center + size * float3(-1, -1, -1), width, color, opacity);
+}
+
+float3 TransformPosition_LocalSpaceToWorldSpace(Transform transform, float3 localPosition)
+{
+    // Assume the direction vectors are normalized? is it safe to do so? idk
+    return transform.right   * localPosition.x * transform.scale.x +
+           transform.forward * localPosition.y * transform.scale.y +
+           transform.up      * localPosition.z * transform.scale.z + 
+           transform.position;
+}
+float3 TransformPosition_WorldSpaceToLocalSpace(Transform transform, float3 worldPosition)
+{
+    //float3 transform.position - worldPosition;
+}
+
+void DrawBox(EngineState* engineState, Transform transform,  float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1, -1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1, -1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1, -1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1, -1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1,  1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1,  1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1, -1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1, -1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1, -1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1, -1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1,  1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1,  1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1, -1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1, -1)), width, color, opacity);
+    DrawLine(engineState, TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1, -1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1, -1)), width, color, opacity);
 }

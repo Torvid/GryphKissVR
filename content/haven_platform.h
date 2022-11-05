@@ -314,7 +314,6 @@ typedef struct Bone Bone;
 
 struct Bone
 {
-    //Transform transform;
     int index;
     Bone* parent;
 

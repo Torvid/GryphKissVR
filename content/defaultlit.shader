@@ -133,7 +133,7 @@ void main()
 	// Tangent-Space Normal mapping
 	M2.rg = M2.rg * 2.0 - 1.0;
 
-	float3 worldNormal = PSVertexNormal * 1.0 + M2.r * PSVertexTangent + M2.g * PSVertexBitangent;
+	float3 worldNormal = PSVertexNormal *1.0 + M2.r * PSVertexTangent + M2.g * PSVertexBitangent;
 	//float3 worldNormal = deriveTangentBasis(PSVertexNormal, worldPos, UV, float3(M2.rg, 1));
 
 	// Lighting

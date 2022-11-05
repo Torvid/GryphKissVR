@@ -11,7 +11,6 @@ struct GameState
     Animation* torvidTestAnimation;
     Sound* torvidSound;
 
-
     Material_unlit* axesMaterial;
     Material_unlit* boneMaterial;
     Material_unlit* red;
@@ -66,14 +65,14 @@ void gryphkissStart(EngineState* engineState, GameState* gameState, Input* input
     gameState->StrawPileMat->texM2 = FileReadTexture(engineState, "barn/StrawPileM2.tga");
     
     // Load meshes
-    gameState->barnWall01 = FileReadMesh(engineState, "barn/barnWall01.obj");
-    gameState->barnWall02 = FileReadMesh(engineState, "barn/barnWall02.obj");
-    gameState->barnWall03 = FileReadMesh(engineState, "barn/barnWall03.obj");
-    gameState->barnCeiling = FileReadMesh(engineState, "barn/barnCeiling.obj");
-    gameState->BarnBeam01 = FileReadMesh(engineState, "barn/BarnBeam01.obj");
-    gameState->BarnBeam02 = FileReadMesh(engineState, "barn/BarnBeam02.obj");
-    gameState->BarnDoor = FileReadMesh(engineState, "barn/BarnDoor.obj");
-    gameState->StrawPile = FileReadMesh(engineState, "barn/StrawPile.obj");
+    gameState->barnWall01 = FileReadMesh(engineState, "barn/BarnWall01.mesh");
+    gameState->barnWall02 = FileReadMesh(engineState, "barn/BarnWall02.mesh");
+    gameState->barnWall03 = FileReadMesh(engineState, "barn/BarnWall03.mesh");
+    gameState->barnCeiling = FileReadMesh(engineState, "barn/BarnCeiling01.mesh");
+    gameState->BarnBeam01 = FileReadMesh(engineState, "barn/BarnBeam01.mesh");
+    gameState->BarnBeam02 = FileReadMesh(engineState, "barn/BarnBeam02.mesh");
+    gameState->BarnDoor = FileReadMesh(engineState, "barn/BarnDoor.mesh");
+    gameState->StrawPile = FileReadMesh(engineState, "barn/StrawPile.mesh");
 
 
     CreateMaterialGlobal(engineState, gameState->red, engineState->unlit, Material_unlit);
@@ -118,22 +117,121 @@ void gryphkissUpdate(EngineState* engineState, GameState* gameState, Input* inpu
 
     // Draw torvid
     float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
-    Transform monkeyRotation = { center +
-        float3(-1, 0, 0),
+
+    
+
+    center += float3(-3, -5, 0);
+    Transform torvidPos = { center +
+        float3(2.5, 8, 0),
         input->playspaceStageLeft.right,
         input->playspaceStageLeft.forward,
         input->playspaceStageLeft.up,
         { 1, 1, 1 } };
-    monkeyRotation = engineState->textTransform;
-    monkeyRotation.position += -monkeyRotation.up * 0.9;
-    monkeyRotation.position += monkeyRotation.right * 1.3;
-    monkeyRotation.position += -monkeyRotation.forward * 1.5;
-    monkeyRotation = rotate(monkeyRotation, monkeyRotation.up, -45);
-    DrawMesh(engineState, gameState->torvidMat, gameState->torvidTest, monkeyRotation);
-
+    //torvidPos = engineState->textTransform;
+    //torvidPos.position += -torvidPos.up * 0.9;
+    //torvidPos.position += torvidPos.right * 1.3;
+    //torvidPos.position += -torvidPos.forward * 1.5;
+    //torvidPos = rotate(monkeyRotation, monkeyRotation.up, -45);
+    torvidPos = rotate(torvidPos, torvidPos.up, -0.4);
+    DrawMesh(engineState, gameState->torvidMat, gameState->torvidTest, torvidPos);
 
     // Draw barn?
+    //DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnCeiling, transformIdentity);
 
-    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnCeiling, transformIdentity);
+    // left wall
+    for (int x = 0; x < 5; x++)
+    {
+        for (int y = 0; y < 3; y++)
+        {
+            if (y == 1)
+            {
+                //&& x % 2 == 0
+                DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall02, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
+            }
+            else
+            {
+                DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
+            }
+        }
+    }
 
+    // right wall
+    for (int x = 0; x < 5; x++)
+    {
+        for (int y = 0; y < 3; y++)
+        {
+            DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(5, x * 2 + 2, y), 0, 0, 0.25));
+        }
+    }
+
+    // floor
+    for (int x = 0; x < 3; x++)
+    {
+        for (int y = 0; y < 5; y++)
+        {
+            DrawMesh(engineState, gameState->barnTilesMat, engineState->ui_quad, transform(center + float3(x, y, 0)*2, float3(2,2,2)));
+        }
+    }
+
+    // front wall
+    for (int x = 0; x < 3; x++)
+    {
+        for (int y = 0; y < 2; y++)
+        {
+            DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(x*2+2, 0, y+2), 0, 0, 0.0));
+        }
+    }
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(3, 0, 4), 0, 0, 0.0));
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(5, 0, 4), 0, 0, 0.0));
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall02, transform(center + float3(1, 0, 0), 0, 0, 0.0));
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall02, transform(center + float3(1, 0, 1), 0, 0, 0.0));
+
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(5, 0, 0), 0, 0, 0.0));
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(5, 0, 1), 0, 0, 0.0));
+
+    // doors
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->BarnDoor, transform(center + float3(1, 0, 2), 0, 0, 0.0, float3(-1, 1, -1)));
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->BarnDoor, transform(center + float3(3, 0, 0), 0, 0, 0.0));
+
+
+    // back wall
+    for (int x = 0; x < 3; x++)
+    {
+        for (int y = 0; y < 4; y++)
+        {
+            DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(x * 2 , 10, y), 0, 0, 0.5));
+        }
+    }
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(1, 10, 4), 0, 0, 0.5));
+    DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(3, 10, 4), 0, 0, 0.5));
+
+    // ceiling left
+    for (int x = 0; x < 3; x++)
+    {
+        for (int y = 0; y < 5; y++)
+        {
+            DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnCeiling, transform(center + float3(x*0.704f, y*2, x * 0.704f) + float3(0, 2, 3), 0, 0.125, 0.25));
+        }
+    }
+
+    // ceiling right
+    for (int x = 0; x < 3; x++)
+    {
+        for (int y = 0; y < 5; y++)
+        {
+            DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnCeiling, transform(center + float3(-x * 0.704f, y * 2, x * 0.704f) + float3(5, 0, 3), 0, -0.125, -0.25));
+        }
+    }
+
+
+    //DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall01, transform(center + float3(0, 1, 0), 0, 0, 0.25));
+    //DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall02, transform(center + float3(0, 2, 0)));
+    //DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnWall03, transform(center + float3(0, 3, 0)));
+    //DrawMesh(engineState, gameState->barnWallCleanMat, gameState->BarnBeam01, transform(center + float3(0, 4, 0)));
+    //DrawMesh(engineState, gameState->barnWallCleanMat, gameState->BarnBeam02, transform(center + float3(0, 5, 0)));
+    //
+    //DrawMesh(engineState, gameState->barnTilesMat, engineState->ui_quad, transform(center + float3(0, 0, 0)));
+    //DrawMesh(engineState, gameState->barnTilesMat, engineState->ui_quad, transform(center + float3(1, 0, 0)));
+    //DrawMesh(engineState, gameState->barnTilesMat, engineState->ui_quad, transform(center + float3(0, 1, 0)));
+    //DrawMesh(engineState, gameState->barnTilesMat, engineState->ui_quad, transform(center + float3(1, 1, 0)));
 }
