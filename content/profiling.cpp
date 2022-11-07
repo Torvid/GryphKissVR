@@ -286,12 +286,12 @@ void ProfilerDrawTimeChart(EngineState* engineState, Input* input, ProfilingData
     DrawText(engineState, text, float2(200, fpscurrentheight));
 }
 
-void profilerStart(EngineState* engineState, GameState* gameState, Input* input)
+void profilerStart(EngineState* engineState, Input* input)
 {
 
 }
 
-void profilerUpdate(EngineState* engineState, GameState* gameState, Input* input)
+void profilerUpdate(EngineState* engineState,  Input* input)
 {
     // Update text
     const int tempStringSize = 2048;

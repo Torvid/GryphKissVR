@@ -41,64 +41,14 @@ Memset* globalMemset;
 #include "math.cpp"
 #include "memory.cpp"
 #include "string.cpp"
-
-// X Macro for generating enums and strings
-#define ENUM(name, a) name##_##a,
-#define STRINGS(name, a) #a,
-#define MakeEnum(name, tableMaker) \
-enum name \
-{ \
-    tableMaker(name, ENUM) \ 
-    name##_COUNT\
-}; \
-char* name##Strings[name##_COUNT + 1] = \
-{ \
-    tableMaker(name, STRINGS) \
-    "" \
-}; \
-char* name##ToString(name x) { return name##Strings[x]; };
-
-
-// Example 1
-#define MyEnumTable(n, X) \
-    X(n, None) \
-    X(n, PlaceComponent) \
-    X(n, PlaceWire) \
-    X(n, DragWire)
-MakeEnum(MyEnum, MyEnumTable);
-
-// Example 2
-#define AnimalEnumTable(n, X) \
-    X(n, Dragon) \
-    X(n, Gryphon) \
-    X(n, Dog) \
-    X(n, Cat)
-MakeEnum(AnimalEnum, AnimalEnumTable);
-
-
-
-enum SoundFalloffType
-{
-    SoundFalloffType_Linear,
-    SoundFalloffType_Exponential,
-    SoundFalloffType_None,
-};
-
-struct SoundChannel
-{
-    bool playing;
-    int currentSample;
-    Sound* sound;
-    bool looping;
-    float volume;
-    bool is3D;
-    float3 position;
-};
+#include "enumTrick.cpp"
 
 
 struct GameState;
 struct ProfilingData;
 struct UIMeshData;
+struct SoundChannel;
+struct Material_unlit;
 
 #define EntityTypeTable(n, X) \
     X(n, StaticMesh) \
@@ -213,22 +163,26 @@ struct EngineState
     Texture* waterRipplesPrevious;
     Texture* waterRipplesCurrent;
 
+    Material_unlit* axesMaterial;
+    Material_unlit* boneMaterial;
+    Material_unlit* red;
+    Material_unlit* green;
+    Material_unlit* blue;
+
 
     Transform spectatorCamera;
 
-    SoundChannel soundChannels[25];
+    SoundChannel* soundChannels[25];
 
     bool headsetView;
 
     MemoryArena arenasArena;
     uint8 arenasArenaData[Megabytes(1024)];
 
-    MemoryArena arenaHotreload;
-    MemoryArena arenaDrawCommands;
-    MemoryArena arenaDrawTextCommands;
-    MemoryArena arenaGlobalDrawCommands;
-    MemoryArena arenaGameState;
-    MemoryArena arenaScene; // memory arena for all the entities currently alive in the scene.
+    MemoryArena arenaHotreload; // arena for loaded assets like textures, meshes, etc. cleared on hoterload.
+    MemoryArena arenaDrawCommands; // arena for draw caommands, cleared every frame
+    MemoryArena arenaGlobalDrawCommands; // arena for draw commands, cleared every frame
+    MemoryArena arenaEngineState; // memory arena for stuff of unknown size in the engine that persists forever.
 
     uint8 scratchBuffer[Megabytes(256)];
 
@@ -306,10 +260,6 @@ char* ShaderNames[] = {
     "UI.shader",
     "unlit.shader"
 };
-
-
-
-
 
 #define CreateMaterialGlobal(engineState, name, _shader, type) \
     name = (type*)ArenaPushStruct(&engineState->arenaGlobalDrawCommands, type, ""); \
@@ -410,94 +360,34 @@ void printTransform(EngineState* engineState, Transform t2)
         t2.up.x, t2.up.y, t2.up.z);
 }
 
-
-void PlaySound(EngineState* engineState, Sound* sound, float volume = 1.0f, bool looping = false)
-{
-    SoundChannel* foundChannel = 0;
-    for (int i = 0; i < ArrayCapacity(engineState->soundChannels); i++)
-    {
-        if (!engineState->soundChannels[i].playing)
-        {
-            foundChannel = &engineState->soundChannels[i];
-            break;
-        }
-    }
-
-    if (!foundChannel)
-        return;
-
-    StructClear(foundChannel);
-
-    foundChannel->playing = true;
-    foundChannel->sound = sound;
-    foundChannel->volume = volume;
-    foundChannel->looping = looping;
-
-}
-
 #include "ui.cpp"
 #include "profiling.cpp"
 
-void UpdateEditorCamera(EngineState* engineState, Input* input)
-{
-    float mouseSensitivity = 0.1f;
-
-    if (!input->mouseRight)
-        return;
-
-    float mouseDeltaX = input->mousePosDelta.x;
-    float mouseDeltaY = input->mousePosDelta.y;
-    if (engineState->spectatorCamera.up.z < 0)
-    {
-        mouseDeltaX = -mouseDeltaX;
-    }
-    engineState->spectatorCamera = rotate(engineState->spectatorCamera, float3(0, 0, 1), -mouseDeltaX * 0.005f * mouseSensitivity);
-    engineState->spectatorCamera = rotate(engineState->spectatorCamera, engineState->spectatorCamera.right, -mouseDeltaY * 0.005f * mouseSensitivity);
-
-    int x = input->w ? 1 : 0 + input->s ? -1 : 0;
-    int y = input->d ? 1 : 0 + input->a ? -1 : 0;
-    int z = input->e ? 1 : 0 + input->q ? -1 : 0;
-
-    float3 Movement = float3(0, 0, 0);
-    Movement += engineState->spectatorCamera.forward * x;
-    Movement += engineState->spectatorCamera.right * y;
-    Movement += engineState->spectatorCamera.up * z;
-
-    if (length(Movement) > 0)
-        Movement = normalize(Movement);
-
-    float speed = 4;
-    if (input->shift)
-        speed = 16;
-    
-    engineState->spectatorCamera.position += Movement * input->deltaTime * speed;
-}
-
-Transform ApplyTransform(Transform t, Transform monkeyRotation)
-{
-    Transform t2 = {};
-    t2.scale = t.scale;
-    float3 d0 = float3(monkeyRotation.right.x, monkeyRotation.forward.x, monkeyRotation.up.x);
-    float3 d1 = float3(monkeyRotation.right.y, monkeyRotation.forward.y, monkeyRotation.up.y);
-    float3 d2 = float3(monkeyRotation.right.z, monkeyRotation.forward.z, monkeyRotation.up.z);
-    t2.position.x = dot(t.position, d0);
-    t2.position.y = dot(t.position, d1);
-    t2.position.z = dot(t.position, d2);
-    t2.position += monkeyRotation.position;
-
-    t2.right.x = -dot(d0, t.right);
-    t2.right.y = -dot(d1, t.right);
-    t2.right.z = -dot(d2, t.right);
-
-    t2.forward.x = dot(d0, t.forward);
-    t2.forward.y = dot(d1, t.forward);
-    t2.forward.z = dot(d2, t.forward);
-
-    t2.up.x = dot(d0, t.up);
-    t2.up.y = dot(d1, t.up);
-    t2.up.z = dot(d2, t.up);
-    return t2;
-}
+//Transform ApplyTransform(Transform t, Transform monkeyRotation)
+//{
+//    Transform t2 = {};
+//    t2.scale = t.scale;
+//    float3 d0 = float3(monkeyRotation.right.x, monkeyRotation.forward.x, monkeyRotation.up.x);
+//    float3 d1 = float3(monkeyRotation.right.y, monkeyRotation.forward.y, monkeyRotation.up.y);
+//    float3 d2 = float3(monkeyRotation.right.z, monkeyRotation.forward.z, monkeyRotation.up.z);
+//    t2.position.x = dot(t.position, d0);
+//    t2.position.y = dot(t.position, d1);
+//    t2.position.z = dot(t.position, d2);
+//    t2.position += monkeyRotation.position;
+//
+//    t2.right.x = -dot(d0, t.right);
+//    t2.right.y = -dot(d1, t.right);
+//    t2.right.z = -dot(d2, t.right);
+//
+//    t2.forward.x = dot(d0, t.forward);
+//    t2.forward.y = dot(d1, t.forward);
+//    t2.forward.z = dot(d2, t.forward);
+//
+//    t2.up.x = dot(d0, t.up);
+//    t2.up.y = dot(d1, t.up);
+//    t2.up.z = dot(d2, t.up);
+//    return t2;
+//}
 
 #include "gryphkiss.cpp"
 #include "editor.cpp"
@@ -523,7 +413,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     memory->engineProfilerEndSample = &engineProfilerEndSample;
 
     EngineState* engineState = (EngineState*)(&(memory->memory));
+    // Set global variables!
     globalEngineState = engineState;
+    assets = &engineState->assets;
 
     engineState->timeStart = memory->platformTime();
     engineState->externalTime = ((engineState->timeStart - engineState->timeEnd) * 100) / 1000;
@@ -537,7 +429,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
     ArrayClear(engineState->renderCommands);
     ArenaReset(&engineState->arenaDrawCommands);
-    ArenaReset(&engineState->arenaDrawTextCommands);
     Input* input = &memory->input;
 
     // hit space = smash game memory to 0 = restart game
@@ -596,7 +487,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         }
     }
     bool firstFrame = false;
-    GameState* gameState = engineState->gameState;
     if (!memory->initialized)
     {
         firstFrame = true;
@@ -607,21 +497,17 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
         ArenaInitialize(&engineState->arenaHotreload,           Megabytes(512), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(512),   "Hotreload",            true), "Hotreload");
         ArenaInitialize(&engineState->arenaDrawCommands,        Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Draw Commands",        true), "Draw Commands");
-        ArenaInitialize(&engineState->arenaDrawTextCommands,    Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Text Draw Commands",   true), "Text Draw Commands");
         ArenaInitialize(&engineState->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Global Draw Commands", true), "Global Draw Commands");
-        ArenaInitialize(&engineState->arenaGameState,           Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Game State",           true), "Game State");
-        ArenaInitialize(&engineState->arenaScene,               Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Scene",                true), "Scene");
-
-        engineState->gameState = ArenaPushStruct(&engineState->arenaGameState, GameState, "GameState");
-        gameState = engineState->gameState;
-        
-        // Set global variables!
-        assets = &engineState->assets;
+        ArenaInitialize(&engineState->arenaEngineState,         Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Engine State",         true), "Engine State");
         
 
-        engineState->profilingData = ArenaPushStruct(&engineState->arenaGameState, ProfilingData, "ProfilingData");
-        engineState->uiMeshData = ArenaPushStruct(&engineState->arenaGameState, UIMeshData, "uiMeshData");
+        engineState->profilingData = ArenaPushStruct(&engineState->arenaEngineState, ProfilingData, "Profiling Data");
+        engineState->uiMeshData = ArenaPushStruct(&engineState->arenaEngineState, UIMeshData, "UI Mesh Data");
 
+        for (int i = 0; i < ArrayCapacity(engineState->soundChannels); i++)
+        {
+            engineState->soundChannels[i] = ArenaPushStruct(&engineState->arenaEngineState, SoundChannel, "Sound Channel");
+        }
 
         engineState->platformPrint = memory->platformPrint;
         engineState->printf = memory->printf;
@@ -657,20 +543,20 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         }
 
 
-        CreateMaterialGlobal(engineState, gameState->axesMaterial, engineState->unlit,  Material_unlit);
-        gameState->axesMaterial->ColorTexture = assets->texAxes;
-        gameState->axesMaterial->Color = float3(1, 1, 1);
+        CreateMaterialGlobal(engineState, engineState->axesMaterial, engineState->unlit,  Material_unlit);
+        engineState->axesMaterial->ColorTexture = assets->texAxes;
+        engineState->axesMaterial->Color = float3(1, 1, 1);
 
 
-        gameState->axesMaterial->BackFaceCulling = true;
+        engineState->axesMaterial->BackFaceCulling = true;
 
-        CreateMaterialGlobal(engineState, gameState->boneMaterial, engineState->unlit, Material_unlit);
-        gameState->boneMaterial->shader = engineState->unlit;
-        gameState->boneMaterial->ColorTexture = assets->white;
-        gameState->boneMaterial->Color = float3(38.0f / 255.0f, 0, 67.0f / 255.0f);
+        CreateMaterialGlobal(engineState, engineState->boneMaterial, engineState->unlit, Material_unlit);
+        engineState->boneMaterial->shader = engineState->unlit;
+        engineState->boneMaterial->ColorTexture = assets->white;
+        engineState->boneMaterial->Color = float3(38.0f / 255.0f, 0, 67.0f / 255.0f);
 
-        gameState->boneMaterial->Wireframe = true;
-        gameState->boneMaterial->BackFaceCulling = false;
+        engineState->boneMaterial->Wireframe = true;
+        engineState->boneMaterial->BackFaceCulling = false;
 
 
         engineState->SwapBuffer = CreateFramebufferTarget(engineState);
@@ -685,72 +571,43 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         memory->missingTexture = assets->missing;
         memory->missingMesh = assets->missingMesh;
 
-        editorStart(engineState, gameState, input);
+        soundStart(engineState, input, memory);
+
+        editorStart(engineState, input);
         
-        gryphkissStart(engineState, gameState, input);
+        gryphkissStart(engineState, input);
+
+        profilerStart(engineState, input);
+
+        CreateMaterialGlobal(engineState, engineState->red, engineState->unlit, Material_unlit);
+        engineState->red->ColorTexture = assets->white;
+        engineState->red->Color = float3(1, 0, 0);
+        engineState->red->BackFaceCulling = true;
+
+        CreateMaterialGlobal(engineState, engineState->green, engineState->unlit, Material_unlit);
+        engineState->green->ColorTexture = assets->white;
+        engineState->green->Color = float3(0, 1, 0);
+        engineState->green->BackFaceCulling = true;
+
+        CreateMaterialGlobal(engineState, engineState->blue, engineState->unlit, Material_unlit);
+        engineState->blue->ColorTexture = assets->white;
+        engineState->blue->Color = float3(0, 0, 1);
+        engineState->blue->BackFaceCulling = true;
 
         return;
     }
 
 
+    soundUpdate(engineState, input, memory);
+
     if (engineState->headsetView)
         memory->spectatorCamera = input->head;
-    
-    for (int i = 0; i < memory->SampleCount; i++)
-    {
-        memory->Samples[i].left = 0;
-        memory->Samples[i].right = 0;
-    }
-
-    // Sound
-    for (int j = 0; j < ArrayCapacity(engineState->soundChannels); j++)
-    {
-        for (int i = 0; i < memory->SampleCount; i++)
-        {
-            SoundChannel* channel = &engineState->soundChannels[j];
-
-            if (!channel->playing)
-                break;
-
-            Sound* sound = channel->sound;
-
-            if (!sound)
-                break;
-            float x = ((input->mousePos.x / 2500.0f) - 0.5) * 2 * 16;
-            int s1 = clamp(channel->currentSample - x, 0, (sound->sampleCount - 1));
-            int s2 = clamp(channel->currentSample + x, 0, (sound->sampleCount - 1));
-            Sample sample1 = sound->data[s1];
-            Sample sample2 = sound->data[s2];
-
-            int left = memory->Samples[i].left + (sample1.left * channel->volume * 0.5f);
-            int right = memory->Samples[i].right + (sample2.right * channel->volume * 0.5f);
-
-            if (!memory->gameFocused)
-            {
-                left = 0;
-                right = 0;
-            }
-
-            memory->Samples[i].left = clamp(left, -32768, 32767);
-            memory->Samples[i].right = clamp(right, -32768, 32767);
-
-            channel->currentSample++;
-            if (channel->currentSample > (sound->sampleCount - 1)) // went over, loop or stop.
-            {
-                if (channel->looping)
-                    channel->currentSample = 0;
-                else
-                    channel->playing = false;
-            }
-        }
-    }
 
     input->head = input->eyeLeft;
     input->head.position = float3(0, 0, 0);
     input->head.position += input->eyeLeft.position;
     input->head.position += input->eyeRight.position;
     input->head.position *= 0.5f;
-
 
     if (input->mouseLeftDown || input->faceButtonRight || firstFrame)
     {
@@ -829,11 +686,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
     DrawText(engineState, "G: toggle editor");
     DrawText(engineState, "P: toggle profiling");
-    editorUpdate(engineState, gameState, input);
+    editorUpdate(engineState, input);
     memory->spectatorCamera = engineState->spectatorCamera;
     
-    profilerUpdate(engineState, gameState, input);
-    gryphkissUpdate(engineState, gameState, input);
+    profilerUpdate(engineState, input);
+    gryphkissUpdate(engineState, input);
 
     if (input->faceButtonLeftDown || input->faceButtonRightDown || input->gDown)
     {

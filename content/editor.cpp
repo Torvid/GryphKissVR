@@ -2,12 +2,48 @@
 
 #include "haven.cpp"
 
-void editorStart(EngineState* engineState, GameState* gameState, Input* input)
+void editorStart(EngineState* engineState, Input* input)
 {
 
 }
 
-void editorUpdate(EngineState* engineState, GameState* gameState, Input* input)
+void UpdateEditorCamera(EngineState* engineState, Input* input)
+{
+    float mouseSensitivity = 0.1f;
+
+    if (!input->mouseRight)
+        return;
+
+    float mouseDeltaX = input->mousePosDelta.x;
+    float mouseDeltaY = input->mousePosDelta.y;
+    if (engineState->spectatorCamera.up.z < 0)
+    {
+        mouseDeltaX = -mouseDeltaX;
+    }
+    engineState->spectatorCamera = rotate(engineState->spectatorCamera, float3(0, 0, 1), -mouseDeltaX * 0.005f * mouseSensitivity);
+    engineState->spectatorCamera = rotate(engineState->spectatorCamera, engineState->spectatorCamera.right, -mouseDeltaY * 0.005f * mouseSensitivity);
+
+    int x = input->w ? 1 : 0 + input->s ? -1 : 0;
+    int y = input->d ? 1 : 0 + input->a ? -1 : 0;
+    int z = input->e ? 1 : 0 + input->q ? -1 : 0;
+
+    float3 Movement = float3(0, 0, 0);
+    Movement += engineState->spectatorCamera.forward * x;
+    Movement += engineState->spectatorCamera.right * y;
+    Movement += engineState->spectatorCamera.up * z;
+
+    if (length(Movement) > 0)
+        Movement = normalize(Movement);
+
+    float speed = 4;
+    if (input->shift)
+        speed = 16;
+
+    engineState->spectatorCamera.position += Movement * input->deltaTime * speed;
+}
+
+
+void editorUpdate(EngineState* engineState, Input* input)
 {
     UpdateEditorCamera(engineState, input);
 
@@ -23,15 +59,15 @@ void editorUpdate(EngineState* engineState, GameState* gameState, Input* input)
 
         }
 
-        DrawMesh(engineState, gameState->axesMaterial, assets->axes, input->handRight);
-        DrawMesh(engineState, gameState->axesMaterial, assets->axes, input->handLeft);
-        DrawMesh(engineState, gameState->axesMaterial, assets->axes, input->aimRight);
-        DrawMesh(engineState, gameState->axesMaterial, assets->axes, input->aimLeft);
-        DrawMesh(engineState, gameState->axesMaterial, assets->axes, input->playspaceStage);
-        DrawMesh(engineState, gameState->axesMaterial, assets->axes, input->playspaceStageLeft);
-        DrawMesh(engineState, gameState->axesMaterial, assets->axes, input->playspaceStageRight);
-        DrawMesh(engineState, gameState->axesMaterial, assets->axes, input->playspaceStageLeftRotated);
-        DrawMesh(engineState, gameState->axesMaterial, assets->axes, input->playspaceStageRightRotated);
+        DrawMesh(engineState, engineState->axesMaterial, assets->axes, input->handRight);
+        DrawMesh(engineState, engineState->axesMaterial, assets->axes, input->handLeft);
+        DrawMesh(engineState, engineState->axesMaterial, assets->axes, input->aimRight);
+        DrawMesh(engineState, engineState->axesMaterial, assets->axes, input->aimLeft);
+        DrawMesh(engineState, engineState->axesMaterial, assets->axes, input->playspaceStage);
+        DrawMesh(engineState, engineState->axesMaterial, assets->axes, input->playspaceStageLeft);
+        DrawMesh(engineState, engineState->axesMaterial, assets->axes, input->playspaceStageRight);
+        DrawMesh(engineState, engineState->axesMaterial, assets->axes, input->playspaceStageLeftRotated);
+        DrawMesh(engineState, engineState->axesMaterial, assets->axes, input->playspaceStageRightRotated);
 
         DrawText3D(engineState, "World Origin", vectorOne * 0.1f);
         DrawText3D(engineState, "Stage", input->playspaceStage.position + vectorOne * 0.1f);
@@ -63,9 +99,9 @@ void editorUpdate(EngineState* engineState, GameState* gameState, Input* input)
     {
         float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
 
-        DrawMesh(engineState, gameState->red, assets->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
-        DrawMesh(engineState, gameState->green, assets->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
-        DrawMesh(engineState, gameState->blue, assets->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
+        DrawMesh(engineState, engineState->red, assets->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
+        DrawMesh(engineState, engineState->green, assets->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
+        DrawMesh(engineState, engineState->blue, assets->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
 
         //Transform monkeyRotation2 = { center + float3(0, -6, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
         //DrawMesh(engineState, gameState->axesMaterial, engineState->monkey, monkeyRotation2);
@@ -128,7 +164,7 @@ void editorUpdate(EngineState* engineState, GameState* gameState, Input* input)
         StringAppend(text, "\n\nSOUND: \n");
         for (int i = 0; i < ArrayCapacity(engineState->soundChannels); i++)
         {
-            SoundChannel* channel = &engineState->soundChannels[i];
+            SoundChannel* channel = engineState->soundChannels[i];
 
             if (channel->playing)
             {

@@ -4,15 +4,12 @@
 
 struct GameState
 {
+    MemoryArena arenaGameState;
+    MemoryArena arenaScene; // memory arena for all the entities currently alive in the scene.
+
     // Torvid
     float torvidFrame;
     Material_defaultlit* torvidMat;
-
-    Material_unlit* axesMaterial;
-    Material_unlit* boneMaterial;
-    Material_unlit* red;
-    Material_unlit* green;
-    Material_unlit* blue;
 
     // Barn stuff
     Material_defaultlit* barnWallMat;
@@ -22,8 +19,14 @@ struct GameState
     Material_defaultlit* StrawPileMat;
 };
 
-void gryphkissStart(EngineState* engineState, GameState* gameState, Input* input)
+void gryphkissStart(EngineState* engineState, Input* input)
 {
+    engineState->gameState = ArenaPushStruct(&engineState->arenaEngineState, GameState, "GameState");
+    GameState* gameState = engineState->gameState;
+
+    ArenaInitialize(&gameState->arenaGameState, Megabytes(64), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64), "Game State", true), "Game State");
+    ArenaInitialize(&gameState->arenaScene, Megabytes(64), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64), "Scene", true), "Scene");
+
     // Load Torvid
     CreateMaterialGlobal(engineState, gameState->torvidMat, engineState->defaultlit, Material_defaultlit);
     gameState->torvidMat->texM1 = assets->TorvidM1;
@@ -47,26 +50,12 @@ void gryphkissStart(EngineState* engineState, GameState* gameState, Input* input
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
     
-
-    CreateMaterialGlobal(engineState, gameState->red, engineState->unlit, Material_unlit);
-    gameState->red->ColorTexture = assets->white;
-    gameState->red->Color = float3(1, 0, 0);
-    gameState->red->BackFaceCulling = true;
-
-    CreateMaterialGlobal(engineState, gameState->green, engineState->unlit, Material_unlit);
-    gameState->green->ColorTexture = assets->white;
-    gameState->green->Color = float3(0, 1, 0);
-    gameState->green->BackFaceCulling = true;
-
-    CreateMaterialGlobal(engineState, gameState->blue, engineState->unlit, Material_unlit);
-    gameState->blue->ColorTexture = assets->white;
-    gameState->blue->Color = float3(0, 0, 1);
-    gameState->blue->BackFaceCulling = true;
-
 }
 
-void gryphkissUpdate(EngineState* engineState, GameState* gameState, Input* input)
+void gryphkissUpdate(EngineState* engineState, Input* input)
 {
+    GameState* gameState = engineState->gameState;
+
     // Set up bones
     for (int i = 0; i < assets->torvidTestAnim->boneCount; i++)
     {
@@ -91,7 +80,7 @@ void gryphkissUpdate(EngineState* engineState, GameState* gameState, Input* inpu
     // Draw torvid
     float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
 
-    DrawMesh(engineState, gameState->barnWallMat, assets->tonk, transform(center, float3(0.1, 0.1, 0.1)));
+    DrawMesh(engineState, gameState->barnWallMat, assets->tonk, transform(center, float3(0.2, 0.1, 0.1)));
 
 
     center += float3(-3, -5, 0);

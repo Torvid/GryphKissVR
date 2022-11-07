@@ -1,5 +1,7 @@
 #pragma once
 
+#include "haven.cpp"
+
 struct WAV_HEADER
 {
     // RIFF Header
@@ -80,4 +82,105 @@ Sound* FileReadSound(EngineState* memory, const char* filename)
     StringCopy(sound->filename, filename);
     LoadWav(memory, sound);
     return sound;
+}
+
+
+enum SoundFalloffType
+{
+    SoundFalloffType_Linear,
+    SoundFalloffType_Exponential,
+    SoundFalloffType_None,
+};
+
+struct SoundChannel
+{
+    bool playing;
+    int currentSample;
+    Sound* sound;
+    bool looping;
+    float volume;
+    bool is3D;
+    float3 position;
+};
+
+void PlaySound(EngineState* engineState, Sound* sound, float volume = 1.0f, bool looping = false)
+{
+    SoundChannel* foundChannel = 0;
+    for (int i = 0; i < ArrayCapacity(engineState->soundChannels); i++)
+    {
+        if (!engineState->soundChannels[i]->playing)
+        {
+            foundChannel = engineState->soundChannels[i];
+            break;
+        }
+    }
+
+    if (!foundChannel)
+        return;
+
+    StructClear(foundChannel);
+
+    foundChannel->playing = true;
+    foundChannel->sound = sound;
+    foundChannel->volume = volume;
+    foundChannel->looping = looping;
+
+}
+
+void soundStart(EngineState* engineState, Input* input, GameMemory* memory)
+{
+
+}
+
+void soundUpdate(EngineState* engineState, Input* input, GameMemory* memory)
+{
+    for (int i = 0; i < memory->SampleCount; i++)
+    {
+        memory->Samples[i].left = 0;
+        memory->Samples[i].right = 0;
+    }
+
+    // Sound
+    for (int j = 0; j < ArrayCapacity(engineState->soundChannels); j++)
+    {
+        for (int i = 0; i < memory->SampleCount; i++)
+        {
+            SoundChannel* channel = engineState->soundChannels[j];
+
+            if (!channel->playing)
+                break;
+
+            Sound* sound = channel->sound;
+
+            if (!sound)
+                break;
+            float x = ((input->mousePos.x / 2500.0f) - 0.5) * 2 * 16;
+            int s1 = clamp(channel->currentSample - x, 0, (sound->sampleCount - 1));
+            int s2 = clamp(channel->currentSample + x, 0, (sound->sampleCount - 1));
+            Sample sample1 = sound->data[s1];
+            Sample sample2 = sound->data[s2];
+
+            int left = memory->Samples[i].left + (sample1.left * channel->volume * 0.5f);
+            int right = memory->Samples[i].right + (sample2.right * channel->volume * 0.5f);
+
+            if (!memory->gameFocused)
+            {
+                left = 0;
+                right = 0;
+            }
+
+            memory->Samples[i].left = clamp(left, -32768, 32767);
+            memory->Samples[i].right = clamp(right, -32768, 32767);
+
+            channel->currentSample++;
+            if (channel->currentSample > (sound->sampleCount - 1)) // went over, loop or stop.
+            {
+                if (channel->looping)
+                    channel->currentSample = 0;
+                else
+                    channel->playing = false;
+            }
+        }
+    }
+
 }
