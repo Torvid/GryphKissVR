@@ -1,7 +1,7 @@
 #pragma once
+#include "haven.cpp"
 #include "haven_platform.h"
 #include "string.cpp"
-
 // Arrays
 //#define ArrayCreate(type, name, size) int name##_count; type name[size];
 #define ArrayCount(name) name##_count
@@ -193,10 +193,11 @@ void Copy(uint8* source, uint8* destination, int size)
 // Sets a block of memory to 0
 void Clear(uint8* destination, int size)
 {
-    for (int i = 0; i < size; i++)
-    {
-        destination[i] = 0;
-    }
+    globalMemset(destination, 0, size);
+    //for (int i = 0; i < size; i++)
+    //{
+    //    destination[i] = 0;
+    //}
 }
 
 // Copies a struct somewhere in memory

@@ -1,6 +1,7 @@
 #pragma once
-//#include "quote.h"
+
 #include "math.cpp"
+
 int StringLength(const char* checkString)
 {
     int i = 0;

@@ -414,15 +414,27 @@ void DrawAABB(EngineState* engineState, float3 center, float3 size, float width,
 
 float3 TransformPosition_LocalSpaceToWorldSpace(Transform transform, float3 localPosition)
 {
-    // Assume the direction vectors are normalized? is it safe to do so? idk
-    return transform.right   * localPosition.x * transform.scale.x +
-           transform.forward * localPosition.y * transform.scale.y +
-           transform.up      * localPosition.z * transform.scale.z + 
-           transform.position;
+    // Multiply the x/y/z components with the transforms axes.
+    // Since local-position is local, its component values represent movements along the axes of the transform.
+    // So moving along those axes bring us into world-space.
+    float3 worldPos = transform.right   * localPosition.x * transform.scale.x +
+                      transform.forward * localPosition.y * transform.scale.y +
+                      transform.up      * localPosition.z * transform.scale.z;
+
+    // Move the point from being relative to the transform to being placed in the world
+    return worldPos + transform.position;
 }
+
 float3 TransformPosition_WorldSpaceToLocalSpace(Transform transform, float3 worldPosition)
 {
-    //float3 transform.position - worldPosition;
+    // Move the point to be relative to the transform.
+    float3 localPos = worldPosition - transform.position;
+
+    // Project the moved position onto each of the transforms axes.
+    // This "rotates" it from world space to local space.
+    return float3(dot(localPos, transform.right), 
+                  dot(localPos, transform.forward), 
+                  dot(localPos, transform.up));
 }
 
 void DrawBox(EngineState* engineState, Transform transform,  float width, float3 color = { 1, 1, 1 }, float opacity = 1)

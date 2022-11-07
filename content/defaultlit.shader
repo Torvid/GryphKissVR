@@ -79,9 +79,9 @@ void main()
 	worldPos = float3(worldPos.x, -worldPos.z, worldPos.y);
 
 	PSVertexPos = worldPos;
-	PSVertexNormal = worldNormal;
-	PSVertexTangent = worldTangent;
-	PSVertexBitangent = cross(VertexTangent, worldNormal);
+	PSVertexNormal = normalize(worldNormal);
+	PSVertexTangent = normalize(worldTangent);
+	PSVertexBitangent = normalize(cross(VertexTangent, worldNormal));
 	PSVertexUV = VertexUV0;
 	PSMaterialID = MaterialID;
 }

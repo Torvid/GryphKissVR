@@ -71,13 +71,16 @@ typedef struct
 //    int w;
 //};
 
+#define TransformContents \
+    float3 position; \
+    float3 right; \
+    float3 forward; \
+    float3 up; \
+    float3 scale;
+
 typedef struct
 {
-    float3 position;
-    float3 right; // x+
-    float3 forward; // y+
-    float3 up; // z+
-    float3 scale;
+    TransformContents
 } Transform;
 
 typedef struct
@@ -489,6 +492,7 @@ typedef int Printf(char const* const _Format, ...);
 typedef int sPrintf(char* str, const char* format, ...);
 typedef int GLUploadTexture(Texture* texture);
 typedef int GLUploadMesh(Mesh* texture);
+typedef void* Memset(void* str, int c, size_t n);
 
 typedef uint32 PlatformGraphicsLoadTexture(Texture* texture); // Upload a texture to the GPU and return back a handle
 typedef uint32 PlatformGraphicsLoadMesh(Mesh* mesh); // Upload a mesh to the GPU and return back a handle
@@ -507,6 +511,7 @@ typedef struct
     PlatformPrint* platformPrint;
     Printf* printf;
     sPrintf* sprintf;
+    Memset* memset;
     PlatformTime* platformTime;
 
     PlatformReadFile* platformReadFile;

@@ -36,6 +36,8 @@ extern "C" { int _fltused = 0; }
 
 #include "haven_platform.h"
 
+Memset* globalMemset;
+
 #include "math.cpp"
 #include "memory.cpp"
 #include "string.cpp"
@@ -94,28 +96,86 @@ struct SoundChannel
 };
 
 
-
-struct RatData
-{
-    Mesh* model;
-    Texture* texture;
-
-    // Draw to this
-    Texture* ratBuffer;
-
-    // Add to this
-    Texture* ratBufferCopyTo;
-};
-
 struct GameState;
 struct ProfilingData;
 struct UIMeshData;
+
+#define EntityTypeTable(n, X) \
+    X(n, StaticMesh) \
+    X(n, SkinnedMesh) \
+    X(n, Light) \
+    X(n, LightDirectional)
+MakeEnum(EntityType, EntityTypeTable);
+
+#define EntityContents \
+    TransformContents \
+    char* name[100]; \
+    EntityType type; \
+    bool visible; \
+    bool hiddenInGame
+
+struct Entity
+{
+    EntityContents;
+};
+
+struct StaticMesh
+{
+    EntityContents;
+    Mesh* mesh;
+    Material* material;
+};
+
+struct SkinnedMesh
+{
+    EntityContents;
+    Mesh* mesh;
+    Material* material;
+};
+
+struct Light
+{
+    EntityContents;
+    float3 color;
+    float intensity;
+    float radius;
+};
+
+struct LightDirectional
+{
+    EntityContents;
+    float3 color;
+    float intensity;
+    float radius;
+};
+
+#define Instantiate(engineState, type) (type*)(engineState->arenaScene.base + engineState->arenaScene.used); \
+    ArenaPushStruct(&engineState->arenaScene, type, "");
+
+#define Instantiate(engineState, type, transform) (type*)(engineState->arenaScene.base + engineState->arenaScene.used); \
+    type* t = ArenaPushStruct(&engineState->arenaScene, type, "") \
+    t->transform = transform;
+
+//void Main(EngineState* engineState)
+//{
+//    EntityLightDirectional* a = Instantiate(engineState, EntityLightDirectional);
+//}
+
+struct Assets
+{
+#define assetRegistryLoad(function, type, name, filename) type* name;
+#include "assetRegistry.cpp"
+#undef assetRegistryLoad
+};
+
+static Assets* assets;
 
 struct EngineState
 {
     PlatformPrint* platformPrint;
     Printf* printf;
     sPrintf* sprintf;
+    Memset* memset;
     PlatformTime* platformTime;
     PlatformReadFile* platformReadFile;
     PlatformWriteFile* platformWriteFile;
@@ -133,49 +193,26 @@ struct EngineState
     //ArrayCreate(Mesh, stringMeshes, 100);
     ArrayCreate(Animation, animations, 100);
     ArrayCreate(RenderCommand, renderCommands, 5000);
-    Mesh* stringMesh;
 
-    Texture* missingTexture;
-    Mesh* missingMesh;
+    //ArrayCreate(Entity*, entities, 1000); // pointers to all entities in the scene
+
     Shader* missingShader;
-
-    Sound* TestSound_44k_mono;
-    Sound* TestSound_48k_mono;
-    Sound* TestSound_22k_mono;
-    Sound* TestSound_44k_stereo;
-
-    Texture* texWhite;
-    Texture* fontTexture;
-    Texture* testImage;
-    Texture* SwapBuffer;
-
-    Texture* waterRipples0;
-    Texture* waterRipples1;
-
-    Texture* texture0;
-    Texture* texture1;
-    Texture* texture2;
-
-    Texture* waterRipplesPrevious;
-    Texture* waterRipplesCurrent;
-
-    Mesh* box;
-    Mesh* axes;
     Shader* unlit;
     Shader* defaultlit;
-
-    Mesh* monkey;
-
     Shader* UIShader;
-    Mesh* ui_circle;
-    Mesh* ui_quad;
-    Mesh* ui_textTest;
     Shader* postProcessShader;
     Shader* textureCopyShader;
     Shader* rippleSimShader;
 
-    Mesh* boneSphere;
-    Mesh* bonePyramid;
+    Mesh* stringMesh;
+
+    // ripple sim
+    Texture* SwapBuffer;
+    Texture* waterRipples0;
+    Texture* waterRipples1;
+    Texture* waterRipplesPrevious;
+    Texture* waterRipplesCurrent;
+
 
     Transform spectatorCamera;
 
@@ -191,6 +228,7 @@ struct EngineState
     MemoryArena arenaDrawTextCommands;
     MemoryArena arenaGlobalDrawCommands;
     MemoryArena arenaGameState;
+    MemoryArena arenaScene; // memory arena for all the entities currently alive in the scene.
 
     uint8 scratchBuffer[Megabytes(256)];
 
@@ -215,7 +253,12 @@ struct EngineState
     float2 uiPos;
 
     Transform textTransform;
+    
+    Assets assets;
+
 };
+static EngineState* globalEngineState;
+static GameMemory* globalGameMemory;
 
 #include "loadMesh.cpp"
 #include "loadAnimation.cpp"
@@ -224,8 +267,15 @@ struct EngineState
 #include "loadTexture.cpp"
 
 
+
 #define Cpp 1
 
+void LoadAssets(EngineState* engineState, Assets* assets)
+{
+#define assetRegistryLoad(function, type, name, filename) assets->name = function(engineState, filename);
+#include "assetRegistry.cpp"
+#undef assetRegistryLoad
+}
 
 #include "defaultlit.shader"
 #include "missing.shader"
@@ -453,7 +503,6 @@ Transform ApplyTransform(Transform t, Transform monkeyRotation)
 #include "editor.cpp"
 
 
-static EngineState* globalEngineState;
 void engineProfilerBeingSample()
 {
     if (!globalEngineState)
@@ -469,11 +518,13 @@ void engineProfilerEndSample(char* name)
 
 extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 {
+    globalMemset = memory->memset;
     memory->engineProfilerBeingSample = &engineProfilerBeingSample;
     memory->engineProfilerEndSample = &engineProfilerEndSample;
 
     EngineState* engineState = (EngineState*)(&(memory->memory));
     globalEngineState = engineState;
+
     engineState->timeStart = memory->platformTime();
     engineState->externalTime = ((engineState->timeStart - engineState->timeEnd) * 100) / 1000;
     if (memory->initialized)
@@ -492,9 +543,10 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     // hit space = smash game memory to 0 = restart game
     if (input->spaceDown)
     {
-        //memory->initialized = false;
-        //StructClear(engineState);
-        memory->reloadNow = true;
+        memory->initialized = false;
+        StructClear(engineState);
+        //memory->memset(engineState, 0, sizeof(*engineState));
+        //memory->reloadNow = true;
     }
 
     if (memory->reloadNow)
@@ -553,15 +605,19 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
         ArenaInitialize(&engineState->arenasArena, sizeof(engineState->arenasArenaData), engineState->arenasArenaData);
 
-        ArenaInitialize(&engineState->arenaHotreload,           Megabytes(512), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(512),   "Hotreload",             true), "Hotreload");
-        ArenaInitialize(&engineState->arenaDrawCommands,        Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Draw Commands",         true), "Draw Commands");
-        ArenaInitialize(&engineState->arenaDrawTextCommands,    Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Text Draw Commands",    true), "Text Draw Commands");
-        ArenaInitialize(&engineState->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Global Draw Commands",  true), "Global Draw Commands");
-        ArenaInitialize(&engineState->arenaGameState,           Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Game State",            true), "Game State");
+        ArenaInitialize(&engineState->arenaHotreload,           Megabytes(512), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(512),   "Hotreload",            true), "Hotreload");
+        ArenaInitialize(&engineState->arenaDrawCommands,        Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Draw Commands",        true), "Draw Commands");
+        ArenaInitialize(&engineState->arenaDrawTextCommands,    Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Text Draw Commands",   true), "Text Draw Commands");
+        ArenaInitialize(&engineState->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Global Draw Commands", true), "Global Draw Commands");
+        ArenaInitialize(&engineState->arenaGameState,           Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Game State",           true), "Game State");
+        ArenaInitialize(&engineState->arenaScene,               Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Scene",                true), "Scene");
 
         engineState->gameState = ArenaPushStruct(&engineState->arenaGameState, GameState, "GameState");
         gameState = engineState->gameState;
-
+        
+        // Set global variables!
+        assets = &engineState->assets;
+        
 
         engineState->profilingData = ArenaPushStruct(&engineState->arenaGameState, ProfilingData, "ProfilingData");
         engineState->uiMeshData = ArenaPushStruct(&engineState->arenaGameState, UIMeshData, "uiMeshData");
@@ -570,6 +626,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         engineState->platformPrint = memory->platformPrint;
         engineState->printf = memory->printf;
         engineState->sprintf = memory->sprintf;
+        engineState->memset = memory->memset;
         engineState->platformTime = memory->platformTime;
         engineState->platformReadFile = memory->platformReadFile;
         engineState->platformWriteFile = memory->platformWriteFile;
@@ -600,35 +657,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         }
 
 
-
-
-        memory->missingTexture = FileReadTexture(engineState, "missing.tga");
-        memory->missingMesh = FileReadMesh(engineState, "missing.obj");
-        engineState->missingTexture = memory->missingTexture;
-        engineState->missingMesh = memory->missingMesh;
-        engineState->missingShader = memory->missingShader;
-
-        //engineState->TestSound_44k_mono = FileReadSound(engineState, "GlassSmash_44k_mono.wav");
-        //engineState->TestSound_48k_mono = FileReadSound(engineState, "Groan_48k_mono.wav");
-        engineState->TestSound_22k_mono = FileReadSound(engineState, "HitWoodDome_22k_mono.wav");
-        //engineState->TestSound_44k_stereo = FileReadSound(engineState, "MusicTheme_44k_stereo.wav");
-
-
-        engineState->texture0 = FileReadTexture(engineState, "axes.tga");
-        engineState->texture1 = FileReadTexture(engineState, "wuff.tga");
-        engineState->texture2 = FileReadTexture(engineState, "coal.tga");
-        engineState->texWhite = FileReadTexture(engineState, "white.tga");
-        engineState->fontTexture = FileReadTexture(engineState, "font.tga");
-        engineState->testImage = FileReadTexture(engineState, "testImage.tga");
-        engineState->axes = FileReadMesh(engineState, "axes.obj");
-        engineState->monkey = FileReadMesh(engineState, "monkey.obj");
-        engineState->box = FileReadMesh(engineState, "box.obj");
-        engineState->ui_circle = FileReadMesh(engineState, "ui_circle.obj");
-        engineState->ui_quad = FileReadMesh(engineState, "ui_quad.obj");
-
-
         CreateMaterialGlobal(engineState, gameState->axesMaterial, engineState->unlit,  Material_unlit);
-        gameState->axesMaterial->ColorTexture = engineState->texture0;
+        gameState->axesMaterial->ColorTexture = assets->texAxes;
         gameState->axesMaterial->Color = float3(1, 1, 1);
 
 
@@ -636,7 +666,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
         CreateMaterialGlobal(engineState, gameState->boneMaterial, engineState->unlit, Material_unlit);
         gameState->boneMaterial->shader = engineState->unlit;
-        gameState->boneMaterial->ColorTexture = engineState->texWhite;
+        gameState->boneMaterial->ColorTexture = assets->white;
         gameState->boneMaterial->Color = float3(38.0f / 255.0f, 0, 67.0f / 255.0f);
 
         gameState->boneMaterial->Wireframe = true;
@@ -647,12 +677,13 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         engineState->waterRipples0 = CreateTextureTarget(engineState, 16, 16);
         engineState->waterRipples1 = CreateTextureTarget(engineState, 16, 16);
 
-        engineState->boneSphere = FileReadMesh(engineState, "bone_sphere.obj");
-        engineState->bonePyramid = FileReadMesh(engineState, "bone_pyramid.obj");
-
         engineState->stringMesh = ArrayAddNew(engineState->meshes);
 
         engineState->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
+
+        LoadAssets(engineState, &engineState->assets);
+        memory->missingTexture = assets->missing;
+        memory->missingMesh = assets->missingMesh;
 
         editorStart(engineState, gameState, input);
         
@@ -731,15 +762,15 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         DrawClear(engineState);
 
         CreateMaterialLocal(copyTexture, engineState->textureCopyShader, Material_textureCopy);
-        copyTexture->mesh = engineState->ui_quad;
-        copyTexture->ColorTexture = engineState->texture2;
+        copyTexture->mesh = assets->ui_quad;
+        copyTexture->ColorTexture = assets->coal;
         DrawMesh(engineState, copyTexture);
 
 
         SetRenderTarget(engineState, engineState->waterRipplesCurrent);
         DrawClear(engineState);
 
-        copyTexture->ColorTexture = engineState->texture2;
+        copyTexture->ColorTexture = assets->coal;
         DrawMesh(engineState, copyTexture);
     }
 
@@ -748,7 +779,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     DrawClear(engineState);
 
     CreateMaterialLocal(rippleSim, engineState->rippleSimShader, Material_rippleSim);
-    rippleSim->mesh = engineState->ui_quad;
+    rippleSim->mesh = assets->ui_quad;
     rippleSim->TexPrevious = engineState->waterRipplesPrevious;
     rippleSim->mousePos = input->mousePos / engineState->Resolution;
     DrawMesh(engineState, rippleSim);
@@ -791,10 +822,10 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     CreateMaterialLocal(waterPlane, engineState->unlit, Material_unlit);
     waterPlane->ColorTexture = engineState->waterRipplesCurrent;
     waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
-    waterPlane->mesh = engineState->ui_quad;
+    waterPlane->mesh = assets->ui_quad;
     waterPlane->BackFaceCulling = true;
     waterPlane->transform = identity;
-    DrawMesh(engineState, waterPlane, engineState->ui_quad, transform(center));
+    DrawMesh(engineState, waterPlane, assets->ui_quad, transform(center));
 
     DrawText(engineState, "G: toggle editor");
     DrawText(engineState, "P: toggle profiling");
@@ -818,7 +849,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     // Mouse cursor
     CreateMaterialLocal(mouseCursorCommand, engineState->UIShader, Material_UI);
     mouseCursorCommand->transform = {};
-    mouseCursorCommand->mesh = engineState->ui_circle;
+    mouseCursorCommand->mesh = assets->ui_circle;
     mouseCursorCommand->BackFaceCulling = false;
     mouseCursorCommand->Wireframe = false;
     mouseCursorCommand->DisableDepthTest = true;
@@ -843,7 +874,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     //command->Wireframe = false;
     //command->DisableDepthTest = true;
     command->blendMode = BlendMode_Alpha;
-    command->FontTexture = engineState->fontTexture;
+    command->FontTexture = assets->font;
 
     command->VRCameraPosition = engineState->textTransform.position;
     command->VRCameraForward = engineState->textTransform.forward;
@@ -869,7 +900,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     DrawClear(engineState);
 
     CreateMaterialLocal(finalOutputCommand, engineState->postProcessShader, Material_PostProcessTest);
-    finalOutputCommand->mesh = engineState->ui_quad;
+    finalOutputCommand->mesh = assets->ui_quad;
 
     finalOutputCommand->ColorTexture = engineState->SwapBuffer;
     finalOutputCommand->TexRipples = engineState->waterRipplesCurrent;
@@ -880,3 +911,4 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 }
 
 #endif
+

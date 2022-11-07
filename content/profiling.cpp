@@ -308,10 +308,6 @@ void profilerUpdate(EngineState* engineState, GameState* gameState, Input* input
         StringAppend(text, "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds");
         DrawText(engineState, text);
 
-        DrawBox2D(engineState, float2(200, 200), float2(300, 300), float3(0.5f, 0.0f, 0.0f), 0.5f);
-        DrawBox2D(engineState, float2(300, 300), float2(300, 300), float3(0.0f, 0.5f, 0.0f), 0.5f);
-        DrawBox2D(engineState, float2(400, 400), float2(300, 300), float3(0.0f, 0.0f, 0.5f), 0.5f);
-
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "\n\nMEMORY:");
         DrawText(engineState, text);

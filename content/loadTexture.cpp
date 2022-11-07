@@ -108,7 +108,7 @@ void LoadTexture(EngineState* engineState, Texture* texture)
     
     if (!end)
     {
-        Texture* missing = engineState->missingTexture;
+        Texture* missing = assets->missing;
         texture->width          = missing->width;
         texture->height         = missing->height;
         texture->mips[0]        = missing->mips[0];
