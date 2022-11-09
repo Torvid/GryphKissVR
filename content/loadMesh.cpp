@@ -1,5 +1,5 @@
 #pragma once
-
+#include "haven.cpp"
 #include "string.cpp"
 
 bool ObjIsDigit(char c)
@@ -205,7 +205,9 @@ void LoadObj(EngineState* engineState, Mesh* mesh)
 
         mesh->vertexes[i].position = temp->positions[pos];
         mesh->vertexes[i].normal = temp->normals[norm];
+        mesh->vertexes[i].tangent = normalize(cross(temp->normals[norm], float3(0, 0, 2.2)));
         mesh->vertexes[i].uv0 = temp->uvs[uv];
+        mesh->vertexes[i].uv1 = temp->uvs[uv];
         mesh->vertexes[i].materialID = 0;
         mesh->indexes[i] = i;
     }

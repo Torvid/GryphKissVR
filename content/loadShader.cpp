@@ -1,4 +1,5 @@
 #pragma once
+#include "haven.cpp"
 
 char* ShaderReadFile(EngineState* engineState, Shader* shader, char* destination, char* scratchBufferFilesDepth, char* filename, char* pixelShader, bool isPixelShader)
 {

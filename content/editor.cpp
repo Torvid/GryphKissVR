@@ -40,6 +40,8 @@ void UpdateEditorCamera(EngineState* engineState, Input* input)
         speed = 16;
 
     engineState->spectatorCamera.position += Movement * input->deltaTime * speed;
+    //engineState->spectatorCamera = input->head;
+
 }
 
 
@@ -137,7 +139,7 @@ void editorUpdate(EngineState* engineState, Input* input)
         StringAppend(text, "\n        Face Button: ", input->faceButtonRight);
         DrawText(engineState, text);
 
-        engineState->headsetView = DrawToggle(engineState, input, "Headset View: ", engineState->headsetView);
+        //engineState->headsetView = DrawToggle(engineState, input, "Headset View: ", engineState->headsetView);
 
         if (DrawButton(engineState, input, "Play a sound") || input->faceButtonLeftDown)
         {

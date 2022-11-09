@@ -1,2 +1,1 @@
-LINK : program database C:\Users\Stinger\Dropbox\Stinger\projects\furry\GryphKiss\content\haven.pdb missing; performing full link
    Creating library haven.lib and object haven.exp

@@ -1,4 +1,4 @@
-
+    
 #pragma once
 // Include guard
 #ifndef havenIncluded
@@ -57,12 +57,21 @@ struct Material_unlit;
     X(n, LightDirectional)
 MakeEnum(EntityType, EntityTypeTable);
 
+struct Entity;
+struct EngineState;
+
+typedef void EntityStart(EngineState* engineState, Entity* entity, Input* input);
+typedef void EntityUpdate(EngineState* engineState, Entity* entity, Input* input);
+
 #define EntityContents \
-    TransformContents \
+    EntityStart* entityStart; \
+    EntityUpdate* entityUpdate; \
+    bool alive; \
+    Transform transform; \
     char* name[100]; \
     EntityType type; \
     bool visible; \
-    bool hiddenInGame
+    bool hiddenInGame;
 
 struct Entity
 {
@@ -144,7 +153,7 @@ struct EngineState
     ArrayCreate(Animation, animations, 100);
     ArrayCreate(RenderCommand, renderCommands, 5000);
 
-    //ArrayCreate(Entity*, entities, 1000); // pointers to all entities in the scene
+    ArrayCreate(Entity*, entities, 1000); // pointers to all entities in the scene
 
     Shader* missingShader;
     Shader* unlit;
@@ -174,8 +183,6 @@ struct EngineState
 
     SoundChannel* soundChannels[25];
 
-    bool headsetView;
-
     MemoryArena arenasArena;
     uint8 arenasArenaData[Megabytes(1024)];
 
@@ -183,6 +190,7 @@ struct EngineState
     MemoryArena arenaDrawCommands; // arena for draw caommands, cleared every frame
     MemoryArena arenaGlobalDrawCommands; // arena for draw commands, cleared every frame
     MemoryArena arenaEngineState; // memory arena for stuff of unknown size in the engine that persists forever.
+    MemoryArena arenaScene; // memory arena for the scene, all live entities go here.
 
     uint8 scratchBuffer[Megabytes(256)];
 
@@ -499,6 +507,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         ArenaInitialize(&engineState->arenaDrawCommands,        Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Draw Commands",        true), "Draw Commands");
         ArenaInitialize(&engineState->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Global Draw Commands", true), "Global Draw Commands");
         ArenaInitialize(&engineState->arenaEngineState,         Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Engine State",         true), "Engine State");
+        ArenaInitialize(&engineState->arenaScene,               Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Scene",                true), "Scene");
         
 
         engineState->profilingData = ArenaPushStruct(&engineState->arenaEngineState, ProfilingData, "Profiling Data");
@@ -541,13 +550,14 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
             ShaderSetupFunctions[i](*shaders[i]);
             (*shaders[i])->GLID = memory->platformGraphicsLoadShader(*shaders[i]);
         }
+        LoadAssets(engineState, &engineState->assets);
+        memory->missingTexture = assets->missing;
+        memory->missingMesh = assets->missingMesh;
 
 
         CreateMaterialGlobal(engineState, engineState->axesMaterial, engineState->unlit,  Material_unlit);
         engineState->axesMaterial->ColorTexture = assets->texAxes;
         engineState->axesMaterial->Color = float3(1, 1, 1);
-
-
         engineState->axesMaterial->BackFaceCulling = true;
 
         CreateMaterialGlobal(engineState, engineState->boneMaterial, engineState->unlit, Material_unlit);
@@ -567,9 +577,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
         engineState->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
 
-        LoadAssets(engineState, &engineState->assets);
-        memory->missingTexture = assets->missing;
-        memory->missingMesh = assets->missingMesh;
 
         soundStart(engineState, input, memory);
 
@@ -578,6 +585,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
         gryphkissStart(engineState, input);
 
         profilerStart(engineState, input);
+
 
         CreateMaterialGlobal(engineState, engineState->red, engineState->unlit, Material_unlit);
         engineState->red->ColorTexture = assets->white;
@@ -599,9 +607,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
 
     soundUpdate(engineState, input, memory);
-
-    if (engineState->headsetView)
-        memory->spectatorCamera = input->head;
 
     input->head = input->eyeLeft;
     input->head.position = float3(0, 0, 0);
@@ -688,7 +693,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     DrawText(engineState, "P: toggle profiling");
     editorUpdate(engineState, input);
     memory->spectatorCamera = engineState->spectatorCamera;
-    
+
     profilerUpdate(engineState, input);
     gryphkissUpdate(engineState, input);
 

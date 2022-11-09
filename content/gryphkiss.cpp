@@ -1,6 +1,7 @@
 #pragma once
 
 #include "haven.cpp"
+#include "hand.cpp"
 
 struct GameState
 {
@@ -17,6 +18,9 @@ struct GameState
     Material_defaultlit* barnCeilingMat;
     Material_defaultlit* barnTilesMat;
     Material_defaultlit* StrawPileMat;
+
+    Hand* leftHand;
+    Hand* rightHand;
 };
 
 void gryphkissStart(EngineState* engineState, Input* input)
@@ -49,12 +53,20 @@ void gryphkissStart(EngineState* engineState, Input* input)
     CreateMaterialGlobal(engineState, gameState->StrawPileMat, engineState->defaultlit, Material_defaultlit);
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
-    
+
+    gameState->leftHand = HandInstantiate(engineState, input);
+    gameState->rightHand = HandInstantiate(engineState, input);
+
 }
 
 void gryphkissUpdate(EngineState* engineState, Input* input)
 {
     GameState* gameState = engineState->gameState;
+
+    for (int i = 0; i < ArrayCount(engineState->entities); i++)
+    {
+        engineState->entities[i]->entityUpdate(engineState, engineState->entities[i], input);
+    }
 
     // Set up bones
     for (int i = 0; i < assets->torvidTestAnim->boneCount; i++)
@@ -80,7 +92,7 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
     // Draw torvid
     float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
 
-    DrawMesh(engineState, gameState->barnWallMat, assets->tonk, transform(center, float3(0.2, 0.1, 0.1)));
+    DrawMesh(engineState, gameState->barnWallMat, assets->tonk, transform(center, float3(0.1, 0.2, 0.1)));
 
 
     center += float3(-3, -5, 0);
@@ -96,6 +108,7 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
     //torvidPos.position += -torvidPos.forward * 1.5;
     //torvidPos = rotate(monkeyRotation, monkeyRotation.up, -45);
     torvidPos = rotate(torvidPos, torvidPos.up, -0.4);
+    
     DrawMesh(engineState, gameState->torvidMat, assets->torvidTest, torvidPos);
 
     // Draw barn?
