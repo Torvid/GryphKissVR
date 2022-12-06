@@ -7,7 +7,7 @@ static const float2 fontSpriteSize = { 6, 13 };
 static const float2 atlasSize = { 32, 4 };
 static const float2 glyphSize = { 6, 13 };
 
-const int quadCountMax = 5000;
+const int quadCountMax = 20000;
 struct UIMeshData
 {
     int quadCount;

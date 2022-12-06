@@ -1,9 +1,10 @@
 
-#include "macros.shader"
+#include "macros.shaderinc"
 
 // Inputs
 
-#define ShaderName PostProcessTest
+#define ShaderName postProcessTest
+
 
 #define Parameters(X) \
 	X(float3, Color)\
@@ -11,7 +12,7 @@
 	X(sampler2D, TexRipples)
 
 #include "shaderMacros.cpp"
-#include "shaderMacros.shader"
+#include "shaderMacros.shaderinc"
 
 //uniform float3 Color;
 //

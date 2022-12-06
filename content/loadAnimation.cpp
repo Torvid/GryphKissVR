@@ -28,10 +28,12 @@ void LoadAnimation(EngineState* engineState, Animation* animation)
 
 Animation* FileReadAnimation(EngineState* engineState, const char* filename)
 {
+    ProfilerBeingSample(engineState);
     Animation* animation = ArrayAddNew(engineState->animations);
     StringCopy(animation->filename, filename);
 
     LoadAnimation(engineState, animation);
-    
+
+    ProfilerEndSample(engineState, "LoadAnimation");
     return animation;
 }

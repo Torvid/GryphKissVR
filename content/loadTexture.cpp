@@ -104,11 +104,14 @@ void LoadASTC(EngineState* engineState, Texture* texture, int fileSize)
 
 void LoadTexture(EngineState* engineState, Texture* texture)
 {
+    ProfilerBeingSample(engineState);
     uint8* end = engineState->platformReadFile(engineState->scratchBuffer, texture->filename);
-    
+    ProfilerEndSample(engineState, "Read File");
+
+    ProfilerBeingSample(engineState);
     if (!end)
     {
-        Texture* missing = assets->missing;
+        Texture* missing        = assets->missingTexture;
         texture->width          = missing->width;
         texture->height         = missing->height;
         texture->mips[0]        = missing->mips[0];
@@ -151,34 +154,99 @@ void LoadTexture(EngineState* engineState, Texture* texture)
     texture->mipSizeX[0] = tga->width;
     texture->mipSizeY[0] = tga->height;
 
-    for (int y = 0; y < tga->height; y++)
-    {
-        for (int x = 0; x < tga->width; x++)
-        {
-            int i = x + y * tga->width;
-            int j = x + y * tga->width;
-            if(flipLeftRight && flipUpDown)
-                j = (tga->width - x - 1) + (tga->height - y - 1) * tga->width;
-            else if (flipLeftRight)
-                j = (tga->width - x - 1) + y * tga->width;
-            else if(flipUpDown)
-                j = x + (tga->height - y - 1) * tga->width;
+    ProfilerEndSample(engineState, "Misc");
 
-            texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
-            texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
-            texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
-            texture->mips[0][i * 4 + 3] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 3);
+    ProfilerBeingSample(engineState);
+    if (flipUpDown && flipLeftRight)
+    {
+        int i = 0;
+        for (int y = tga->height - 1; y >= 0; y--)
+        {
+            for (int x = tga->width - 1; x >= 0; x--)
+            {
+                //int j = x + y * tga->width;
+                //uint32* source = (uint32*)(((uint8*)tga + sizeof(TGA_HEADER) + j * 4));
+                //uint32* target = (uint32*)(&texture->mips[0][i * 4]);
+                //*source = *target;
+                //i++;
+
+                int j = x + y * tga->width;
+                texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
+                texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
+                texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
+                texture->mips[0][i * 4 + 3] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 3);
+                i++;
+            }
         }
     }
+    else if (flipUpDown)
+    {
+        int i = 0;
+        for (int y = tga->height - 1; y >= 0; y--)
+        {
+            uint8* destination = texture->mips[0] + tga->width * y * 4;
+            uint8* source = (uint8*)tga + sizeof(TGA_HEADER) + tga->width * (tga->height - y) * 4;
+            Copy(source, destination, tga->width * 4);
+            //for (int x = 0; x < tga->width; x++)
+            //{
+            //    //int i = x + y * tga->width;
+            //    int j = x + y * tga->width;
+            //    texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
+            //    texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
+            //    texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
+            //    texture->mips[0][i * 4 + 3] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 3);
+            //    i++;
+            //}
+        }
+    }
+    else if (flipLeftRight)
+    {
+        int i = 0;
+        for (int y = 0; y < tga->height; y++)
+        {
+            for (int x = tga->width - 1; x >= 0; x--)
+            {
+                //int i = x + y * tga->width;
+                int j = x + y * tga->width;
+                texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
+                texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
+                texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
+                texture->mips[0][i * 4 + 3] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 3);
+                i++;
+            }
+        }
+    }
+    else
+    {
+        int i = 0;
+        for (int y = 0; y < tga->height; y++)
+        {
+            for (int x = 0; x < tga->width; x++)
+            {
+                //int i = x + y * tga->width;
+                int j = x + y * tga->width;
+                texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
+                texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
+                texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
+                texture->mips[0][i * 4 + 3] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 3);
+                i++;
+            }
+        }
+    }
+    ProfilerEndSample(engineState, "Copy");
 
+    ProfilerBeingSample(engineState);
     texture->GLID = engineState->platformGraphicsLoadTexture(texture);
+    ProfilerEndSample(engineState, "Upload");
 }
 
 Texture* FileReadTexture(EngineState* engineState, const char* filename)
 {
+    ProfilerBeingSample(engineState);
     Texture* texture = ArrayAddNew(engineState->textures);
     StringCopy(texture->filename, filename);
     LoadTexture(engineState, texture);
+    ProfilerEndSample(engineState, "LoadTexture");
     return texture;
 }
 

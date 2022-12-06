@@ -53,7 +53,7 @@ char* ShaderReadFile(EngineState* engineState, Shader* shader, char* destination
             StringAppendMax(name, filename, LastIndexOf(filename, '/') + 1);
             int idx = StringLength(name) + IndexOf(a, '"');
             StringAppendMax(name, a, idx);
-            if (EndsWith(name, ".shader"))
+            if (EndsWith(name, ".shaderinc"))
             {
                 destination = ShaderReadFile(engineState, shader, destination, scratchBufferFilesDepth, name, pixelShader, isPixelShader);
             }
@@ -126,8 +126,6 @@ void LoadShader(EngineState* memory, Shader* shader)
     pixelShader = StringAppend(pixelShader, pixelAppend);
     vertexShader = StringAppend(vertexShader, vertexAppend);
 
-
-
     ShaderReadFile(memory, shader, pixelShader  + StringLength(pixelAppend), scratchBuffer, shader->filename, pixelShader, true);
     ShaderReadFile(memory, shader, vertexShader + StringLength(vertexAppend), scratchBuffer, shader->filename, vertexShader, false);
     
@@ -142,17 +140,19 @@ void LoadShader(EngineState* memory, Shader* shader)
     shader->pixelShaderText = pixelShader;
     shader->vertexShaderText = vertexShader;
 }
-Shader* FileReadShader(EngineState* memory, const char* filename)
+Shader* FileReadShader(EngineState* engineState, const char* filename)
 {
     //Shader* shader = &memory->shaders[ArrayCount(memory->shaders)];
     //ArrayCount(memory->shaders)++;
     //Assert(IsInArray(memory->shaders, ArrayCount(memory->shaders) - 1), "Array is out of capacity.");
     //memory->shaders[ArrayCount(memory->shaders) - 1] = {};
 
-    Shader* shader = ArrayAddNew(memory->shaders);
+    ProfilerBeingSample(engineState);
+    Shader* shader = ArrayAddNew(engineState->shaders);
 
     StringCopy(shader->filename, filename);
-    LoadShader(memory, shader);
+    LoadShader(engineState, shader);
+    ProfilerEndSample(engineState, "LoadShader");
     return shader;
 }
 

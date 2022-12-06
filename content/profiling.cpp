@@ -4,7 +4,7 @@
 #include "haven.cpp"
 #include "math.cpp"
 
-static const int timeSampleCount = 30;
+static const int timeSampleCount = 2;
 
 struct ProfilingData
 {

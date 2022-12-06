@@ -184,10 +184,11 @@ bool Equals(uint8* a, uint8* b, int size)
 // Copies memory from one location to another
 void Copy(uint8* source, uint8* destination, int size)
 {
-    for (int i = 0; i < size; i++)
-    {
-        destination[i] = source[i];
-    }
+    globalMemcpy(destination, source, size);
+    //for (int i = 0; i < size; i++)
+    //{
+    //    destination[i] = source[i];
+    //}
 }
 
 // Sets a block of memory to 0

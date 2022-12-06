@@ -1,7 +1,7 @@
 
-#include "macros.shader"
+#include "macros.shaderinc"
 
-#define ShaderName UI
+#define ShaderName UIShader
 
 #define Parameters(X) \
 	X(float3, VRCameraPosition) \
@@ -24,7 +24,7 @@
 
 
 #include "shaderMacros.cpp"
-#include "shaderMacros.shader"
+#include "shaderMacros.shaderinc"
 
 #ifdef vertexShader
 

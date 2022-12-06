@@ -137,6 +137,7 @@ char* GoToNextLineOrEndOfString(char* text)
 
 void LoadObj(EngineState* engineState, Mesh* mesh)
 {
+    ProfilerBeingSample(engineState);
     int i = sizeof(Mesh);
     uint8* moreScratchBuffer = engineState->platformReadFile(engineState->scratchBuffer, mesh->filename);
 
@@ -214,6 +215,7 @@ void LoadObj(EngineState* engineState, Mesh* mesh)
 
     mesh->GLID = engineState->platformGraphicsLoadMesh(mesh);
 
+    ProfilerEndSample(engineState, "LoadObj");
 }
 
 struct MESH_HEADER
@@ -312,11 +314,13 @@ void LoadMesh(EngineState* engineState, Mesh* mesh)
 
 Mesh* FileReadMesh(EngineState* engineState, const char* filename)
 {
+    ProfilerBeingSample(engineState);
     Mesh* mesh = ArrayAddNew(engineState->meshes);
     StringCopy(mesh->filename, filename);
 
     LoadMesh(engineState, mesh);
-    
+
+    ProfilerEndSample(engineState, "LoadMesh");
     return mesh;
 }
 

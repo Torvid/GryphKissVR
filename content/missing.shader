@@ -1,5 +1,5 @@
 
-#include "macros.shader"
+#include "macros.shaderinc"
 
 #define ShaderName missing
 
@@ -7,7 +7,7 @@
 X(float3,Color)
 
 #include "shaderMacros.cpp"
-#include "shaderMacros.shader"
+#include "shaderMacros.shaderinc"
 
 #ifdef vertexShader
 

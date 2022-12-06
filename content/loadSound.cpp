@@ -76,11 +76,13 @@ void LoadWav(EngineState* engineState, Sound* sound)
     sound->loaded = true;
 }
 
-Sound* FileReadSound(EngineState* memory, const char* filename)
+Sound* FileReadSound(EngineState* engineState, const char* filename)
 {
-    Sound* sound = ArrayAddNew(memory->sounds);
+    ProfilerBeingSample(engineState);
+    Sound* sound = ArrayAddNew(engineState->sounds);
     StringCopy(sound->filename, filename);
-    LoadWav(memory, sound);
+    LoadWav(engineState, sound);
+    ProfilerEndSample(engineState, "LoadWav");
     return sound;
 }
 

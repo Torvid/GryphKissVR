@@ -493,6 +493,7 @@ typedef int sPrintf(char* str, const char* format, ...);
 typedef int GLUploadTexture(Texture* texture);
 typedef int GLUploadMesh(Mesh* texture);
 typedef void* Memset(void* str, int c, size_t n);
+typedef void* Memcpy(void* destination, const void* source, size_t num);
 
 typedef uint32 PlatformGraphicsLoadTexture(Texture* texture); // Upload a texture to the GPU and return back a handle
 typedef uint32 PlatformGraphicsLoadMesh(Mesh* mesh); // Upload a mesh to the GPU and return back a handle
@@ -512,6 +513,7 @@ typedef struct
     Printf* printf;
     sPrintf* sprintf;
     Memset* memset;
+    Memcpy* memcpy;
     PlatformTime* platformTime;
 
     PlatformReadFile* platformReadFile;

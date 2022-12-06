@@ -1,15 +1,15 @@
 
-#include "macros.shader"
+#include "macros.shaderinc"
 
 
-#define ShaderName textureCopy
+#define ShaderName textureCopyShader
 
 #define Parameters(X) \
 	X(float3, Color)\
 	X(sampler2D, ColorTexture)
 
 #include "shaderMacros.cpp"
-#include "shaderMacros.shader"
+#include "shaderMacros.shaderinc"
 
 //uniform float3 Color;
 //uniform sampler2D ColorTexture;

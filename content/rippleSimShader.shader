@@ -1,8 +1,8 @@
 
-#include "macros.shader"
+#include "macros.shaderinc"
 
 
-#define ShaderName rippleSim
+#define ShaderName rippleSimShader
 
 #define Parameters(X) \
 	X(float2, mousePos)\
@@ -10,7 +10,7 @@
 
 
 #include "shaderMacros.cpp"
-#include "shaderMacros.shader"
+#include "shaderMacros.shaderinc"
 
 #ifdef vertexShader
 

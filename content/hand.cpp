@@ -14,7 +14,7 @@ void HandStart(EngineState* engineState, Entity* entity, Input* input)
     Hand* hand = (Hand*)entity;
 
     hand->clickCount = 0;
-    CreateMaterialGlobal(engineState, hand->handMaterial, engineState->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(engineState, hand->handMaterial, assets->defaultlit, Material_defaultlit);
 }
 
 void HandUpdate(EngineState* engineState, Entity* entity, Input* input)

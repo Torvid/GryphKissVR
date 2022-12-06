@@ -1,5 +1,5 @@
 
-#include "macros.shader"
+#include "macros.shaderinc"
 
 #define ShaderName defaultlit
 
@@ -11,7 +11,7 @@
 #define addBoneTransforms 1
 
 #include "shaderMacros.cpp"
-#include "shaderMacros.shader"
+#include "shaderMacros.shaderinc"
 
 // Inputs
 //uniform sampler2D texM1; // Color, Roughness

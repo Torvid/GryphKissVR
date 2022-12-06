@@ -32,25 +32,25 @@ void gryphkissStart(EngineState* engineState, Input* input)
     ArenaInitialize(&gameState->arenaScene, Megabytes(64), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64), "Scene", true), "Scene");
 
     // Load Torvid
-    CreateMaterialGlobal(engineState, gameState->torvidMat, engineState->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(engineState, gameState->torvidMat, assets->defaultlit, Material_defaultlit);
     gameState->torvidMat->texM1 = assets->TorvidM1;
     gameState->torvidMat->texM2 = assets->TorvidM2;
     gameState->torvidMat->BackFaceCulling = true;
 
     // Create materials and load textures
-    CreateMaterialGlobal(engineState, gameState->barnWallMat, engineState->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(engineState, gameState->barnWallMat, assets->defaultlit, Material_defaultlit);
     gameState->barnWallMat->texM1 = assets->BarnWallM1;
     gameState->barnWallMat->texM2 = assets->BarnWallM2;
-    CreateMaterialGlobal(engineState, gameState->barnWallCleanMat, engineState->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(engineState, gameState->barnWallCleanMat, assets->defaultlit, Material_defaultlit);
     gameState->barnWallCleanMat->texM1 = assets->BarnWallCleanM1;
     gameState->barnWallCleanMat->texM2 = assets->BarnWallCleanM2;
-    CreateMaterialGlobal(engineState, gameState->barnCeilingMat, engineState->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(engineState, gameState->barnCeilingMat, assets->defaultlit, Material_defaultlit);
     gameState->barnCeilingMat->texM1 = assets->BarnCeilingM1;
     gameState->barnCeilingMat->texM2 = assets->BarnCeilingM2;
-    CreateMaterialGlobal(engineState, gameState->barnTilesMat, engineState->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(engineState, gameState->barnTilesMat, assets->defaultlit, Material_defaultlit);
     gameState->barnTilesMat->texM1 = assets->TilesM1;
     gameState->barnTilesMat->texM2 = assets->TilesM2;
-    CreateMaterialGlobal(engineState, gameState->StrawPileMat, engineState->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(engineState, gameState->StrawPileMat, assets->defaultlit, Material_defaultlit);
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
 

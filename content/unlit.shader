@@ -1,5 +1,5 @@
 
-#include "macros.shader"
+#include "macros.shaderinc"
 
 #define ShaderName unlit
 
@@ -8,7 +8,7 @@
 	X(sampler2D, ColorTexture)
 
 #include "shaderMacros.cpp"
-#include "shaderMacros.shader"
+#include "shaderMacros.shaderinc"
 
 #ifdef vertexShader
 
