@@ -329,7 +329,7 @@ void DrawRay(EngineState* engineState, float3 start, float3 direction, float len
 
 float3 AngleToVector(float angle, float3 left, float3 right)
 {
-    return sin_turns(angle) * left + cos_turns(angle) * right;
+    return sinTurns(angle) * left + cosTurns(angle) * right;
 }
 
 void DrawCircle(EngineState* engineState, float3 center, float3 normal, float radius, float width, float3 color = { 1, 1, 1 }, float opacity = 1, int detail = 32)

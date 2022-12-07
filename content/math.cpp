@@ -364,6 +364,33 @@ float sqrtFast(float x) // surprisingly accurate, BUT NOT ACCURATE ENOUGH
     return asfloat(i);
 }
 
+// counts the number of set bits in an int.
+int popcount(int value)
+{
+#if __clang__
+    return __builtin_popcount(value);
+#elif _MSC_VER 
+    return __popcnt(value);
+#else
+    int count = 0;
+    int test = value;
+    for (int i = 0; i < 32; i++)
+    {
+        if (test & 1)
+            count++;
+        test >>= 1;
+    }
+    return test;
+#endif
+}
+
+char GetNthBit(char c, char n)
+{
+    unsigned char tmp = 1 << n;
+    return (c & tmp) >> n;
+}
+
+
 int32 RoundToInt(float x){return (int32)game_roundf(x);}
 uint32 RoundToUInt(float x){return (uint32)game_roundf(x);}
 int32 TruncateToInt(float x){return (int32)x;}
@@ -850,8 +877,8 @@ float round(float x) { return game_roundf(x); }
 float acos(float x) { return game_acosf(x); }
 float sin(float x) { return game_sinf(x); }
 float cos(float x) { return game_cosf(x); }
-float sin_turns(float x) { return game_sinf(x * 3.14152128f * 2.0f); }
-float cos_turns(float x) { return game_cosf(x * 3.14152128f * 2.0f); }
+float sinTurns(float x) { return game_sinf(x * 3.14152128f * 2.0f); }
+float cosTurns(float x) { return game_cosf(x * 3.14152128f * 2.0f); }
 float sqrt(float x) { return game_sqrtf(x); }
 float atan2(float x, float y)
 {
@@ -973,6 +1000,13 @@ float remap01(float t, float iMin, float iMax)
     return inverselerp(iMin, iMax, t);
 }
 
+// Gaussian / bell-curve function.
+float gaussian(float x, float Width, float Height)
+{
+    return pow(2, -pow(x / Width, 2)) * Height;
+}
+
+
 float2 reflect(float2 a, float2 normal)
 {
     // How tf can a matrix be its own inverse.
@@ -1005,33 +1039,46 @@ float3 reflect(float3 v, float3 normal)
 {
     return v - 2.0 * normal * dot(v, normal);
 }
-float MoveTowards(float current, float target, float distance)
-{
-    return current + clamp(target - current, -distance, distance);
-}
-fixed MoveTowards(fixed current, fixed target, fixed distance)
-{
-    return current + clamp(target - current, -distance, distance);
-}
-float2 MoveTowards(float2 current, float2 target, float dist)
-{
-    if (current.x == target.x && current.y == target.y)
-        return current;
-    return current + normalize(target - current) * min(dist, distance(target, current));
-}
-float3 MoveTowards(float3 current, float3 target, float dist)
-{
-    if (current.x == target.x && current.y == target.y && current.z == target.z)
-        return current;
-    return current + normalize(target - current) * min(dist, distance(target, current));
-}
 
-fixed3 MoveTowards(fixed3 current, fixed3 target, fixed dist)
-{
-    if (current.x == target.x && current.y == target.y && current.z == target.z)
-        return current;
-    return current + normalize(target - current) * min(dist, distance(target, current));
-}
+// TODO: test these
+//float MoveTowards(float current, float target, float distance)
+//{
+//    return current + clamp(target - current, -distance, distance);
+//}
+//fixed MoveTowards(fixed current, fixed target, fixed distance)
+//{
+//    return current + clamp(target - current, -distance, distance);
+//}
+//float2 MoveTowards(float2 current, float2 target, float dist)
+//{
+//    if (current.x == target.x && current.y == target.y)
+//        return current;
+//    return current + normalize(target - current) * min(dist, distance(target, current));
+//}
+//float3 MoveTowards(float3 current, float3 target, float dist)
+//{
+//    if (current.x == target.x && current.y == target.y && current.z == target.z)
+//        return current;
+//    return current + normalize(target - current) * min(dist, distance(target, current));
+//}
+//fixed3 MoveTowards(fixed3 current, fixed3 target, fixed dist)
+//{
+//    if (current.x == target.x && current.y == target.y && current.z == target.z)
+//        return current;
+//    return current + normalize(target - current) * min(dist, distance(target, current));
+//}
+float MoveTowards(float from, float to, float distance) { return from + clamp(to - from, -distance, distance); }
+float2 MoveTowards(float2 from, float2 to, float distance) { return from + ((to - from) / length(to - from)) * min(distance, length(to - from)); }
+float3 MoveTowards(float3 from, float3 to, float distance) { return from + ((to - from) / length(to - from)) * min(distance, length(to - from)); }
+
+float ToSRGB(float Lin) { return Lin <= .04045 ? Lin / 12.92 : pow((Lin + 0.055) / 1.055, 2.4); }
+float2 ToSRGB(float2 Lin) { return float2(ToSRGB(Lin.x), ToSRGB(Lin.y)); }
+float3 ToSRGB(float3 Lin) { return float3(ToSRGB(Lin.x), ToSRGB(Lin.y), ToSRGB(Lin.z)); }
+
+float ToGamma(float Lin) { return Lin <= .0031308 ? Lin * 12.92 : 1.055 * pow(Lin, (1.0f / 2.4)) - 0.055; }
+float2 ToGamma(float2 Lin) { return float2(ToGamma(Lin.x), ToGamma(Lin.y)); }
+float3 ToGamma(float3 Lin) { return float3(ToGamma(Lin.x), ToGamma(Lin.y), ToGamma(Lin.z)); }
+
 
 float atan2(float2 a)
 {
@@ -1042,6 +1089,17 @@ float AngleBetween(float2 A, float2 B)
 {
     return atan2(B) - atan2(A);
 }
+// atan2 with a 0 - 1 range instead of -pi to pi range
+float atan2Turns(float x, float y)
+{
+    return atan2(float2(x, y)) / 3.14152128 / 2.0 + 0.5f;
+}
+// atan2 with a 0 - 1 range instead of -pi to pi range
+float atan2Turns(float2 a)
+{
+    return atan2(a) / 3.14152128 / 2.0 + 0.5f;
+}
+
 
 float3 palette(float t, float3 a, float3 b, float3 c, float3 d)
 {
@@ -1421,4 +1479,25 @@ float GetSmoothedValue(float data[100], int* index, float newTime, int count)
     }
     accumulatedDelta /= count;
     return accumulatedDelta;
+}
+
+// Spiral Blur
+// https://www.youtube.com/watch?v=lOIP_Z_-0Hs
+// Thanks vihart :>
+float2 GoldenSpiral(float step)
+{
+    float PhiRadians = 2.3998277;
+    return float2(sin(step * PhiRadians) * step, cos(step * PhiRadians) * step);
+}
+
+// Call this in a loop to get UV offsets
+float2 GetSpiralBlurUVOffset(float Radius, float Samples, float i)
+{
+    return GoldenSpiral(i) / Samples * Radius;
+}
+
+float GetSpiralBlurWeight(float Samples, float i)
+{
+    Samples += 0.01f;
+    return (1.0f - (i / Samples)) / Samples * 2.0;
 }
