@@ -40,7 +40,7 @@ struct ProfilingData
 
 };
 
-void DrawArena(EngineState* engineState, float2* pos,  MemoryArena* arena)
+void DrawArena(float2* pos,  MemoryArena* arena)
 {
     const int tempStringSize = 2500;
     char text[tempStringSize] = {};
@@ -51,7 +51,7 @@ void DrawArena(EngineState* engineState, float2* pos,  MemoryArena* arena)
     StringAppend(text, " MB - ", (int)arena->usedPercentage, "%");
     bool checkedEntries[ArrayCapacity(arena->memoryArenaEntrys)] = {};
 
-    DrawText(engineState, text, pos);
+    DrawText(text, pos);
     Clear((uint8*)text, tempStringSize);
 
     for (int i = 0; i < ArrayCount(arena->memoryArenaEntrys); i++)
@@ -88,32 +88,32 @@ void DrawArena(EngineState* engineState, float2* pos,  MemoryArena* arena)
         StringAppend(text, "\n");
         if (StringLength(text) > (tempStringSize - 500))
         {
-            DrawText(engineState, text, pos);
+            DrawText(text, pos);
             Clear((uint8*)text, tempStringSize);
         }
     }
-    DrawText(engineState, text, pos);
+    DrawText(text, pos);
 }
-void DrawArena(EngineState* engineState, MemoryArena* arena)
+void DrawArena(MemoryArena* arena)
 {
-    DrawArena(engineState, &engineState->uiPos, arena);
+    DrawArena(&haven->uiPos, arena);
 }
 // Call this to start a profile region
-void ProfilerBeingSample(EngineState* engineState)
+void ProfilerBeingSample()
 {
-    ProfilingData* data = engineState->profilingData;
+    ProfilingData* data = haven->profilingData;
 
-    data->timeStack[data->currentDepth][data->frameNumber] = engineState->platformTime();
+    data->timeStack[data->currentDepth][data->frameNumber] = haven->platformTime();
     data->currentDepth++;
 }
 
 // Call this to end a profile region
-void ProfilerEndSample(EngineState* engineState, const char* name)
+void ProfilerEndSample(const char* name)
 {
-    ProfilingData* data = engineState->profilingData;
+    ProfilingData* data = haven->profilingData;
 
     data->enterTime[data->index][data->frameNumber] = data->timeStack[data->currentDepth - 1][data->frameNumber];
-    data->exitTime[data->index][data->frameNumber] = engineState->platformTime();
+    data->exitTime[data->index][data->frameNumber] = haven->platformTime();
     for (int i = 0; i < 50; i++)
     {
         data->functionNames[data->index][i] = name[i];
@@ -124,29 +124,29 @@ void ProfilerEndSample(EngineState* engineState, const char* name)
 }
 
 // Call this somewhere near the start of the frame
-void ProfilerStart(EngineState* engineState)
+void ProfilerStart()
 {
-    ProfilerEndSample(engineState, " h a v e n - Platform Layer");
-    //ProfilerEndSample(engineState, "Frame");
-    ProfilingData* data = engineState->profilingData;
+    ProfilerEndSample(" h a v e n - Platform Layer");
+    //ProfilerEndSample("Frame");
+    ProfilingData* data = haven->profilingData;
     //data->memory = memory;
     //data->Global_End = data->Global_Start;
     int64 lastStart = data->Global_Start;
-    data->Global_Start = engineState->platformTime();
+    data->Global_Start = haven->platformTime();
     data->Delta = (lastStart - data->Global_Start);
     if (data->Delta < 0)
         data->Delta *= -1;
-    //data->outsideEnd = engineState->platformTime();
+    //data->outsideEnd = haven->platformTime();
 
 
 }
 
 // Call this somewhere near the end of the frame
-void ProfilerEnd(EngineState* engineState)
+void ProfilerEnd(EngineState* haven)
 {
-    ProfilingData* data = engineState->profilingData;
+    ProfilingData* data = haven->profilingData;
 
-    //ProfilerEndSample(engineState, "Frame");
+    //ProfilerEndSample("Frame");
 
 
 
@@ -156,17 +156,17 @@ void ProfilerEnd(EngineState* engineState)
     data->currentDepth = 0;
     data->frameNumber++;
     data->frameNumber %= timeSampleCount;
-    data->Global_End = engineState->platformTime();
+    data->Global_End = haven->platformTime();
     data->Delta = data->Global_End - data->Global_Start;
-    //data->outsideStart = engineState->platformTime();
+    //data->outsideStart = haven->platformTime();
     //ProfilerBeingSample(engineState);
 
     //data->index++;
-    ProfilerBeingSample(engineState);
+    ProfilerBeingSample();
 }
 
 
-void ProfilerDrawFlameChart(EngineState* engineState, Input* input, ProfilingData* data)
+void ProfilerDrawFlameChart(Input* input, ProfilingData* data)
 {
     ProfilingData* profilingData = data;
 
@@ -182,9 +182,9 @@ void ProfilerDrawFlameChart(EngineState* engineState, Input* input, ProfilingDat
     //float rightOffset = 2560 / 2;
     float rightOffset = 720;
     
-    float pixelWidth = engineState->Resolution.x / (engineState->Resolution.x - rightOffset);
+    float pixelWidth = haven->Resolution.x / (haven->Resolution.x - rightOffset);
     // Zoom
-    if (input->mousePos.x > rightOffset && input->mousePos.y > (engineState->Resolution.y - 80))
+    if (input->mousePos.x > rightOffset && input->mousePos.y > (haven->Resolution.y - 80))
     {
         profilingData->zoom -= profilingData->zoom * input->mouseScrollDelta * 0.1f;
         profilingData->zoom = max(profilingData->zoom, 0.1f);
@@ -201,21 +201,21 @@ void ProfilerDrawFlameChart(EngineState* engineState, Input* input, ProfilingDat
     
     float flipOffset = 80;
 
-    DrawBox2D(engineState, float2(rightOffset, flipOffset - 80), float2(engineState->Resolution.x - rightOffset, 80), float3(0.0, 0.0, 0.0), 0.5);
+    DrawBox2D(float2(rightOffset, flipOffset - 80), float2(haven->Resolution.x - rightOffset, 80), float3(0.0, 0.0, 0.0), 0.5);
     
-    DrawLine2D(engineState, float2(rightOffset, flipOffset), float2(engineState->Resolution.x, flipOffset), 1);
+    DrawLine2D(float2(rightOffset, flipOffset), float2(haven->Resolution.x, flipOffset), 1);
     //DrawLine2D(videoBuffer, float2(rightOffset, videoBuffer->Height - 1), float2(videoBuffer->Width, videoBuffer->Height - 1));
     for (int i = 0; i < 21; i++)
     {
-        int point = (((float)i * 10000 * q) / ((float)sampleCount)) * engineState->Resolution.x + rightOffset;
-        DrawLine2D(engineState, float2(point,     flipOffset), float2(point,     flipOffset - 8), 1);
-        DrawLine2D(engineState, float2(point + 1, flipOffset), float2(point + 1, flipOffset - 8), 1);
+        int point = (((float)i * 10000 * q) / ((float)sampleCount)) * haven->Resolution.x + rightOffset;
+        DrawLine2D(float2(point,     flipOffset), float2(point,     flipOffset - 8), 1);
+        DrawLine2D(float2(point + 1, flipOffset), float2(point + 1, flipOffset - 8), 1);
         //DrawLine2D(videoBuffer, float2(point, videoBuffer->Height - 0), float2(point, videoBuffer->Height - 8));
         //DrawLine2D(videoBuffer, float2(point + 1, videoBuffer->Height - 0), float2(point + 1, videoBuffer->Height - 8));
         char time[100] = {};
         StringAppend(time, (int)(i * q));
         StringAppend(time, "ms");
-        DrawText(engineState, time, float2(point + 2, flipOffset - 20), float3(1, 1, 1));
+        DrawText(time, float2(point + 2, flipOffset - 20), float3(1, 1, 1));
     }
     float pos = 0;
 
@@ -234,29 +234,29 @@ void ProfilerDrawFlameChart(EngineState* engineState, Input* input, ProfilingDat
 
         float startNormalized = (float)start / sampleCount;
         float endNormalized = (float)end / sampleCount;
-        startNormalized *= engineState->Resolution.x;
-        endNormalized *= engineState->Resolution.x;
+        startNormalized *= haven->Resolution.x;
+        endNormalized *= haven->Resolution.x;
         //startNormalized = max(startNormalized, 0);
 
         float height = flipOffset - (17 * profilingData->depth[i]);
         float2 pos = float2(round(startNormalized), height) + float2(rightOffset, 0);
         float2 size = float2(round(endNormalized - startNormalized) - 1, 16);
-        DrawBox2D(engineState, pos, size, float3(0.5, 0.5, 0.5), 1.0f);
+        DrawBox2D(pos, size, float3(0.5, 0.5, 0.5), 1.0f);
         char time[100] = {};
         StringAppend(time, name);
         StringAppend(time, ": ");
         StringAppend(time, (int)((end - start) / 10));
         StringAppend(time, "us");
-        DrawText(engineState, time, float2(startNormalized + rightOffset + 2, height), float3(1,1,1));
-        //DrawFont(engineState->fontSpritesheet, videoBuffer, startNormalized + rightOffset + 2, height, time);
+        DrawText(time, float2(startNormalized + rightOffset + 2, height), float3(1,1,1));
+        //DrawFont(haven->fontSpritesheet, videoBuffer, startNormalized + rightOffset + 2, height, time);
     }
 }
 
-void ProfilerDrawTimeChart(EngineState* engineState, Input* input, ProfilingData* data)
+void ProfilerDrawTimeChart(Input* input, ProfilingData* data)
 {
     ProfilingData* profilingData = data;
 
-    DrawBox2D(engineState, float2(0, engineState->Resolution.y - 200), float2(200, 200), float3(0.0, 0.0, 0.0), 0.5);
+    DrawBox2D(float2(0, haven->Resolution.y - 200), float2(200, 200), float3(0.0, 0.0, 0.0), 0.5);
 
     float FPS = (float)(1.0f / input->deltaTime);
     float Delta = (float)(profilingData->Delta) / 10000000;
@@ -272,52 +272,52 @@ void ProfilerDrawTimeChart(EngineState* engineState, Input* input, ProfilingData
     {
         int h = (i + profilingData->deltas2Index) % 100;
         float a = profilingData->deltas2[h] * HeightMultiplier;
-        float height = engineState->Resolution.y - a;
+        float height = haven->Resolution.y - a;
         //DrawLine2D(videoBuffer, float2(i * 2 - 2, LastHeight), float2(i * 2, height));
 
         LastHeight = height;
     }
 
 
-    float fpscurrentheight = engineState->Resolution.y - (SmoothedTime)*HeightMultiplier;
+    float fpscurrentheight = haven->Resolution.y - (SmoothedTime)*HeightMultiplier;
     char text[100] = {};
     StringAppend(text, TotalTimeDelta * 1000);
     StringAppend(text, "ms");
-    DrawText(engineState, text, float2(200, fpscurrentheight));
+    DrawText(text, float2(200, fpscurrentheight));
 }
 
-void profilerStart(EngineState* engineState, Input* input)
+void profilerStart(Input* input)
 {
 
 }
 
-void profilerUpdate(EngineState* engineState,  Input* input)
+void profilerUpdate(Input* input)
 {
     // Update text
     const int tempStringSize = 2048;
     char text[tempStringSize] = {};
     Clear((uint8*)text, tempStringSize);
 
-    if (engineState->profiling)
+    if (haven->profiling)
     {
         StringAppend(text, "\nPERFORMANCE:");
         StringAppend(text, "\n    Time: ", input->time);
         StringAppend(text, "\n    FPS: ", 1.0f / input->deltaTime);
-        StringAppend(text, "\n    Internal Time: ", (int)engineState->internalTime, " microseconds");
-        StringAppend(text, "\n    External Time: ", (int)engineState->externalTime, " microseconds");
+        StringAppend(text, "\n    Internal Time: ", (int)haven->internalTime, " microseconds");
+        StringAppend(text, "\n    External Time: ", (int)haven->externalTime, " microseconds");
         StringAppend(text, "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds");
-        DrawText(engineState, text);
+        DrawText(text);
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "\n\nMEMORY:");
-        DrawText(engineState, text);
+        DrawText(text);
 
-        //DrawArena(engineState, &pos, &engineState->arenaGlobalDrawCommands, textTransform);
-        //DrawArena(engineState, &pos, &engineState->arenaGameState, textTransform);
-        DrawArena(engineState, &engineState->arenaHotreload);
+        //DrawArena(&pos, &haven->arenaGlobalDrawCommands, textTransform);
+        //DrawArena(&pos, &haven->arenaGameState, textTransform);
+        DrawArena(&haven->arenaHotreload);
 
-        //DrawArena(engineState, &pos, &engineState->arenaDrawCommands);
-        ProfilerDrawTimeChart(engineState, input, engineState->profilingData);
-        ProfilerDrawFlameChart(engineState, input, engineState->profilingData);
+        //DrawArena(&pos, &haven->arenaDrawCommands);
+        ProfilerDrawTimeChart(input, haven->profilingData);
+        ProfilerDrawFlameChart(input, haven->profilingData);
     }
 }

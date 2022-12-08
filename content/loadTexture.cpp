@@ -71,11 +71,11 @@ unpackedASTC unpackASTCHeader(uint8* fileData)
     return Result;
 }
 
-void LoadASTC(EngineState* engineState, Texture* texture, int fileSize)
+void LoadASTC(Texture* texture, int fileSize)
 {
     texture->ASTC = true;
 
-    uint8* currentMip = engineState->scratchBuffer;
+    uint8* currentMip = haven->scratchBuffer;
 
     // copy the raw bytes
     int i = 0;
@@ -90,7 +90,7 @@ void LoadASTC(EngineState* engineState, Texture* texture, int fileSize)
         texture->mipSizeX[i] = astc.sizeX;
         texture->mipSizeY[i] = astc.sizeY;
 
-        texture->mips[i] = (uint8*)ArenaPushBytes(&engineState->arenaHotreload, astc.dataSize, texture->filename);
+        texture->mips[i] = (uint8*)ArenaPushBytes(&haven->arenaHotreload, astc.dataSize, texture->filename);
         Copy(astc.dataStart, texture->mips[i], astc.dataSize);
         texture->mipSize[i] = astc.dataSize;
 
@@ -99,16 +99,16 @@ void LoadASTC(EngineState* engineState, Texture* texture, int fileSize)
     }
 
     texture->mipCount = i;
-    texture->GLID = engineState->platformGraphicsLoadTexture(texture);
+    texture->GLID = haven->platformGraphicsLoadTexture(texture);
 }
 
-void LoadTexture(EngineState* engineState, Texture* texture)
+void LoadTexture(Texture* texture)
 {
-    ProfilerBeingSample(engineState);
-    uint8* end = engineState->platformReadFile(engineState->scratchBuffer, texture->filename);
-    ProfilerEndSample(engineState, "Read File");
+    ProfilerBeingSample();
+    uint8* end = haven->platformReadFile(haven->scratchBuffer, texture->filename);
+    ProfilerEndSample("Read File");
 
-    ProfilerBeingSample(engineState);
+    ProfilerBeingSample();
     if (!end)
     {
         Texture* missing        = assets->missingTexture;
@@ -132,31 +132,31 @@ void LoadTexture(EngineState* engineState, Texture* texture)
     }
 
     // Check if it's an ASTC compressed texture (android). If it is, load it that way.
-    ASTC_HEADER* astc = (ASTC_HEADER*)engineState->scratchBuffer;
+    ASTC_HEADER* astc = (ASTC_HEADER*)haven->scratchBuffer;
     if (astc->magic[0] == 0x13 &&
         astc->magic[1] == 0xAB &&
         astc->magic[2] == 0xA1 &&
         astc->magic[3] == 0x5C)
     {
-        LoadASTC(engineState, texture, end - engineState->scratchBuffer);
+        LoadASTC(texture, end - haven->scratchBuffer);
         return;
     }
 
-    TGA_HEADER* tga = (TGA_HEADER*)engineState->scratchBuffer;
+    TGA_HEADER* tga = (TGA_HEADER*)haven->scratchBuffer;
     bool flipUpDown = tga->imagedescriptor & 1 << 5;
     bool flipLeftRight = tga->imagedescriptor & 1 << 4;
 
     texture->mipSize[0] = tga->width * tga->height * 4;
     
-    texture->mips[0] = (uint8*)ArenaPushBytes(&engineState->arenaHotreload, texture->mipSize[0], texture->filename);
+    texture->mips[0] = (uint8*)ArenaPushBytes(&haven->arenaHotreload, texture->mipSize[0], texture->filename);
     texture->width = tga->width;
     texture->height = tga->height;
     texture->mipSizeX[0] = tga->width;
     texture->mipSizeY[0] = tga->height;
 
-    ProfilerEndSample(engineState, "Misc");
+    ProfilerEndSample("Misc");
 
-    ProfilerBeingSample(engineState);
+    ProfilerBeingSample();
     if (flipUpDown && flipLeftRight)
     {
         int i = 0;
@@ -233,20 +233,20 @@ void LoadTexture(EngineState* engineState, Texture* texture)
             }
         }
     }
-    ProfilerEndSample(engineState, "Copy");
+    ProfilerEndSample("Copy");
 
-    ProfilerBeingSample(engineState);
-    texture->GLID = engineState->platformGraphicsLoadTexture(texture);
-    ProfilerEndSample(engineState, "Upload");
+    ProfilerBeingSample();
+    texture->GLID = haven->platformGraphicsLoadTexture(texture);
+    ProfilerEndSample("Upload");
 }
 
-Texture* FileReadTexture(EngineState* engineState, const char* filename)
+Texture* FileReadTexture(const char* filename)
 {
-    ProfilerBeingSample(engineState);
-    Texture* texture = ArrayAddNew(engineState->textures);
+    ProfilerBeingSample();
+    Texture* texture = ArrayAddNew(haven->textures);
     StringCopy(texture->filename, filename);
-    LoadTexture(engineState, texture);
-    ProfilerEndSample(engineState, "LoadTexture");
+    LoadTexture(texture);
+    ProfilerEndSample("LoadTexture");
     return texture;
 }
 

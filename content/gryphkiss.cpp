@@ -23,49 +23,49 @@ struct GameState
     Hand* rightHand;
 };
 
-void gryphkissStart(EngineState* engineState, Input* input)
+void gryphkissStart(Input* input)
 {
-    engineState->gameState = ArenaPushStruct(&engineState->arenaEngineState, GameState, "GameState");
-    GameState* gameState = engineState->gameState;
+    haven->gameState = ArenaPushStruct(&haven->arenaEngineState, GameState, "GameState");
+    GameState* gameState = haven->gameState;
 
-    ArenaInitialize(&gameState->arenaGameState, Megabytes(64), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64), "Game State", true), "Game State");
-    ArenaInitialize(&gameState->arenaScene, Megabytes(64), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64), "Scene", true), "Scene");
+    ArenaInitialize(&gameState->arenaGameState, Megabytes(64), (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64), "Game State", true), "Game State");
+    ArenaInitialize(&gameState->arenaScene, Megabytes(64), (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64), "Scene", true), "Scene");
 
     // Load Torvid
-    CreateMaterialGlobal(engineState, gameState->torvidMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->torvidMat, assets->defaultlit, Material_defaultlit);
     gameState->torvidMat->texM1 = assets->TorvidM1;
     gameState->torvidMat->texM2 = assets->TorvidM2;
     gameState->torvidMat->BackFaceCulling = true;
 
     // Create materials and load textures
-    CreateMaterialGlobal(engineState, gameState->barnWallMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->barnWallMat, assets->defaultlit, Material_defaultlit);
     gameState->barnWallMat->texM1 = assets->BarnWallM1;
     gameState->barnWallMat->texM2 = assets->BarnWallM2;
-    CreateMaterialGlobal(engineState, gameState->barnWallCleanMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->barnWallCleanMat, assets->defaultlit, Material_defaultlit);
     gameState->barnWallCleanMat->texM1 = assets->BarnWallCleanM1;
     gameState->barnWallCleanMat->texM2 = assets->BarnWallCleanM2;
-    CreateMaterialGlobal(engineState, gameState->barnCeilingMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->barnCeilingMat, assets->defaultlit, Material_defaultlit);
     gameState->barnCeilingMat->texM1 = assets->BarnCeilingM1;
     gameState->barnCeilingMat->texM2 = assets->BarnCeilingM2;
-    CreateMaterialGlobal(engineState, gameState->barnTilesMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->barnTilesMat, assets->defaultlit, Material_defaultlit);
     gameState->barnTilesMat->texM1 = assets->TilesM1;
     gameState->barnTilesMat->texM2 = assets->TilesM2;
-    CreateMaterialGlobal(engineState, gameState->StrawPileMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->StrawPileMat, assets->defaultlit, Material_defaultlit);
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
 
-    gameState->leftHand = HandInstantiate(engineState, input);
-    gameState->rightHand = HandInstantiate(engineState, input);
+    gameState->leftHand = HandInstantiate(input);
+    gameState->rightHand = HandInstantiate(input);
 
 }
 
-void gryphkissUpdate(EngineState* engineState, Input* input)
+void gryphkissUpdate(Input* input)
 {
-    GameState* gameState = engineState->gameState;
+    GameState* gameState = haven->gameState;
 
-    for (int i = 0; i < ArrayCount(engineState->entities); i++)
+    for (int i = 0; i < ArrayCount(haven->entities); i++)
     {
-        engineState->entities[i]->entityUpdate(engineState, engineState->entities[i], input);
+        haven->entities[i]->entityUpdate(haven->entities[i], input);
     }
 
     // Set up bones
@@ -81,7 +81,7 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
     float animationFPS = 25.0f;
     if (gameState->torvidFrame == 0.0f)
     {
-        PlaySound(engineState, assets->Torvid_Gryphon, 0.25f);
+        PlaySound(assets->Torvid_Gryphon, 0.25f);
     }
     gameState->torvidFrame += animationFPS * input->deltaTime;
     if (gameState->torvidFrame > 180.0f)
@@ -92,7 +92,7 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
     // Draw torvid
     float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
 
-    DrawMesh(engineState, gameState->barnWallMat, assets->tonk, transform(center, float3(0.1, 0.2, 0.1)));
+    DrawMesh(gameState->barnWallMat, assets->tonk, transform(center, float3(0.1, 0.2, 0.1)));
 
 
     center += float3(-3, -5, 0);
@@ -102,17 +102,17 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
         input->playspaceStageLeft.forward,
         input->playspaceStageLeft.up,
         { 1, 1, 1 } };
-    //torvidPos = engineState->textTransform;
+    //torvidPos = haven->textTransform;
     //torvidPos.position += -torvidPos.up * 0.9;
     //torvidPos.position += torvidPos.right * 1.3;
     //torvidPos.position += -torvidPos.forward * 1.5;
     //torvidPos = rotate(monkeyRotation, monkeyRotation.up, -45);
     torvidPos = rotate(torvidPos, torvidPos.up, -0.4);
     
-    DrawMesh(engineState, gameState->torvidMat, assets->torvidTest, torvidPos);
+    DrawMesh(gameState->torvidMat, assets->torvidTest, torvidPos);
 
     // Draw barn?
-    //DrawMesh(engineState, gameState->barnWallCleanMat, gameState->barnCeiling, transformIdentity);
+    //DrawMesh(gameState->barnWallCleanMat, gameState->barnCeiling, transformIdentity);
 
     // left wall
     for (int x = 0; x < 5; x++)
@@ -122,11 +122,11 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
             if (y == 1)
             {
                 //&& x % 2 == 0
-                DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall02, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
+                DrawMesh(gameState->barnWallCleanMat, assets->BarnWall02, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
             }
             else
             {
-                DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
+                DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
             }
         }
     }
@@ -136,7 +136,7 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
     {
         for (int y = 0; y < 3; y++)
         {
-            DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(5, x * 2 + 2, y), 0, 0, 0.25));
+            DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(5, x * 2 + 2, y), 0, 0, 0.25));
         }
     }
 
@@ -145,7 +145,7 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
     {
         for (int y = 0; y < 5; y++)
         {
-            DrawMesh(engineState, gameState->barnTilesMat, assets->ui_quad, transform(center + float3(x, y, 0)*2, float3(2,2,2)));
+            DrawMesh(gameState->barnTilesMat, assets->ui_quad, transform(center + float3(x, y, 0)*2, float3(2,2,2)));
         }
     }
 
@@ -154,20 +154,20 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
     {
         for (int y = 0; y < 2; y++)
         {
-            DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(x*2+2, 0, y+2), 0, 0, 0.0));
+            DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(x*2+2, 0, y+2), 0, 0, 0.0));
         }
     }
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(3, 0, 4), 0, 0, 0.0));
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(5, 0, 4), 0, 0, 0.0));
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall02, transform(center + float3(1, 0, 0), 0, 0, 0.0));
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall02, transform(center + float3(1, 0, 1), 0, 0, 0.0));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(3, 0, 4), 0, 0, 0.0));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(5, 0, 4), 0, 0, 0.0));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnWall02, transform(center + float3(1, 0, 0), 0, 0, 0.0));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnWall02, transform(center + float3(1, 0, 1), 0, 0, 0.0));
 
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(5, 0, 0), 0, 0, 0.0));
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(5, 0, 1), 0, 0, 0.0));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(5, 0, 0), 0, 0, 0.0));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(5, 0, 1), 0, 0, 0.0));
 
     // doors
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnDoor, transform(center + float3(1, 0, 2), 0, 0, 0.0, float3(-1, 1, -1)));
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnDoor, transform(center + float3(3, 0, 0), 0, 0, 0.0));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnDoor, transform(center + float3(1, 0, 2), 0, 0, 0.0, float3(-1, 1, -1)));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnDoor, transform(center + float3(3, 0, 0), 0, 0, 0.0));
 
 
     // back wall
@@ -175,18 +175,18 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
     {
         for (int y = 0; y < 4; y++)
         {
-            DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(x * 2 , 10, y), 0, 0, 0.5));
+            DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(x * 2 , 10, y), 0, 0, 0.5));
         }
     }
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(1, 10, 4), 0, 0, 0.5));
-    DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(3, 10, 4), 0, 0, 0.5));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(1, 10, 4), 0, 0, 0.5));
+    DrawMesh(gameState->barnWallCleanMat, assets->BarnWall01, transform(center + float3(3, 10, 4), 0, 0, 0.5));
 
     // ceiling left
     for (int x = 0; x < 3; x++)
     {
         for (int y = 0; y < 5; y++)
         {
-            DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnCeiling01, transform(center + float3(x*0.704f, y*2, x * 0.704f) + float3(0, 2, 3), 0, 0.125, 0.25));
+            DrawMesh(gameState->barnWallCleanMat, assets->BarnCeiling01, transform(center + float3(x*0.704f, y*2, x * 0.704f) + float3(0, 2, 3), 0, 0.125, 0.25));
         }
     }
 
@@ -195,7 +195,7 @@ void gryphkissUpdate(EngineState* engineState, Input* input)
     {
         for (int y = 0; y < 5; y++)
         {
-            DrawMesh(engineState, gameState->barnWallCleanMat, assets->BarnCeiling01, transform(center + float3(-x * 0.704f, y * 2, x * 0.704f) + float3(5, 0, 3), 0, -0.125, -0.25));
+            DrawMesh(gameState->barnWallCleanMat, assets->BarnCeiling01, transform(center + float3(-x * 0.704f, y * 2, x * 0.704f) + float3(5, 0, 3), 0, -0.125, -0.25));
         }
     }
 

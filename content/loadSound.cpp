@@ -25,13 +25,13 @@ struct WAV_HEADER
     //uint8 bytes; // Remainder of wave file is bytes
 };
 
-void LoadWav(EngineState* engineState, Sound* sound)
+void LoadWav(Sound* sound)
 {
-    engineState->platformReadFile(engineState->scratchBuffer, sound->filename);
+    haven->platformReadFile(haven->scratchBuffer, sound->filename);
     sound->loaded = false;
 
-    WAV_HEADER* header = (WAV_HEADER*)engineState->scratchBuffer;
-    int16* data = (int16*)(((uint8*)engineState->scratchBuffer) + sizeof(WAV_HEADER));
+    WAV_HEADER* header = (WAV_HEADER*)haven->scratchBuffer;
+    int16* data = (int16*)(((uint8*)haven->scratchBuffer) + sizeof(WAV_HEADER));
     int32 sampleCount = header->data_bytes / 2; // divide by 2 because it's 16 bits per sample.
 
     // if the format is anything other than PCM, don't load it.
@@ -46,7 +46,7 @@ void LoadWav(EngineState* engineState, Sound* sound)
     int destinationSampleCount = lengthInSeconds * 44100;
     sound->length = lengthInSeconds;
 
-    sound->data = ArenaPushArray(&engineState->arenaHotreload, destinationSampleCount, Sample, sound->filename);
+    sound->data = ArenaPushArray(&haven->arenaHotreload, destinationSampleCount, Sample, sound->filename);
 
     Clear((uint8*)sound->data, destinationSampleCount * sizeof(Sample));
 
@@ -76,13 +76,13 @@ void LoadWav(EngineState* engineState, Sound* sound)
     sound->loaded = true;
 }
 
-Sound* FileReadSound(EngineState* engineState, const char* filename)
+Sound* FileReadSound(const char* filename)
 {
-    ProfilerBeingSample(engineState);
-    Sound* sound = ArrayAddNew(engineState->sounds);
+    ProfilerBeingSample();
+    Sound* sound = ArrayAddNew(haven->sounds);
     StringCopy(sound->filename, filename);
-    LoadWav(engineState, sound);
-    ProfilerEndSample(engineState, "LoadWav");
+    LoadWav(sound);
+    ProfilerEndSample("LoadWav");
     return sound;
 }
 
@@ -105,14 +105,14 @@ struct SoundChannel
     float3 position;
 };
 
-void PlaySound(EngineState* engineState, Sound* sound, float volume = 1.0f, bool looping = false)
+void PlaySound(Sound* sound, float volume = 1.0f, bool looping = false)
 {
     SoundChannel* foundChannel = 0;
-    for (int i = 0; i < ArrayCapacity(engineState->soundChannels); i++)
+    for (int i = 0; i < ArrayCapacity(haven->soundChannels); i++)
     {
-        if (!engineState->soundChannels[i]->playing)
+        if (!haven->soundChannels[i]->playing)
         {
-            foundChannel = engineState->soundChannels[i];
+            foundChannel = haven->soundChannels[i];
             break;
         }
     }
@@ -129,12 +129,12 @@ void PlaySound(EngineState* engineState, Sound* sound, float volume = 1.0f, bool
 
 }
 
-void soundStart(EngineState* engineState, Input* input, GameMemory* memory)
+void soundStart(Input* input, GameMemory* memory)
 {
 
 }
 
-void soundUpdate(EngineState* engineState, Input* input, GameMemory* memory)
+void soundUpdate(Input* input, GameMemory* memory)
 {
     for (int i = 0; i < memory->SampleCount; i++)
     {
@@ -143,11 +143,11 @@ void soundUpdate(EngineState* engineState, Input* input, GameMemory* memory)
     }
 
     // Sound
-    for (int j = 0; j < ArrayCapacity(engineState->soundChannels); j++)
+    for (int j = 0; j < ArrayCapacity(haven->soundChannels); j++)
     {
         for (int i = 0; i < memory->SampleCount; i++)
         {
-            SoundChannel* channel = engineState->soundChannels[j];
+            SoundChannel* channel = haven->soundChannels[j];
 
             if (!channel->playing)
                 break;

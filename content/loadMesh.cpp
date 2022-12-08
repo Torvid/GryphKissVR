@@ -135,11 +135,11 @@ char* GoToNextLineOrEndOfString(char* text)
     return text;
 }
 
-void LoadObj(EngineState* engineState, Mesh* mesh)
+void LoadObj(Mesh* mesh)
 {
-    ProfilerBeingSample(engineState);
+    ProfilerBeingSample();
     int i = sizeof(Mesh);
-    uint8* moreScratchBuffer = engineState->platformReadFile(engineState->scratchBuffer, mesh->filename);
+    uint8* moreScratchBuffer = haven->platformReadFile(haven->scratchBuffer, mesh->filename);
 
     // Failed to load file, wrong filename?
     Assert(moreScratchBuffer);
@@ -150,7 +150,7 @@ void LoadObj(EngineState* engineState, Mesh* mesh)
     int normalCount = 0;
     int uvCount = 0;
     int indexCount = 0;
-    char* text = (char*)engineState->scratchBuffer;
+    char* text = (char*)haven->scratchBuffer;
     while (*text != 0)
     {
         ObjLineType lineType = ObjClassifyLine(text);
@@ -195,8 +195,8 @@ void LoadObj(EngineState* engineState, Mesh* mesh)
     mesh->vertexCount = indexCount / 3;
     mesh->indexCount = indexCount / 3;
 
-    mesh->vertexes = ArenaPushArray(&engineState->arenaHotreload, mesh->vertexCount, Vertex, mesh->filename);
-    mesh->indexes = ArenaPushArray(&engineState->arenaHotreload, mesh->indexCount, uint32, mesh->filename);
+    mesh->vertexes = ArenaPushArray(&haven->arenaHotreload, mesh->vertexCount, Vertex, mesh->filename);
+    mesh->indexes = ArenaPushArray(&haven->arenaHotreload, mesh->indexCount, uint32, mesh->filename);
 
     for (int i = 0; i < mesh->vertexCount; i++)
     {
@@ -213,9 +213,9 @@ void LoadObj(EngineState* engineState, Mesh* mesh)
         mesh->indexes[i] = i;
     }
 
-    mesh->GLID = engineState->platformGraphicsLoadMesh(mesh);
+    mesh->GLID = haven->platformGraphicsLoadMesh(mesh);
 
-    ProfilerEndSample(engineState, "LoadObj");
+    ProfilerEndSample("LoadObj");
 }
 
 struct MESH_HEADER
@@ -238,21 +238,21 @@ struct BONE_DATA_HEADER
     uint32 frameCount;
 };
 
-void LoadMesh(EngineState* engineState, Mesh* mesh)
+void LoadMesh(Mesh* mesh)
 {
     if (EndsWith(mesh->filename, ".obj"))
     {
-        LoadObj(engineState, mesh);
+        LoadObj(mesh);
         return;
     }
 
     // Push file into the hoterload arena
-    MESH_HEADER* header = (MESH_HEADER*)(engineState->arenaHotreload.base + engineState->arenaHotreload.used);
-    uint8* end = (uint8*)engineState->platformReadFile((uint8*)header, mesh->filename);
+    MESH_HEADER* header = (MESH_HEADER*)(haven->arenaHotreload.base + haven->arenaHotreload.used);
+    uint8* end = (uint8*)haven->platformReadFile((uint8*)header, mesh->filename);
     
     Assert(end, "File not found");
     
-    ArenaPushBytes(&engineState->arenaHotreload, (uint8*)end - (uint8*)header, mesh->filename);
+    ArenaPushBytes(&haven->arenaHotreload, (uint8*)end - (uint8*)header, mesh->filename);
 
     // Crash if we read the wrong file
     Assert(Equals((uint8*)header->magicCookie, (uint8*)"h a v e n - mesh", 16));
@@ -309,27 +309,27 @@ void LoadMesh(EngineState* engineState, Mesh* mesh)
     }
     
     // Upload to GPU
-    mesh->GLID = engineState->platformGraphicsLoadMesh(mesh);
+    mesh->GLID = haven->platformGraphicsLoadMesh(mesh);
 }
 
-Mesh* FileReadMesh(EngineState* engineState, const char* filename)
+Mesh* FileReadMesh(const char* filename)
 {
-    ProfilerBeingSample(engineState);
-    Mesh* mesh = ArrayAddNew(engineState->meshes);
+    ProfilerBeingSample();
+    Mesh* mesh = ArrayAddNew(haven->meshes);
     StringCopy(mesh->filename, filename);
 
-    LoadMesh(engineState, mesh);
+    LoadMesh(mesh);
 
-    ProfilerEndSample(engineState, "LoadMesh");
+    ProfilerEndSample("LoadMesh");
     return mesh;
 }
 
-void UpdateMesh(EngineState* engineState, Mesh* mesh, Vertex* vertexes, int vertexCount, uint32* indexes, int indexCount) // Updates the geometry of a mesh.
+void UpdateMesh(Mesh* mesh, Vertex* vertexes, int vertexCount, uint32* indexes, int indexCount) // Updates the geometry of a mesh.
 {
     mesh->vertexes = vertexes;
     mesh->vertexCount = vertexCount;
     mesh->indexes = indexes;
     mesh->indexCount = indexCount;
     mesh->filename[0] = {};
-    mesh->GLID = engineState->platformGraphicsLoadMesh(mesh);
+    mesh->GLID = haven->platformGraphicsLoadMesh(mesh);
 }

@@ -1,12 +1,12 @@
 #pragma once
 #include "haven.cpp"
 
-char* ShaderReadFile(EngineState* engineState, Shader* shader, char* destination, char* scratchBufferFilesDepth, char* filename, char* pixelShader, bool isPixelShader)
+char* ShaderReadFile(Shader* shader, char* destination, char* scratchBufferFilesDepth, char* filename, char* pixelShader, bool isPixelShader)
 {
     char* fileStep = scratchBufferFilesDepth;
     char* fileStep2 = scratchBufferFilesDepth;
     char* fileStep3 = scratchBufferFilesDepth;
-    scratchBufferFilesDepth = (char*)engineState->platformReadFile((uint8*)scratchBufferFilesDepth, filename);
+    scratchBufferFilesDepth = (char*)haven->platformReadFile((uint8*)scratchBufferFilesDepth, filename);
 
     // Scan through the whole file and remove all line continuation
     //while (*fileStep2 != 0)
@@ -55,7 +55,7 @@ char* ShaderReadFile(EngineState* engineState, Shader* shader, char* destination
             StringAppendMax(name, a, idx);
             if (EndsWith(name, ".shaderinc"))
             {
-                destination = ShaderReadFile(engineState, shader, destination, scratchBufferFilesDepth, name, pixelShader, isPixelShader);
+                destination = ShaderReadFile(shader, destination, scratchBufferFilesDepth, name, pixelShader, isPixelShader);
             }
         }
         else if (StartsWithIngoreWhitespace(fileStep, "#define Parameters"))
@@ -92,7 +92,7 @@ char* ShaderReadFile(EngineState* engineState, Shader* shader, char* destination
 }
 
 // Print the string peacemeal because android is trash.
-void print_fuck_android(EngineState* memory, char* string)
+void print_fuck_android(char* string)
 {
     bool printing = true;
     int j = 0;
@@ -110,24 +110,24 @@ void print_fuck_android(EngineState* memory, char* string)
             j++;
         }
         text[999] = 0;
-        memory->platformPrint(text);
+        haven->platformPrint(text);
     }
 }
 
-void LoadShader(EngineState* memory, Shader* shader)
+void LoadShader(Shader* shader)
 {
-    char* scratchBuffer = (char*)(memory->scratchBuffer);
+    char* scratchBuffer = (char*)(haven->scratchBuffer);
 
-    char* pixelShader  = (char*)ArenaPushBytes(&memory->arenaHotreload, Kilobytes(25), shader->filename, true);
-    char* vertexShader = (char*)ArenaPushBytes(&memory->arenaHotreload, Kilobytes(25), shader->filename, true);
+    char* pixelShader  = (char*)ArenaPushBytes(&haven->arenaHotreload, Kilobytes(25), shader->filename, true);
+    char* vertexShader = (char*)ArenaPushBytes(&haven->arenaHotreload, Kilobytes(25), shader->filename, true);
     
     const char* pixelAppend = "#version 320 es\n#define pixelShader 1\n#define Cpp 0\n";
     const char* vertexAppend = "#version 320 es\n#define vertexShader 1\n#define Cpp 0\n";
     pixelShader = StringAppend(pixelShader, pixelAppend);
     vertexShader = StringAppend(vertexShader, vertexAppend);
 
-    ShaderReadFile(memory, shader, pixelShader  + StringLength(pixelAppend), scratchBuffer, shader->filename, pixelShader, true);
-    ShaderReadFile(memory, shader, vertexShader + StringLength(vertexAppend), scratchBuffer, shader->filename, vertexShader, false);
+    ShaderReadFile(shader, pixelShader  + StringLength(pixelAppend), scratchBuffer, shader->filename, pixelShader, true);
+    ShaderReadFile(shader, vertexShader + StringLength(vertexAppend), scratchBuffer, shader->filename, vertexShader, false);
     
     int pixelShaderLength = StringLength(pixelShader);
     int vertexShaderLength = StringLength(vertexShader);
@@ -140,19 +140,19 @@ void LoadShader(EngineState* memory, Shader* shader)
     shader->pixelShaderText = pixelShader;
     shader->vertexShaderText = vertexShader;
 }
-Shader* FileReadShader(EngineState* engineState, const char* filename)
+Shader* FileReadShader(const char* filename)
 {
     //Shader* shader = &memory->shaders[ArrayCount(memory->shaders)];
     //ArrayCount(memory->shaders)++;
     //Assert(IsInArray(memory->shaders, ArrayCount(memory->shaders) - 1), "Array is out of capacity.");
     //memory->shaders[ArrayCount(memory->shaders) - 1] = {};
 
-    ProfilerBeingSample(engineState);
-    Shader* shader = ArrayAddNew(engineState->shaders);
+    ProfilerBeingSample();
+    Shader* shader = ArrayAddNew(haven->shaders);
 
     StringCopy(shader->filename, filename);
-    LoadShader(engineState, shader);
-    ProfilerEndSample(engineState, "LoadShader");
+    LoadShader(shader);
+    ProfilerEndSample("LoadShader");
     return shader;
 }
 

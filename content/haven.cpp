@@ -61,8 +61,8 @@ MakeEnum(EntityType, EntityTypeTable);
 struct Entity;
 struct EngineState;
 
-typedef void EntityStart(EngineState* engineState, Entity* entity, Input* input);
-typedef void EntityUpdate(EngineState* engineState, Entity* entity, Input* input);
+typedef void EntityStart(Entity* entity, Input* input);
+typedef void EntityUpdate(Entity* entity, Input* input);
 
 #define EntityContents \
     EntityStart* entityStart; \
@@ -109,11 +109,11 @@ struct LightDirectional
     float radius;
 };
 
-#define Instantiate(engineState, type) (type*)(engineState->arenaScene.base + engineState->arenaScene.used); \
-    ArenaPushStruct(&engineState->arenaScene, type, "");
+#define Instantiate(type) (type*)(haven->arenaScene.base + haven->arenaScene.used); \
+    ArenaPushStruct(&haven->arenaScene, type, "");
 
-#define Instantiate(engineState, type, transform) (type*)(engineState->arenaScene.base + engineState->arenaScene.used); \
-    type* t = ArenaPushStruct(&engineState->arenaScene, type, "") \
+#define Instantiate(type, transform) (type*)(haven->arenaScene.base + haven->arenaScene.used); \
+    type* t = ArenaPushStruct(&haven->arenaScene, type, "") \
     t->transform = transform;
 
 struct Assets
@@ -207,7 +207,7 @@ struct EngineState
     
     Assets assets;
 };
-static EngineState* globalEngineState;
+static EngineState* haven;
 static GameMemory* globalGameMemory;
 
 #include "ui.cpp"
@@ -230,23 +230,23 @@ static GameMemory* globalGameMemory;
 #include "unlit.shader"
 
 
-void LoadAssets(GameMemory* memory, EngineState* engineState, Assets* assets)
+void LoadAssets(Assets* assets)
 {
-#define assetRegistryLoad(function, type, name, filename) assets->name = function(engineState, filename)
-#define assetRegistryLoadShader(function, type, name, filename) assets->name = function(engineState, filename); SetupShader_##name(assets->name); assets->name->GLID = memory->platformGraphicsLoadShader(assets->name)
+#define assetRegistryLoad(function, type, name, filename) assets->name = function(filename)
+#define assetRegistryLoadShader(function, type, name, filename) assets->name = function(filename); SetupShader_##name(assets->name); assets->name->GLID = haven->platformGraphicsLoadShader(assets->name)
 #include "assetRegistry.cpp"
 #undef assetRegistryLoadShader
 #undef assetRegistryLoad
 }
 
-#define CreateMaterialGlobal(engineState, name, _shader, type) \
-    name = (type*)ArenaPushStruct(&engineState->arenaGlobalDrawCommands, type, ""); \
+#define CreateMaterialGlobal(name, _shader, type) \
+    name = (type*)ArenaPushStruct(&haven->arenaGlobalDrawCommands, type, ""); \
     name->shader = (_shader);\
     name->BackFaceCulling = true;\
     name->Wireframe = false;\
     SetShaderDefaults(name);\
 
-// mouseCursorCommand2, engineState->UIShader, Material_UI
+// mouseCursorCommand2, haven->UIShader, Material_UI
 #define CreateMaterialLocal(name, _shader, type) \
     type name##Data = {};\
     type* name = &name##Data;\
@@ -257,33 +257,33 @@ void LoadAssets(GameMemory* memory, EngineState* engineState, Assets* assets)
     SetShaderDefaults(name);\
 
 
-void DrawClear(EngineState* memory, float3 color = {0,0,0})
+void DrawClear(float3 color = {0,0,0})
 {
-    RenderCommand* result = ArrayAddNew(memory->renderCommands);
+    RenderCommand* result = ArrayAddNew(haven->renderCommands);
     result->type = RenderCommand_Clear;
     result->clearColor = { color.x, color.y, color.z, 1 };
     result->clearColorEnabled = true;
     result->clearDepthEnabled = true;
 }
 
-void DrawClearDepth(EngineState* memory)
+void DrawClearDepth()
 {
-    RenderCommand* result = ArrayAddNew(memory->renderCommands);
+    RenderCommand* result = ArrayAddNew(haven->renderCommands);
     result->type = RenderCommand_Clear;
     //result->clearColor = clearColor;
     result->clearColorEnabled = false;
     result->clearDepthEnabled = true;
 }
-void DrawClearColor(EngineState* memory, float3 color = { 0,0,0 })
+void DrawClearColor(float3 color = { 0,0,0 })
 {
-    RenderCommand* result = ArrayAddNew(memory->renderCommands);
+    RenderCommand* result = ArrayAddNew(haven->renderCommands);
     result->type = RenderCommand_Clear;
     result->clearColor = { color.x, color.y, color.z, 1 };
     result->clearColorEnabled = true;
     result->clearDepthEnabled = false;
 }
 
-void SetRenderTarget(EngineState* memory, Texture* target)
+void SetRenderTarget(Texture* target)
 {
     RenderCommand result = {};
     if (target == 0)
@@ -308,31 +308,31 @@ void SetRenderTarget(EngineState* memory, Texture* target)
 
     result.type = RenderCommand_SetRenderTarget;
     result.framebufferTarget = target;
-    ArrayAdd(memory->renderCommands, result);
+    ArrayAdd(haven->renderCommands, result);
 }
 
 Texture* CreateFramebufferTarget(EngineState* engineState)
 {
-    Texture* result = ArrayAddNew(engineState->textures);
+    Texture* result = ArrayAddNew(haven->textures);
     result->isFramebufferTarget = true;
-    engineState->platformGraphicsCreateFramebufferTarget(result);
+    haven->platformGraphicsCreateFramebufferTarget(result);
     return result;
 }
 
-Texture* CreateTextureTarget(EngineState* engineState, int sizeX, int sizeY)
+Texture* CreateTextureTarget(int sizeX, int sizeY)
 {
-    Texture* result = ArrayAddNew(engineState->textures);
+    Texture* result = ArrayAddNew(haven->textures);
     result->isTextureTarget = true;
     result->width = sizeX;
     result->height = sizeY;
-    engineState->platformGraphicsCreateTextureTarget(result);
+    haven->platformGraphicsCreateTextureTarget(result);
     return result;
 }
 
-void printTransform(EngineState* engineState, Transform t2)
+void printTransform(Transform t2)
 {
-    engineState->printf("pos  : (%.2f, %.2f, %.2f)\n", t2.position.x, t2.position.y, t2.position.z);
-    engineState->printf("right  : (%.2f, %.2f, %.2f)\nforward: (%.2f, %.2f, %.2f)\nup     : (%.2f, %.2f, %.2f)\n",
+    haven->printf("pos  : (%.2f, %.2f, %.2f)\n", t2.position.x, t2.position.y, t2.position.z);
+    haven->printf("right  : (%.2f, %.2f, %.2f)\nforward: (%.2f, %.2f, %.2f)\nup     : (%.2f, %.2f, %.2f)\n",
         t2.right.x, t2.right.y, t2.right.z,
         t2.forward.x, t2.forward.y, t2.forward.z,
         t2.up.x, t2.up.y, t2.up.z);
@@ -371,170 +371,165 @@ void printTransform(EngineState* engineState, Transform t2)
 
 void engineProfilerBeingSample()
 {
-    if (!globalEngineState)
+    if (!haven)
         return;
-    ProfilerBeingSample(globalEngineState);
+    ProfilerBeingSample();
 }
 void engineProfilerEndSample(char* name)
 {
-    if (!globalEngineState)
+    if (!haven)
         return;
-    ProfilerEndSample(globalEngineState, name);
+    ProfilerEndSample(name);
 }
 
-extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
+extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory)
 {
-    globalMemset = memory->memset;
-    globalMemcpy = memory->memcpy;
-    memory->engineProfilerBeingSample = &engineProfilerBeingSample;
-    memory->engineProfilerEndSample = &engineProfilerEndSample;
+    EngineState* engineState = (EngineState*)(&(gameMemory->memory));
+    haven = engineState;
+    globalGameMemory = gameMemory;
 
-    EngineState* engineState = (EngineState*)(&(memory->memory));
+    globalMemset = gameMemory->memset;
+    globalMemcpy = gameMemory->memcpy;
+    gameMemory->engineProfilerBeingSample = &engineProfilerBeingSample;
+    gameMemory->engineProfilerEndSample = &engineProfilerEndSample;
+
     // Set global variables!
-    globalEngineState = engineState;
-    assets = &engineState->assets;
+    assets = &haven->assets;
 
-    engineState->timeStart = memory->platformTime();
-    engineState->externalTime = ((engineState->timeStart - engineState->timeEnd) * 100) / 1000;
-    if (memory->initialized)
+    haven->timeStart = gameMemory->platformTime();
+    haven->externalTime = ((haven->timeStart - haven->timeEnd) * 100) / 1000;
+    if (gameMemory->initialized)
     {
-        ProfilerStart(engineState);
-        ProfilerBeingSample(engineState);
+        ProfilerStart();
+        ProfilerBeingSample();
     }
 
-    engineState->Resolution = memory->Resolution;
+    haven->Resolution = haven->Resolution;
 
-    ArrayClear(engineState->renderCommands);
-    ArenaReset(&engineState->arenaDrawCommands);
-    Input* input = &memory->input;
+    ArrayClear(haven->renderCommands);
+    ArenaReset(&haven->arenaDrawCommands);
+    Input* input = &gameMemory->input;
 
     // hit space = smash game memory to 0 = restart game
     if (input->spaceDown)
     {
-        memory->initialized = false;
-        StructClear(engineState);
+        gameMemory->initialized = false;
+        StructClear(haven);
     }
-
-    if (memory->reloadNow)
+    
+    if (gameMemory->reloadNow)
     {
-        ProfilerBeingSample(engineState);
-        memory->reloadNow = false;
-        ArenaReset(&engineState->arenaHotreload);
-        engineState->coutner++;
+        ProfilerBeingSample();
+        gameMemory->reloadNow = false;
+        ArenaReset(&haven->arenaHotreload);
+        haven->coutner++;
 
-        ArrayClear(engineState->textures);
-        ArrayClear(engineState->meshes);
-        ArrayClear(engineState->shaders);
-        ArrayClear(engineState->sounds);
-        ArrayClear(engineState->animations);
+        ArrayClear(haven->textures);
+        ArrayClear(haven->meshes);
+        ArrayClear(haven->shaders);
+        ArrayClear(haven->sounds);
+        ArrayClear(haven->animations);
 
-        //ProfilerBeingSample(engineState);
-        LoadAssets(memory, engineState, &engineState->assets);
-        //ProfilerEndSample(engineState, "LoadAssets");
-        ProfilerEndSample(engineState, "Hotreload");
-
-        //int64 start = engineState->platformTime();
-
-        //int64 delta = engineState->platformTime() - start;
-        //float deltaf = delta / 10000000.0f;
-        //deltaf = 0;
+        LoadAssets(&haven->assets);
+        ProfilerEndSample("Hotreload");
     }
+
     bool firstFrame = false;
-    if (!memory->initialized)
+    if (!gameMemory->initialized)
     {
         firstFrame = true;
-        engineState->coutner = 0;
-        memory->initialized = true;
+        haven->coutner = 0;
+        gameMemory->initialized = true;
 
-        ArenaInitialize(&engineState->arenasArena, sizeof(engineState->arenasArenaData), engineState->arenasArenaData);
+        ArenaInitialize(&haven->arenasArena, sizeof(haven->arenasArenaData), haven->arenasArenaData);
 
-        ArenaInitialize(&engineState->arenaHotreload,           Megabytes(512), (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(512),   "Hotreload",            true), "Hotreload");
-        ArenaInitialize(&engineState->arenaDrawCommands,        Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Draw Commands",        true), "Draw Commands");
-        ArenaInitialize(&engineState->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Global Draw Commands", true), "Global Draw Commands");
-        ArenaInitialize(&engineState->arenaEngineState,         Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Engine State",         true), "Engine State");
-        ArenaInitialize(&engineState->arenaScene,               Megabytes(64),  (uint8*)ArenaPushBytes(&engineState->arenasArena, Megabytes(64),    "Scene",                true), "Scene");
+        ArenaInitialize(&haven->arenaHotreload,           Megabytes(512), (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(512),   "Hotreload",            true), "Hotreload");
+        ArenaInitialize(&haven->arenaDrawCommands,        Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Draw Commands",        true), "Draw Commands");
+        ArenaInitialize(&haven->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Global Draw Commands", true), "Global Draw Commands");
+        ArenaInitialize(&haven->arenaEngineState,         Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Engine State",         true), "Engine State");
+        ArenaInitialize(&haven->arenaScene,               Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Scene",                true), "Scene");
         
 
-        engineState->profilingData = ArenaPushStruct(&engineState->arenaEngineState, ProfilingData, "Profiling Data");
-        engineState->uiMeshData = ArenaPushStruct(&engineState->arenaEngineState, UIMeshData, "UI Mesh Data");
+        haven->profilingData = ArenaPushStruct(&haven->arenaEngineState, ProfilingData, "Profiling Data");
+        haven->uiMeshData = ArenaPushStruct(&haven->arenaEngineState, UIMeshData, "UI Mesh Data");
 
-        for (int i = 0; i < ArrayCapacity(engineState->soundChannels); i++)
+        for (int i = 0; i < ArrayCapacity(haven->soundChannels); i++)
         {
-            engineState->soundChannels[i] = ArenaPushStruct(&engineState->arenaEngineState, SoundChannel, "Sound Channel");
+            haven->soundChannels[i] = ArenaPushStruct(&haven->arenaEngineState, SoundChannel, "Sound Channel");
         }
 
-        engineState->platformPrint = memory->platformPrint;
-        engineState->printf = memory->printf;
-        engineState->sprintf = memory->sprintf;
-        engineState->memset = memory->memset;
-        engineState->platformTime = memory->platformTime;
-        engineState->platformReadFile = memory->platformReadFile;
-        engineState->platformWriteFile = memory->platformWriteFile;
-        engineState->platformGraphicsLoadTexture = memory->platformGraphicsLoadTexture;
-        engineState->platformGraphicsLoadMesh = memory->platformGraphicsLoadMesh;
-        engineState->platformGraphicsLoadShader = memory->platformGraphicsLoadShader;
-        engineState->platformGraphicsCreateFramebufferTarget = memory->platformGraphicsCreateFramebufferTarget;
-        engineState->platformGraphicsCreateTextureTarget = memory->platformGraphicsCreateTextureTarget;
+        haven->platformPrint = gameMemory->platformPrint;
+        haven->printf = gameMemory->printf;
+        haven->sprintf = gameMemory->sprintf;
+        haven->memset = gameMemory->memset;
+        haven->platformTime = gameMemory->platformTime;
+        haven->platformReadFile = gameMemory->platformReadFile;
+        haven->platformWriteFile = gameMemory->platformWriteFile;
+        haven->platformGraphicsLoadTexture = gameMemory->platformGraphicsLoadTexture;
+        haven->platformGraphicsLoadMesh = gameMemory->platformGraphicsLoadMesh;
+        haven->platformGraphicsLoadShader = gameMemory->platformGraphicsLoadShader;
+        haven->platformGraphicsCreateFramebufferTarget = gameMemory->platformGraphicsCreateFramebufferTarget;
+        haven->platformGraphicsCreateTextureTarget = gameMemory->platformGraphicsCreateTextureTarget;
 
-        memory->renderCommands = engineState->renderCommands;
+        gameMemory->renderCommands = haven->renderCommands;
 
-        LoadAssets(memory, engineState, &engineState->assets);
-        memory->missingTexture = assets->missingTexture;
-        memory->missingMesh = assets->missingMesh;
-
-
-        CreateMaterialGlobal(engineState, engineState->axesMaterial, assets->unlit,  Material_unlit);
-        engineState->axesMaterial->ColorTexture = assets->texAxes;
-        engineState->axesMaterial->Color = float3(1, 1, 1);
-        engineState->axesMaterial->BackFaceCulling = true;
-
-        CreateMaterialGlobal(engineState, engineState->boneMaterial, assets->unlit, Material_unlit);
-        engineState->boneMaterial->shader = assets->unlit;
-        engineState->boneMaterial->ColorTexture = assets->white;
-        engineState->boneMaterial->Color = float3(38.0f / 255.0f, 0, 67.0f / 255.0f);
-
-        engineState->boneMaterial->Wireframe = true;
-        engineState->boneMaterial->BackFaceCulling = false;
+        LoadAssets(&haven->assets);
+        gameMemory->missingTexture = assets->missingTexture;
+        gameMemory->missingMesh = assets->missingMesh;
 
 
-        engineState->SwapBuffer = CreateFramebufferTarget(engineState);
-        engineState->waterRipples0 = CreateTextureTarget(engineState, 16, 16);
-        engineState->waterRipples1 = CreateTextureTarget(engineState, 16, 16);
+        CreateMaterialGlobal(haven->axesMaterial, assets->unlit,  Material_unlit);
+        haven->axesMaterial->ColorTexture = assets->texAxes;
+        haven->axesMaterial->Color = float3(1, 1, 1);
+        haven->axesMaterial->BackFaceCulling = true;
 
-        engineState->stringMesh = ArrayAddNew(engineState->meshes);
+        CreateMaterialGlobal(haven->boneMaterial, assets->unlit, Material_unlit);
+        haven->boneMaterial->shader = assets->unlit;
+        haven->boneMaterial->ColorTexture = assets->white;
+        haven->boneMaterial->Color = float3(38.0f / 255.0f, 0, 67.0f / 255.0f);
 
-        engineState->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
+        haven->boneMaterial->Wireframe = true;
+        haven->boneMaterial->BackFaceCulling = false;
 
 
-        soundStart(engineState, input, memory);
+        haven->SwapBuffer = CreateFramebufferTarget(engineState);
+        haven->waterRipples0 = CreateTextureTarget(16, 16);
+        haven->waterRipples1 = CreateTextureTarget(16, 16);
 
-        editorStart(engineState, input);
+        haven->stringMesh = ArrayAddNew(haven->meshes);
+
+        haven->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
+
+
+        soundStart(input, gameMemory);
+
+        editorStart(input);
         
-        gryphkissStart(engineState, input);
+        gryphkissStart(input);
 
-        profilerStart(engineState, input);
+        profilerStart(input);
 
 
-        CreateMaterialGlobal(engineState, engineState->red, assets->unlit, Material_unlit);
-        engineState->red->ColorTexture = assets->white;
-        engineState->red->Color = float3(1, 0, 0);
-        engineState->red->BackFaceCulling = true;
+        CreateMaterialGlobal(haven->red, assets->unlit, Material_unlit);
+        haven->red->ColorTexture = assets->white;
+        haven->red->Color = float3(1, 0, 0);
+        haven->red->BackFaceCulling = true;
 
-        CreateMaterialGlobal(engineState, engineState->green, assets->unlit, Material_unlit);
-        engineState->green->ColorTexture = assets->white;
-        engineState->green->Color = float3(0, 1, 0);
-        engineState->green->BackFaceCulling = true;
+        CreateMaterialGlobal(haven->green, assets->unlit, Material_unlit);
+        haven->green->ColorTexture = assets->white;
+        haven->green->Color = float3(0, 1, 0);
+        haven->green->BackFaceCulling = true;
 
-        CreateMaterialGlobal(engineState, engineState->blue, assets->unlit, Material_unlit);
-        engineState->blue->ColorTexture = assets->white;
-        engineState->blue->Color = float3(0, 0, 1);
-        engineState->blue->BackFaceCulling = true;
+        CreateMaterialGlobal(haven->blue, assets->unlit, Material_unlit);
+        haven->blue->ColorTexture = assets->white;
+        haven->blue->Color = float3(0, 0, 1);
+        haven->blue->BackFaceCulling = true;
 
         return;
     }
 
 
-    soundUpdate(engineState, input, memory);
+    soundUpdate(input, gameMemory);
 
     input->head = input->eyeLeft;
     input->head.position = float3(0, 0, 0);
@@ -544,49 +539,49 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
 
     if (input->mouseLeftDown || input->faceButtonRight || firstFrame)
     {
-        engineState->waterRipplesPrevious = engineState->waterRipples0;
-        engineState->waterRipplesCurrent = engineState->waterRipples1;
+        haven->waterRipplesPrevious = haven->waterRipples0;
+        haven->waterRipplesCurrent = haven->waterRipples1;
 
         // setup
-        SetRenderTarget(engineState, engineState->waterRipplesPrevious);
-        DrawClear(engineState);
+        SetRenderTarget(haven->waterRipplesPrevious);
+        DrawClear();
 
         CreateMaterialLocal(copyTexture, assets->textureCopyShader, Material_textureCopyShader);
         copyTexture->mesh = assets->ui_quad;
         copyTexture->ColorTexture = assets->coal;
-        DrawMesh(engineState, copyTexture);
+        DrawMesh(copyTexture);
 
 
-        SetRenderTarget(engineState, engineState->waterRipplesCurrent);
-        DrawClear(engineState);
+        SetRenderTarget(haven->waterRipplesCurrent);
+        DrawClear();
 
         copyTexture->ColorTexture = assets->coal;
-        DrawMesh(engineState, copyTexture);
+        DrawMesh(copyTexture);
     }
 
     // draw
-    SetRenderTarget(engineState, engineState->waterRipplesCurrent);
-    DrawClear(engineState);
+    SetRenderTarget(haven->waterRipplesCurrent);
+    DrawClear();
 
     CreateMaterialLocal(rippleSim, assets->rippleSimShader, Material_rippleSimShader);
     rippleSim->mesh = assets->ui_quad;
-    rippleSim->TexPrevious = engineState->waterRipplesPrevious;
-    rippleSim->mousePos = input->mousePos / engineState->Resolution;
-    DrawMesh(engineState, rippleSim);
+    rippleSim->TexPrevious = haven->waterRipplesPrevious;
+    rippleSim->mousePos = input->mousePos / haven->Resolution;
+    DrawMesh(rippleSim);
 
     // swap
     Texture* temp;
-    temp = engineState->waterRipplesPrevious;
-    engineState->waterRipplesPrevious = engineState->waterRipplesCurrent;
-    engineState->waterRipplesCurrent = temp;
+    temp = haven->waterRipplesPrevious;
+    haven->waterRipplesPrevious = haven->waterRipplesCurrent;
+    haven->waterRipplesCurrent = temp;
 
-    SetRenderTarget(engineState, engineState->SwapBuffer);
-    DrawClear(engineState, float3(0.5, 0, 0));
+    SetRenderTarget(haven->SwapBuffer);
+    DrawClear(float3(0.5, 0, 0));
 
 
 
     float2 pos = float2(0, 0);
-    engineState->uiPos = float2(0, 0);
+    haven->uiPos = float2(0, 0);
     
 
     input->vibrationAmplitudeRight = input->grabRight;
@@ -610,28 +605,28 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     // Simulation plane
     Transform identity = Transform(vectorDown * 2.0, vectorForward, vectorUp, vectorOne);
     CreateMaterialLocal(waterPlane, assets->unlit, Material_unlit);
-    waterPlane->ColorTexture = engineState->waterRipplesCurrent;
+    waterPlane->ColorTexture = haven->waterRipplesCurrent;
     waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
     waterPlane->mesh = assets->ui_quad;
     waterPlane->BackFaceCulling = true;
     waterPlane->transform = identity;
-    DrawMesh(engineState, waterPlane, assets->ui_quad, transform(center));
+    DrawMesh(waterPlane, assets->ui_quad, transform(center));
 
-    DrawText(engineState, "G: toggle editor");
-    DrawText(engineState, "P: toggle profiling");
-    editorUpdate(engineState, input);
-    memory->spectatorCamera = engineState->spectatorCamera;
+    DrawText("G: toggle editor");
+    DrawText("P: toggle profiling");
+    editorUpdate(input);
+    gameMemory->spectatorCamera = haven->spectatorCamera;
 
-    profilerUpdate(engineState, input);
-    gryphkissUpdate(engineState, input);
+    profilerUpdate(input);
+    gryphkissUpdate(input);
 
     if (input->faceButtonLeftDown || input->faceButtonRightDown || input->gDown)
     {
-        engineState->editor = !engineState->editor;
+        haven->editor = !haven->editor;
     }
     if (input->faceButtonLeftDown || input->faceButtonRightDown || input->pDown)
     {
-        engineState->profiling = !engineState->profiling;
+        haven->profiling = !haven->profiling;
     }
 
 
@@ -645,20 +640,20 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     mouseCursorCommand->DisableDepthTest = true;
 
     // Draw UI
-    engineState->textTransform = input->head;
-    engineState->textTransform.position += engineState->textTransform.forward * 3;
-    engineState->textTransform.position += engineState->textTransform.up * 0.25;
-    engineState->textTransform.position += engineState->textTransform.right * -0.25;
+    haven->textTransform = input->head;
+    haven->textTransform.position += haven->textTransform.forward * 3;
+    haven->textTransform.position += haven->textTransform.up * 0.25;
+    haven->textTransform.position += haven->textTransform.right * -0.25;
 
     // Draw the UI
-    UpdateMesh(engineState, engineState->stringMesh,
-        engineState->uiMeshData->vertexes,
-        engineState->uiMeshData->quadCount * 4, 
-        engineState->uiMeshData->indexes, 
-        engineState->uiMeshData->quadCount * 6);
+    UpdateMesh(haven->stringMesh,
+        haven->uiMeshData->vertexes,
+        haven->uiMeshData->quadCount * 4, 
+        haven->uiMeshData->indexes, 
+        haven->uiMeshData->quadCount * 6);
 
     CreateMaterialLocal(uiCommand, assets->UIShader, Material_UIShader);
-    uiCommand->mesh = engineState->stringMesh;
+    uiCommand->mesh = haven->stringMesh;
     uiCommand->transform = transformIdentity;
     uiCommand->BackFaceCulling = false;
     //command->Wireframe = false;
@@ -666,38 +661,38 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* memory)
     uiCommand->blendMode = BlendMode_Alpha;
     uiCommand->FontTexture = assets->font;
 
-    uiCommand->VRCameraPosition = engineState->textTransform.position;
-    uiCommand->VRCameraForward = engineState->textTransform.forward;
-    uiCommand->VRCameraUp = engineState->textTransform.up;
-    uiCommand->VRCameraRight = engineState->textTransform.right;
+    uiCommand->VRCameraPosition = haven->textTransform.position;
+    uiCommand->VRCameraForward = haven->textTransform.forward;
+    uiCommand->VRCameraUp = haven->textTransform.up;
+    uiCommand->VRCameraRight = haven->textTransform.right;
 
-    uiCommand->SpectatorCameraPosition = engineState->spectatorCamera.position;
-    uiCommand->SpectatorCameraForward = engineState->spectatorCamera.forward;
-    uiCommand->SpectatorCameraUp = engineState->spectatorCamera.up;
-    uiCommand->SpectatorCameraRight = engineState->spectatorCamera.right;
+    uiCommand->SpectatorCameraPosition = haven->spectatorCamera.position;
+    uiCommand->SpectatorCameraForward = haven->spectatorCamera.forward;
+    uiCommand->SpectatorCameraUp = haven->spectatorCamera.up;
+    uiCommand->SpectatorCameraRight = haven->spectatorCamera.right;
 
     // Clear depth so UI is drawn on top.
-    DrawMesh(engineState, uiCommand, false);
-    engineState->uiMeshData->quadCount = 0;
+    DrawMesh(uiCommand, false);
+    haven->uiMeshData->quadCount = 0;
 
-    ProfilerEndSample(engineState, "GryphKissVR");
+    ProfilerEndSample("GryphKissVR");
     
     ProfilerEnd(engineState);
-    engineState->timeEnd = engineState->platformTime();
-    engineState->internalTime = ((engineState->timeEnd - engineState->timeStart) * 100) / 1000;
+    haven->timeEnd = haven->platformTime();
+    haven->internalTime = ((haven->timeEnd - haven->timeStart) * 100) / 1000;
 
-    SetRenderTarget(engineState, 0);
-    DrawClear(engineState);
+    SetRenderTarget(0);
+    DrawClear();
 
     CreateMaterialLocal(finalOutputCommand, assets->postProcessTest, Material_postProcessTest);
     finalOutputCommand->mesh = assets->ui_quad;
 
-    finalOutputCommand->ColorTexture = engineState->SwapBuffer;
-    finalOutputCommand->TexRipples = engineState->waterRipplesCurrent;
+    finalOutputCommand->ColorTexture = haven->SwapBuffer;
+    finalOutputCommand->TexRipples = haven->waterRipplesCurrent;
 
-    DrawMesh(engineState, finalOutputCommand);
+    DrawMesh(finalOutputCommand);
 
-    memory->renderCommands_count = engineState->renderCommands_count;
+    gameMemory->renderCommands_count = haven->renderCommands_count;
 }
 
 #endif

@@ -76,32 +76,32 @@ struct ShaderStructName
     };
 };
 
-void DrawMesh(EngineState* engineState, ShaderStructName* command, bool profile = true)
+void DrawMesh(ShaderStructName* command, bool profile = true)
 {
     ShaderStructName* temp;
     //if (text)
-    //    temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawTextCommands, ShaderStructName, command->mesh->filename);
+    //    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawTextCommands, ShaderStructName, command->mesh->filename);
     //else
-    temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawCommands, ShaderStructName, command->mesh->filename);
+    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawCommands, ShaderStructName, command->mesh->filename);
     *temp = *command;
 
     Parameters(SetStructPointer);
     temp->parameters = &temp->shaderParameters[0];
 
-    RenderCommand* result = ArrayAddNew(engineState->renderCommands);
-    result->index = ArrayCount(engineState->renderCommands);
+    RenderCommand* result = ArrayAddNew(haven->renderCommands);
+    result->index = ArrayCount(haven->renderCommands);
     result->type = RenderCommand_DrawMesh;
     result->profile = profile;
     result->material = &temp->mat;
 }
 
-void DrawMesh(EngineState* engineState, ShaderStructName* command, Mesh* mesh, Transform transform, bool profile = true)
+void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, bool profile = true)
 {
     ShaderStructName* temp;
     //if (text)
-    //    temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawTextCommands, ShaderStructName, mesh->filename);
+    //    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawTextCommands, ShaderStructName, mesh->filename);
     //else
-    temp = (ShaderStructName*)ArenaPushStruct(&engineState->arenaDrawCommands, ShaderStructName, mesh->filename);
+    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawCommands, ShaderStructName, mesh->filename);
     *temp = *command;
 
     Parameters(SetStructPointer)
@@ -113,8 +113,8 @@ void DrawMesh(EngineState* engineState, ShaderStructName* command, Mesh* mesh, T
         temp->boneTransforms = &temp->shaderBoneTransforms[0];
     }
     temp->transform = transform;
-    RenderCommand* result = ArrayAddNew(engineState->renderCommands);
-    result->index = ArrayCount(engineState->renderCommands);
+    RenderCommand* result = ArrayAddNew(haven->renderCommands);
+    result->index = ArrayCount(haven->renderCommands);
     result->type = RenderCommand_DrawMesh;
     result->profile = profile;
     result->material = &temp->mat;
