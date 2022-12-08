@@ -225,7 +225,7 @@ float2 GetTextSize(char* text)
 }
 
 
-bool DrawToggle(Input* input, char* text, float2* position, bool value)
+bool DrawToggle(char* text, float2* position, bool value)
 {
     char wat[100] = "[";
     StringAppend(wat, text);
@@ -249,12 +249,12 @@ bool DrawToggle(Input* input, char* text, float2* position, bool value)
 
     return value;
 }
-bool DrawToggle(Input* input, char* text, bool value)
+bool DrawToggle(char* text, bool value)
 {
-    return DrawToggle(input, text, &haven->uiPos, value);
+    return DrawToggle(text, &haven->uiPos, value);
 }
 
-bool DrawButton(Input* input, char* text, float2* position)
+bool DrawButton(char* text, float2* position)
 {
     char wat[100] = "[";
     StringAppend(wat, text);
@@ -277,9 +277,9 @@ bool DrawButton(Input* input, char* text, float2* position)
 
     return false;
 }
-bool DrawButton(Input* input, char* text)
+bool DrawButton(char* text)
 {
-    return DrawButton(input, text, &haven->uiPos);
+    return DrawButton(text, &haven->uiPos);
 }
 
 void DrawBox2D(float2 position, float2 size, float3 color = { 1, 1, 1 }, float opacity = 1)

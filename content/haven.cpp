@@ -61,8 +61,8 @@ MakeEnum(EntityType, EntityTypeTable);
 struct Entity;
 struct EngineState;
 
-typedef void EntityStart(Entity* entity, Input* input);
-typedef void EntityUpdate(Entity* entity, Input* input);
+typedef void EntityStart(Entity* entity);
+typedef void EntityUpdate(Entity* entity);
 
 #define EntityContents \
     EntityStart* entityStart; \
@@ -132,8 +132,6 @@ struct EngineState
     PlatformPrint* platformPrint;
     Printf* printf;
     sPrintf* sprintf;
-    Memset* memset;
-    Memcpy* memcpy;
     PlatformTime* platformTime;
     PlatformReadFile* platformReadFile;
     PlatformWriteFile* platformWriteFile;
@@ -208,6 +206,8 @@ struct EngineState
     Assets assets;
 };
 static EngineState* haven;
+static Input* input;
+
 static GameMemory* globalGameMemory;
 
 #include "ui.cpp"
@@ -408,7 +408,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
     ArrayClear(haven->renderCommands);
     ArenaReset(&haven->arenaDrawCommands);
-    Input* input = &gameMemory->input;
+    input = &gameMemory->input;
 
     // hit space = smash game memory to 0 = restart game
     if (input->spaceDown)
@@ -501,13 +501,13 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         haven->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
 
 
-        soundStart(input, gameMemory);
+        soundStart(gameMemory);
 
-        editorStart(input);
+        editorStart();
         
-        gryphkissStart(input);
+        gryphkissStart();
 
-        profilerStart(input);
+        profilerStart();
 
 
         CreateMaterialGlobal(haven->red, assets->unlit, Material_unlit);
@@ -529,7 +529,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     }
 
 
-    soundUpdate(input, gameMemory);
+    soundUpdate(gameMemory);
 
     input->head = input->eyeLeft;
     input->head.position = float3(0, 0, 0);
@@ -614,11 +614,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
     DrawText("G: toggle editor");
     DrawText("P: toggle profiling");
-    editorUpdate(input);
+    editorUpdate();
     gameMemory->spectatorCamera = haven->spectatorCamera;
 
-    profilerUpdate(input);
-    gryphkissUpdate(input);
+    profilerUpdate();
+    gryphkissUpdate();
 
     if (input->faceButtonLeftDown || input->faceButtonRightDown || input->gDown)
     {

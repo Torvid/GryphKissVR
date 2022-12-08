@@ -9,7 +9,7 @@ struct Hand
 };
 
 
-void HandStart(Entity* entity, Input* input)
+void HandStart(Entity* entity)
 {
     Hand* hand = (Hand*)entity;
 
@@ -17,7 +17,7 @@ void HandStart(Entity* entity, Input* input)
     CreateMaterialGlobal(hand->handMaterial, assets->defaultlit, Material_defaultlit);
 }
 
-void HandUpdate(Entity* entity, Input* input)
+void HandUpdate(Entity* entity)
 {
     Hand* hand = (Hand*)entity;
     
@@ -32,13 +32,13 @@ void HandUpdate(Entity* entity, Input* input)
     DrawMesh(hand->handMaterial, assets->tonk, hand->transform);
 }
 
-Hand* HandInstantiate(Input* input)
+Hand* HandInstantiate()
 {
     Hand* newHand = ArenaPushStruct(&haven->arenaScene, Hand, "hand");
     ArrayAdd(haven->entities, (Entity*)newHand);
     newHand->entityStart = &HandStart;
     newHand->entityUpdate = &HandUpdate;
-    newHand->entityStart((Entity*)newHand, input);
+    newHand->entityStart((Entity*)newHand);
 
     return newHand;
 }

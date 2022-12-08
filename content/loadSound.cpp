@@ -129,12 +129,12 @@ void PlaySound(Sound* sound, float volume = 1.0f, bool looping = false)
 
 }
 
-void soundStart(Input* input, GameMemory* memory)
+void soundStart(GameMemory* memory)
 {
 
 }
 
-void soundUpdate(Input* input, GameMemory* memory)
+void soundUpdate(GameMemory* memory)
 {
     for (int i = 0; i < memory->SampleCount; i++)
     {

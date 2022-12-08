@@ -23,7 +23,7 @@ struct GameState
     Hand* rightHand;
 };
 
-void gryphkissStart(Input* input)
+void gryphkissStart()
 {
     haven->gameState = ArenaPushStruct(&haven->arenaEngineState, GameState, "GameState");
     GameState* gameState = haven->gameState;
@@ -54,18 +54,18 @@ void gryphkissStart(Input* input)
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
 
-    gameState->leftHand = HandInstantiate(input);
-    gameState->rightHand = HandInstantiate(input);
+    gameState->leftHand = HandInstantiate();
+    gameState->rightHand = HandInstantiate();
 
 }
 
-void gryphkissUpdate(Input* input)
+void gryphkissUpdate()
 {
     GameState* gameState = haven->gameState;
 
     for (int i = 0; i < ArrayCount(haven->entities); i++)
     {
-        haven->entities[i]->entityUpdate(haven->entities[i], input);
+        haven->entities[i]->entityUpdate(haven->entities[i]);
     }
 
     // Set up bones

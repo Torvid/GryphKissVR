@@ -2,12 +2,12 @@
 
 #include "haven.cpp"
 
-void editorStart(Input* input)
+void editorStart()
 {
 
 }
 
-void UpdateEditorCamera(Input* input)
+void UpdateEditorCamera()
 {
     float mouseSensitivity = 0.1f;
 
@@ -45,9 +45,9 @@ void UpdateEditorCamera(Input* input)
 }
 
 
-void editorUpdate(Input* input)
+void editorUpdate()
 {
-    UpdateEditorCamera(input);
+    UpdateEditorCamera();
 
     if (haven->editor)
     {
@@ -56,7 +56,7 @@ void editorUpdate(Input* input)
             //memory->printf("Save\n");
             haven->platformWriteFile((uint8*)haven, 2048, "scene.cpp");
         }
-        if (DrawButton(input, "Load"))
+        if (DrawButton("Load"))
         {
 
         }
@@ -141,7 +141,7 @@ void editorUpdate(Input* input)
 
         //haven->headsetView = DrawToggle(input, "Headset View: ", haven->headsetView);
 
-        if (DrawButton(input, "Play a sound") || input->faceButtonLeftDown)
+        if (DrawButton("Play a sound") || input->faceButtonLeftDown)
         {
             PlaySound(assets->HitWoodDome_22k_mono, 1.0f, false);
         }

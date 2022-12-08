@@ -166,7 +166,7 @@ void ProfilerEnd(EngineState* haven)
 }
 
 
-void ProfilerDrawFlameChart(Input* input, ProfilingData* data)
+void ProfilerDrawFlameChart(ProfilingData* data)
 {
     ProfilingData* profilingData = data;
 
@@ -252,7 +252,7 @@ void ProfilerDrawFlameChart(Input* input, ProfilingData* data)
     }
 }
 
-void ProfilerDrawTimeChart(Input* input, ProfilingData* data)
+void ProfilerDrawTimeChart(ProfilingData* data)
 {
     ProfilingData* profilingData = data;
 
@@ -286,12 +286,12 @@ void ProfilerDrawTimeChart(Input* input, ProfilingData* data)
     DrawText(text, float2(200, fpscurrentheight));
 }
 
-void profilerStart(Input* input)
+void profilerStart()
 {
 
 }
 
-void profilerUpdate(Input* input)
+void profilerUpdate()
 {
     // Update text
     const int tempStringSize = 2048;
@@ -317,7 +317,7 @@ void profilerUpdate(Input* input)
         DrawArena(&haven->arenaHotreload);
 
         //DrawArena(&pos, &haven->arenaDrawCommands);
-        ProfilerDrawTimeChart(input, haven->profilingData);
-        ProfilerDrawFlameChart(input, haven->profilingData);
+        ProfilerDrawTimeChart(haven->profilingData);
+        ProfilerDrawFlameChart(haven->profilingData);
     }
 }
