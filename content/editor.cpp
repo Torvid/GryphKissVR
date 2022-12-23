@@ -111,6 +111,7 @@ void editorUpdate()
         //DrawMesh(gameState->axesMaterial, haven->ui_quad, monkeyRotation2);
         //monkeyRotation2 = { center + float3(-3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
         //DrawMesh(gameState->torvidMat, haven->monkey, monkeyRotation2);
+
     }
 
     if (haven->editor)

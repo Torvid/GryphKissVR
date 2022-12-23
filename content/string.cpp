@@ -20,6 +20,17 @@ int PrintableLength(const char* checkString)
     }
     return i;
 }
+int DistanceToNewline(const char* checkString)
+{
+    int i = 0;
+    while (true)
+    {
+        if (checkString[i] == 0 || checkString[i] == '\n')
+            break;
+        i++;
+    }
+    return i;
+}
 
 int StringCountOccurances(char* string, char searchFor)
 {

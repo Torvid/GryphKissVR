@@ -12,6 +12,7 @@
 	X(float3, SpectatorCameraForward) \
 	X(float3, SpectatorCameraUp) \
 	X(float3, SpectatorCameraRight) \
+	X(sampler2D, SpriteFont) \
 	X(sampler2D, FontTexture) \
 	X(sampler2D, Texture0) \
 	X(sampler2D, Texture1) \
@@ -56,20 +57,30 @@ void main()
 		float4(VRCameraRight, 0),
 		float4(VRCameraForward, 0),
 		float4(VRCameraUp, 0),
-		float4(VRCameraPosition, 1));
+		float4(VRCameraPosition + VRCameraForward*3.0, 1));
 
 	float4x4 spectator = float4x4(
-		float4(SpectatorCameraRight, 0),
-		float4(-SpectatorCameraForward, 0),
-		float4(-SpectatorCameraUp, 0),
+		float4(normalize(SpectatorCameraRight) * 0.86, 0),
+		float4(normalize(-SpectatorCameraForward), 0),
+		float4(normalize(-SpectatorCameraUp), 0),
 		float4(VertexTangent, 1));
 
+	// face
 	float4x4 headset2 = float4x4(
 		float4(VRCameraRight, 0),
 		float4(-VRCameraForward, 0),
 		float4(-VRCameraUp, 0),
 		float4(VertexTangent, 1));
 
+	// look at
+	float3 MeshForward = normalize(VRCameraPosition - VertexTangent);
+	headset2 = float4x4(
+		float4(cross(MeshForward, -float3(0, 0, 1)), 0),
+		float4(MeshForward, 0),
+		float4(-float3(0,0,1), 0),
+		float4(VertexTangent, 1));
+
+	//normalize(VRCameraPosition - VertexTangent)
 	bool Is3DText = VertexUV1.y > 0.5 && VertexUV1.y < 1.5;
 	bool Is3DMesh = VertexUV1.y > 1.5 && VertexUV1.y < 2.5;
 	
@@ -124,9 +135,56 @@ out float4 FragColor;
 
 void main()
 {
-	float4 M1 = Sample(FontTexture, PSVertexUV0);
+	float value = Sample(SpriteFont, PSVertexUV0).a;
+	
+	if (PSMaterialID >= 1)
+	{
+		int w = 3;
+		float floatw = float(w);
+		float halfw = float(w) * 0.5;
+		float2 dx = ddx(PSVertexUV0) / (float(w));
+		float2 dy = ddx(PSVertexUV0) / (float(w));
+		value = 0.0;
+		for (int x = 0; x < w; x++)
+		{
+			for (int y = 0; y < w; y++)
+			{
+				float2 UV = PSVertexUV0 + (dx * (float(x) / floatw - 0.5) + dy * (float(y) / floatw - 0.5) + float2(-0.001, -0.001));
+				float4 fontSample = SampleLod(FontTexture, UV, 0.0f);
+				float res = 0.0;
+				if (PSMaterialID == 1)
+					res = fontSample.r;
+				else if (PSMaterialID == 2)
+					res = fontSample.b;
+				else if (PSMaterialID == 3)
+					res = fontSample.g;
 
-	FragColor.rgb = PSVertexNormal; // M1.rgb * 
-	FragColor.a = M1.a * PSVertexUV1.x;
+				res -= 0.5f;
+				res /= max(fwidth(res), 0.0001);
+				res += 0.5f;
+				res = saturate(res);
+				value += res;
+			}
+		}
+		value /= (float(w) * float(w));
+	
+
+		//float4 fontSample = SampleLod(FontTexture, PSVertexUV0, 0.0f);
+		//if (PSMaterialID == 1)
+		//	value = fontSample.r;
+		//else if (PSMaterialID == 2)
+		//	value = fontSample.b;
+		//else if (PSMaterialID == 3)
+		//	value = fontSample.g;
+		//value -= 0.5f;
+		//value /= max(fwidth(value), 0.0001);
+		//value += 0.5f;
+		//value = saturate(value);
+	}
+
+	value = saturate(value);
+
+	FragColor.rgb = PSVertexNormal;
+	FragColor.a = value* PSVertexUV1.x;
 }
 #endif

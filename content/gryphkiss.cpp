@@ -61,7 +61,12 @@ void gryphkissStart()
 
 void gryphkissUpdate()
 {
+
     GameState* gameState = haven->gameState;
+    haven->printf("Hello");
+
+    int c = ArrayCount(haven->entities);
+
 
     for (int i = 0; i < ArrayCount(haven->entities); i++)
     {

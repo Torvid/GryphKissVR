@@ -44,6 +44,28 @@ Memcpy* globalMemcpy;
 #include "string.cpp"
 #include "enumTrick.cpp"
 
+const char* validchars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@"; 
+
+#pragma pack(push, 1)
+struct Glyph
+{
+    uint16 minX;
+    uint16 minY;
+    uint16 maxX;
+    uint16 maxY;
+    uint16 pivotX;
+    uint16 pivotY;
+    uint16 advanceX;
+    uint16 advanceY;
+};
+struct Font
+{
+    char cookie[16];
+    Glyph glyphs[128];
+    char filename[100];
+};
+#pragma pack(pop)
+
 
 struct GameState;
 struct ProfilingData;
@@ -127,6 +149,19 @@ struct Assets
 
 static Assets* assets;
 
+enum HAlign
+{
+    HAlign_right,
+    HAlign_center,
+    HAlign_left,
+};
+enum VAlign
+{
+    VAlign_up,
+    VAlign_center,
+    VAlign_down,
+};
+
 struct EngineState
 {
     PlatformPrint* platformPrint;
@@ -146,6 +181,7 @@ struct EngineState
     ArrayCreate(Shader, shaders, 100);
     ArrayCreate(Sound, sounds, 100);
     ArrayCreate(Animation, animations, 100);
+    ArrayCreate(Font, fonts, 5);
 
     ArrayCreate(RenderCommand, renderCommands, 5000);
     ArrayCreate(Entity*, entities, 1000); // pointers to all entities in the scene
@@ -204,6 +240,8 @@ struct EngineState
     Transform textTransform;
     
     Assets assets;
+    HAlign hAlign;
+    VAlign vAlign;
 };
 static EngineState* haven;
 static Input* input;
@@ -218,6 +256,7 @@ static GameMemory* globalGameMemory;
 #include "loadShader.cpp"
 #include "loadSound.cpp"
 #include "loadTexture.cpp"
+#include "loadFont.cpp"
 
 #define Cpp 1
 
@@ -429,10 +468,26 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         ArrayClear(haven->shaders);
         ArrayClear(haven->sounds);
         ArrayClear(haven->animations);
+        ArrayClear(haven->fonts);
 
         LoadAssets(&haven->assets);
         ProfilerEndSample("Hotreload");
+        haven->hAlign = HAlign_center;
+        haven->vAlign = VAlign_center;
     }
+
+    haven->platformPrint = gameMemory->platformPrint;
+    haven->printf = gameMemory->printf;
+    haven->sprintf = gameMemory->sprintf;
+    //haven->memset = gameMemory->memset;
+    haven->platformTime = gameMemory->platformTime;
+    haven->platformReadFile = gameMemory->platformReadFile;
+    haven->platformWriteFile = gameMemory->platformWriteFile;
+    haven->platformGraphicsLoadTexture = gameMemory->platformGraphicsLoadTexture;
+    haven->platformGraphicsLoadMesh = gameMemory->platformGraphicsLoadMesh;
+    haven->platformGraphicsLoadShader = gameMemory->platformGraphicsLoadShader;
+    haven->platformGraphicsCreateFramebufferTarget = gameMemory->platformGraphicsCreateFramebufferTarget;
+    haven->platformGraphicsCreateTextureTarget = gameMemory->platformGraphicsCreateTextureTarget;
 
     bool firstFrame = false;
     if (!gameMemory->initialized)
@@ -458,24 +513,12 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
             haven->soundChannels[i] = ArenaPushStruct(&haven->arenaEngineState, SoundChannel, "Sound Channel");
         }
 
-        haven->platformPrint = gameMemory->platformPrint;
-        haven->printf = gameMemory->printf;
-        haven->sprintf = gameMemory->sprintf;
-        haven->memset = gameMemory->memset;
-        haven->platformTime = gameMemory->platformTime;
-        haven->platformReadFile = gameMemory->platformReadFile;
-        haven->platformWriteFile = gameMemory->platformWriteFile;
-        haven->platformGraphicsLoadTexture = gameMemory->platformGraphicsLoadTexture;
-        haven->platformGraphicsLoadMesh = gameMemory->platformGraphicsLoadMesh;
-        haven->platformGraphicsLoadShader = gameMemory->platformGraphicsLoadShader;
-        haven->platformGraphicsCreateFramebufferTarget = gameMemory->platformGraphicsCreateFramebufferTarget;
-        haven->platformGraphicsCreateTextureTarget = gameMemory->platformGraphicsCreateTextureTarget;
-
         gameMemory->renderCommands = haven->renderCommands;
 
         LoadAssets(&haven->assets);
         gameMemory->missingTexture = assets->missingTexture;
         gameMemory->missingMesh = assets->missingMesh;
+
 
 
         CreateMaterialGlobal(haven->axesMaterial, assets->unlit,  Material_unlit);
@@ -493,8 +536,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
 
         haven->SwapBuffer = CreateFramebufferTarget(engineState);
-        haven->waterRipples0 = CreateTextureTarget(16, 16);
-        haven->waterRipples1 = CreateTextureTarget(16, 16);
+        haven->waterRipples0 = CreateTextureTarget(256, 256);
+        haven->waterRipples1 = CreateTextureTarget(256, 256);
 
         haven->stringMesh = ArrayAddNew(haven->meshes);
 
@@ -569,6 +612,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     rippleSim->mousePos = input->mousePos / haven->Resolution;
     DrawMesh(rippleSim);
 
+
     // swap
     Texture* temp;
     temp = haven->waterRipplesPrevious;
@@ -576,7 +620,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     haven->waterRipplesCurrent = temp;
 
     SetRenderTarget(haven->SwapBuffer);
-    DrawClear(float3(0.5, 0, 0));
+    DrawClear(float3(0.251, 0.298, 0.373));
 
 
 
@@ -611,6 +655,57 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     waterPlane->BackFaceCulling = true;
     waterPlane->transform = identity;
     DrawMesh(waterPlane, assets->ui_quad, transform(center));
+
+
+    //CreateMaterialLocal(fontTest, assets->unlit, Material_unlit);
+    //fontTest->ColorTexture = assets->FontRegular;
+    //fontTest->Color = float3(1.0f, 1.0f, 1.0f);
+    //DrawMesh(fontTest, assets->ui_quad, transform(center + float3(0,0,2)));
+
+
+    if (DrawButton("HAlign_right"))
+        haven->hAlign = HAlign_right;
+    if (DrawButton("HAlign_center"))
+        haven->hAlign = HAlign_center;
+    if (DrawButton("HAlign_left"))
+        haven->hAlign = HAlign_left;
+
+    if (DrawButton("VAlign_up"))
+        haven->vAlign = VAlign_up;
+    if (DrawButton("VAlign_center"))
+        haven->vAlign = VAlign_center;
+    if (DrawButton("VAlign_down"))
+        haven->vAlign = VAlign_down;
+
+    char* lorem = "What is #88#*Lorem Ipsum*#ff#?\n\n*Lorem Ipsum* is simply #ff000088#dummy#ffffffff# text of the printing and typesetting industry. *Lorem Ipsum* #10#has #20#been #30#the #40#industry's #50#standard #60#dummy #70#text #80#ever #90#since #a0#the#b0# 1500s, #c0#when #d0#an #e0#unknown #f0#printer took a galley of type and scrambled it to make a type specimen book. **It has survived not only five centuries**, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing#ff0000# *Lorem #ffbf00#Ipsum* #80ff00#passages, #00ff40#and #00ffff#more #0040ff#recently #8000ff#with #ff00bf#desktop #ffffff#publishing software like Aldus PageMaker including versions of *Lorem Ipsum*.";
+    char* lorem2 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text \nof the printing and typesetting industry. \nLorem Ipsum has been the industry's \nstandard dummy text ever since the \n1500s, when an unknown printer took \na galley of type and scrambled it to \nmake a type specimen book. It has survived \nnot only five centuries, but also the leap \ninto electronic typesetting, remaining \nessentially unchanged. It was popularised \nin the 1960s with the release of Letraset \nsheets containing Lorem Ipsum passages, \nand more recently with desktop publishing \nsoftware like Aldus PageMaker including \nversions of Lorem Ipsum.";
+    char* lorem3 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+    char* lorem4 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, **remaining essentially unchanged.** It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+
+    //DrawFontMain("Barn bam, The quick brown fox jumps over the lazy dog");
+    //DrawFontMain("Hello, this is a test sentence.\nhttps://byork.torvid.net/B-Yorked.htm\ngryph@torvid.net\n$33.99 ((x^2) - 3*4) / 187.0\nvoid main(char* s) { return 0; }\n$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@", float2(400, 420), 200);
+
+    //DrawFont2D("@", float2(600, 600), 5000, 600, haven->hAlign, haven->vAlign);
+
+    //DrawFont2D(lorem4, float2(400, 400), 300, 700, haven->hAlign, haven->vAlign);
+    //DrawFontCameraFacing(lorem4, center + float3(0, 0, 3), 0.75, 2.0f * 0.75f, haven->hAlign, haven->vAlign);
+    DrawFont(lorem3, transform(center + float3(-1, 0, 2)), 1.0, 2.0f, haven->hAlign, haven->vAlign);
+
+    //DrawFont2D("LLL**LLL**", float2(700, 200), 800, 400, haven->hAlign, haven->vAlign);
+
+    //DrawText(lorem2, float2(200, 200));
+    DrawText3D(lorem2, center + float3(1, 0, 3));
+
+    //DrawFontMain("aaaaaaaa\naaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", float2(400, 420), 200);
+    //DrawFontMain("^v^ uvu ovo >v> <v< ;v; :> >:3 >:D");
+
+    //DrawFontMain("Hello World", float2(100, 100), 50);
+    //DrawFontMain("Hello World", float2(100, 120), 100);
+    //DrawFontMain("Hello World", float2(100, 180), 500);
+    //DrawFontMain("Hello World", float2(100, 300), 1000);
+    //DrawFontMain("Hello World", float2(100, 500), 2000);
+    //DrawFont3D(lorem, center + float3(0, 8, 0), 2, wrap, haven->hAlign, haven->vAlign);
+    //DrawText3D("Hello World", center + float3(0, 0, 2), 2);
 
     DrawText("G: toggle editor");
     DrawText("P: toggle profiling");
@@ -659,12 +754,14 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     //command->Wireframe = false;
     //command->DisableDepthTest = true;
     uiCommand->blendMode = BlendMode_Alpha;
-    uiCommand->FontTexture = assets->font;
-
-    uiCommand->VRCameraPosition = haven->textTransform.position;
-    uiCommand->VRCameraForward = haven->textTransform.forward;
-    uiCommand->VRCameraUp = haven->textTransform.up;
-    uiCommand->VRCameraRight = haven->textTransform.right;
+    uiCommand->SpriteFont = assets->SpriteFont;
+    uiCommand->FontTexture = assets->FontTexture;
+    //uiCommand->FontBoldTexture = assets->font;
+    
+    uiCommand->VRCameraPosition = input->head.position;
+    uiCommand->VRCameraForward = input->head.forward;
+    uiCommand->VRCameraUp = input->head.up;
+    uiCommand->VRCameraRight = input->head.right;
 
     uiCommand->SpectatorCameraPosition = haven->spectatorCamera.position;
     uiCommand->SpectatorCameraForward = haven->spectatorCamera.forward;
