@@ -73,26 +73,25 @@ struct UIMeshData;
 struct SoundChannel;
 struct Material_unlit;
 
-#define EntityTypeTable(n, X) \
-    X(n, StaticMesh) \
-    X(n, SkinnedMesh) \
-    X(n, Light) \
-    X(n, LightDirectional)
-MakeEnum(EntityType, EntityTypeTable);
+//#define EntityTypeTable(n, X) \
+//    X(n, StaticMesh) \
+//    X(n, SkinnedMesh) \
+//    X(n, Light) \
+//    X(n, LightDirectional)
+//MakeEnum(EntityType, EntityTypeTable);
 
 struct Entity;
 struct EngineState;
 
-typedef void EntityStart(Entity* entity);
-typedef void EntityUpdate(Entity* entity);
+//typedef void EntityStart(Entity* entity);
+//typedef void EntityUpdate(Entity* entity);
 
+    //EntityType type; \
+//#define EntityUpdate(entity, name) 
 #define EntityContents \
-    EntityStart* entityStart; \
-    EntityUpdate* entityUpdate; \
     bool alive; \
     Transform transform; \
     char* name[100]; \
-    EntityType type; \
     bool visible; \
     bool hiddenInGame;
 
@@ -101,42 +100,58 @@ struct Entity
     EntityContents;
 };
 
-struct StaticMesh
-{
-    EntityContents;
-    Mesh* mesh;
-    Material* material;
-};
+//struct StaticMesh
+//{
+//    EntityContents;
+//    Mesh* mesh;
+//    Material* material;
+//};
+//
+//struct SkinnedMesh
+//{
+//    EntityContents;
+//    Mesh* mesh;
+//    Material* material;
+//};
+//
+//struct Light
+//{
+//    EntityContents;
+//    float3 color;
+//    float intensity;
+//    float radius;
+//};
+//
+//struct LightDirectional
+//{
+//    EntityContents;
+//    float3 color;
+//    float intensity;
+//    float radius;
+//};
 
-struct SkinnedMesh
-{
-    EntityContents;
-    Mesh* mesh;
-    Material* material;
-};
+//#define Instantiate(type) (type*)(haven->arenaScene.base + haven->arenaScene.used); \
+//    ArenaPushStruct(&haven->arenaScene, type, "");
+//
+//#define Instantiate(type, transform) (type*)(haven->arenaScene.base + haven->arenaScene.used); \
+//    type* t = ArenaPushStruct(&haven->arenaScene, type, "") \
+//    t->transform = transform;
 
-struct Light
-{
-    EntityContents;
-    float3 color;
-    float intensity;
-    float radius;
-};
+#define Instantiate(type, _position) ArenaPushStruct(&haven->arenaScene, type, "ent"); \
+{ \
+    Entity* newEntity = (Entity*)(haven->arenaScene.base + haven->arenaScene.used); \
+    newEntity->transform = transform(_position); \
+    ArrayAdd(haven->entities, newEntity); \
+} \
 
-struct LightDirectional
-{
-    EntityContents;
-    float3 color;
-    float intensity;
-    float radius;
-};
+#define Instantiate(type) ArenaPushStruct(&haven->arenaScene, type, "ent"); \
+{ \
+    Entity* newEntity = (Entity*)(haven->arenaScene.base + haven->arenaScene.used); \
+    newEntity->transform = transform(float3(0,0,0)); \
+    ArrayAdd(haven->entities, newEntity); \
+} \
 
-#define Instantiate(type) (type*)(haven->arenaScene.base + haven->arenaScene.used); \
-    ArenaPushStruct(&haven->arenaScene, type, "");
 
-#define Instantiate(type, transform) (type*)(haven->arenaScene.base + haven->arenaScene.used); \
-    type* t = ArenaPushStruct(&haven->arenaScene, type, "") \
-    t->transform = transform;
 
 struct Assets
 {
@@ -407,7 +422,6 @@ void printTransform(Transform t2)
 #include "gryphkiss.cpp"
 #include "editor.cpp"
 
-
 void engineProfilerBeingSample()
 {
     if (!haven)
@@ -443,7 +457,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         ProfilerBeingSample();
     }
 
-    haven->Resolution = haven->Resolution;
+    haven->Resolution = gameMemory->Resolution;
 
     ArrayClear(haven->renderCommands);
     ArenaReset(&haven->arenaDrawCommands);
@@ -715,11 +729,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     profilerUpdate();
     gryphkissUpdate();
 
-    if (input->faceButtonLeftDown || input->faceButtonRightDown || input->gDown)
+    if (input->gDown)
     {
         haven->editor = !haven->editor;
     }
-    if (input->faceButtonLeftDown || input->faceButtonRightDown || input->pDown)
+    if (input->pDown)
     {
         haven->profiling = !haven->profiling;
     }
@@ -790,6 +804,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     DrawMesh(finalOutputCommand);
 
     gameMemory->renderCommands_count = haven->renderCommands_count;
+
 }
 
 #endif

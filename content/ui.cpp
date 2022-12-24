@@ -223,10 +223,10 @@ void DrawText3D(char* text, float3 position, float scale = 1.0f, float3 color = 
             offset.y += 1;
             continue;
         }
-        float3 size = float3(glyphSize.x, 0, -glyphSize.y) * 0.01f * scale;
+        float3 size = float3(glyphSize.x, 0, glyphSize.y) * 0.01f * scale;
         float3 offsetSize = float3(offset.x - totalLength * 0.5f, 0, offset.y - 0.5f);
-        //AppendQuadToUI3DCameraFacing(position, (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
-        AppendQuadToUI3D(position, position + (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
+        AppendQuadToUI3DCameraFacing(position, (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
+        //AppendQuadToUI3D(position, position + (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
 
         offset.x++;
     }

@@ -147,12 +147,12 @@ typedef struct
 
 #define InputUpdateFloat2(Button, asdf123)\
 {\
+    (Button)->LastValue.x = (Button)->Value.x;\
+    (Button)->LastValue.y = (Button)->Value.y;\
     (Button)->Value.x = asdf123.x;\
     (Button)->Value.y = asdf123.y;\
     (Button)->ValueDelta.x = (Button)->Value.x - (Button)->LastValue.x;\
     (Button)->ValueDelta.y = (Button)->Value.y - (Button)->LastValue.y;\
-    (Button)->LastValue.x = (Button)->Value.x;\
-    (Button)->LastValue.y = (Button)->Value.y;\
 }\
 
 #define InputUpdateFloat(Button, asdf123)\
@@ -184,6 +184,9 @@ typedef struct
             Transform playspaceStageRightRotated;
         };
     };
+
+    Transform playspace;
+
 
     Transform head;
 
@@ -553,7 +556,6 @@ typedef struct
     RenderCommand* renderCommands;// [5000] ;
 
     float* GlobalVariables;
-
 
     bool first;
     //int currentShader;

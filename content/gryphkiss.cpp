@@ -2,6 +2,8 @@
 
 #include "haven.cpp"
 #include "hand.cpp"
+#include "player.cpp"
+#include "staticMesh.cpp"
 
 struct GameState
 {
@@ -21,6 +23,8 @@ struct GameState
 
     Hand* leftHand;
     Hand* rightHand;
+
+    Player* player;
 };
 
 void gryphkissStart()
@@ -54,24 +58,34 @@ void gryphkissStart()
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
 
-    gameState->leftHand = HandInstantiate();
-    gameState->rightHand = HandInstantiate();
+    //gameState->leftHand = HandInstantiate();
+    //gameState->rightHand = HandInstantiate();
 
+    gameState->leftHand  = Instantiate(Hand);
+    gameState->rightHand = Instantiate(Hand);
+    gameState->leftHand->handSide = HandSide_Left;
+    gameState->rightHand->handSide = HandSide_Right;
+    HandStart(gameState->leftHand);
+    HandStart(gameState->rightHand);
+
+    gameState->player = Instantiate(Player);
+    PlayerStart(gameState->player);
 }
 
 void gryphkissUpdate()
 {
-
     GameState* gameState = haven->gameState;
-    haven->printf("Hello");
 
-    int c = ArrayCount(haven->entities);
+    // Entity Update
+    HandUpdate(gameState->leftHand);
+    HandUpdate(gameState->rightHand);
 
+    PlayerUpdate(gameState->player);
 
-    for (int i = 0; i < ArrayCount(haven->entities); i++)
-    {
-        haven->entities[i]->entityUpdate(haven->entities[i]);
-    }
+    //for (int i = 0; i < ArrayCount(haven->entities); i++)
+    //{
+    //    haven->entities[i]->entityUpdate(haven->entities[i]);
+    //}
 
     // Set up bones
     for (int i = 0; i < assets->torvidTestAnim->boneCount; i++)
@@ -115,6 +129,8 @@ void gryphkissUpdate()
     torvidPos = rotate(torvidPos, torvidPos.up, -0.4);
     
     DrawMesh(gameState->torvidMat, assets->torvidTest, torvidPos);
+
+
 
     // Draw barn?
     //DrawMesh(gameState->barnWallCleanMat, gameState->barnCeiling, transformIdentity);

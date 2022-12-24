@@ -504,6 +504,7 @@ float2 operator *(float a, float2 b) { return float2(a * b.x, a * b.y); }
 float2 operator /(float2 a, float2 b) { return float2(a.x / b.x, a.y / b.y); }
 float2 operator /(float2 a, float b) { return float2(a.x / b, a.y / b); }
 float2 operator /(float a, float2 b) { return float2(a / b.x, a / b.y); }
+bool operator ==(float2 a, float2 b) { return ((a.x == b.x) && (a.y == b.y)); }
 
 
 // FLOAT3
@@ -1067,9 +1068,9 @@ float3 reflect(float3 v, float3 normal)
 //        return current;
 //    return current + normalize(target - current) * min(dist, distance(target, current));
 //}
-float MoveTowards(float from, float to, float distance) { return from + clamp(to - from, -distance, distance); }
-float2 MoveTowards(float2 from, float2 to, float distance) { return from + ((to - from) / length(to - from)) * min(distance, length(to - from)); }
-float3 MoveTowards(float3 from, float3 to, float distance) { return from + ((to - from) / length(to - from)) * min(distance, length(to - from)); }
+float MoveTowards(float from, float to, float distance)     { return (from == to) ? from : from + clamp(to - from, -distance, distance); }
+float2 MoveTowards(float2 from, float2 to, float distance)  { return (from == to) ? from : from + ((to - from) / length(to - from)) * min(distance, length(to - from)); }
+float3 MoveTowards(float3 from, float3 to, float distance)  { return (from == to) ? from : from + ((to - from) / length(to - from)) * min(distance, length(to - from)); }
 
 float ToSRGB(float Lin) { return Lin <= .04045 ? Lin / 12.92 : pow((Lin + 0.055) / 1.055, 2.4); }
 float2 ToSRGB(float2 Lin) { return float2(ToSRGB(Lin.x), ToSRGB(Lin.y)); }
@@ -1236,6 +1237,26 @@ float3 WorldToLocalVectorNoScale(Transform Trans, float3 position)
         dot(position, Trans.forward),
         dot(position, Trans.up));
 }
+
+// A is a world space transform
+Transform LocalToWorld(Transform A, Transform B)
+{
+    B.position  = LocalToWorld(A, B.position);
+    B.right     = LocalToWorldVector(A, B.right);
+    B.forward   = LocalToWorldVector(A, B.forward);
+    B.up        = LocalToWorldVector(A, B.up);
+    return B;
+}
+// A is a world space transform
+Transform WorldToLocal(Transform A, Transform B)
+{
+    B.position  = WorldToLocal(A, B.position);
+    B.right     = WorldToLocalVector(A, B.right);
+    B.forward   = WorldToLocalVector(A, B.forward);
+    B.up        = WorldToLocalVector(A, B.up);
+    return B;
+}
+
 float ClosestRayDistance(float3 l1Pos, float3 l1Dir, float3 l2Pos, float3 l2dir)
 {
     float3 rightVector = normalize(cross(l1Dir, cross(l1Dir, l2dir)));

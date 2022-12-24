@@ -75,9 +75,9 @@ void main()
 	// look at
 	float3 MeshForward = normalize(VRCameraPosition - VertexTangent);
 	headset2 = float4x4(
-		float4(cross(MeshForward, -float3(0, 0, 1)), 0),
-		float4(MeshForward, 0),
-		float4(-float3(0,0,1), 0),
+		float4(normalize(cross(MeshForward, -float3(0, 0, 1))), 0),
+		float4(normalize(MeshForward), 0),
+		float4(normalize(-float3(0, 0, 1)), 0),
 		float4(VertexTangent, 1));
 
 	//normalize(VRCameraPosition - VertexTangent)
