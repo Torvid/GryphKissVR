@@ -349,6 +349,11 @@ typedef struct
     Bone boneHierarchy[200];
     Transform* bindPose;
 
+    float3 boundsCenter;
+    float3 boundsSize;
+    float3 boundsMin;
+    float3 boundsMax;
+    float radius;
 } Mesh;
 
 typedef struct
@@ -495,8 +500,8 @@ typedef int Printf(char const* const _Format, ...);
 typedef int sPrintf(char* str, const char* format, ...);
 typedef int GLUploadTexture(Texture* texture);
 typedef int GLUploadMesh(Mesh* texture);
-typedef void* Memset(void* str, int c, size_t n);
-typedef void* Memcpy(void* destination, const void* source, size_t num);
+typedef void* Memset(void* str, int c, uint64 n);
+typedef void* Memcpy(void* destination, const void* source, uint64 num);
 
 typedef uint32 PlatformGraphicsLoadTexture(Texture* texture); // Upload a texture to the GPU and return back a handle
 typedef uint32 PlatformGraphicsLoadMesh(Mesh* mesh); // Upload a mesh to the GPU and return back a handle

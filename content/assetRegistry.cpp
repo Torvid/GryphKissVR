@@ -1,5 +1,5 @@
 assetRegistryLoad(FileReadTexture, Texture, asdf2, "asdf2.tga");
-<assetRegistryLoad(FileReadMesh, Mesh, axes, "axes.obj");
+assetRegistryLoad(FileReadMesh, Mesh, axes, "axes.obj");
 assetRegistryLoad(FileReadMesh, Mesh, bone_pyramid, "bone_pyramid.obj");
 assetRegistryLoad(FileReadMesh, Mesh, bone_sphere, "bone_sphere.obj");
 assetRegistryLoad(FileReadMesh, Mesh, box, "box.obj");

@@ -73,85 +73,8 @@ struct UIMeshData;
 struct SoundChannel;
 struct Material_unlit;
 
-//#define EntityTypeTable(n, X) \
-//    X(n, StaticMesh) \
-//    X(n, SkinnedMesh) \
-//    X(n, Light) \
-//    X(n, LightDirectional)
-//MakeEnum(EntityType, EntityTypeTable);
-
 struct Entity;
 struct EngineState;
-
-//typedef void EntityStart(Entity* entity);
-//typedef void EntityUpdate(Entity* entity);
-
-    //EntityType type; \
-//#define EntityUpdate(entity, name) 
-#define EntityContents \
-    bool alive; \
-    Transform transform; \
-    char* name[100]; \
-    bool visible; \
-    bool hiddenInGame;
-
-struct Entity
-{
-    EntityContents;
-};
-
-//struct StaticMesh
-//{
-//    EntityContents;
-//    Mesh* mesh;
-//    Material* material;
-//};
-//
-//struct SkinnedMesh
-//{
-//    EntityContents;
-//    Mesh* mesh;
-//    Material* material;
-//};
-//
-//struct Light
-//{
-//    EntityContents;
-//    float3 color;
-//    float intensity;
-//    float radius;
-//};
-//
-//struct LightDirectional
-//{
-//    EntityContents;
-//    float3 color;
-//    float intensity;
-//    float radius;
-//};
-
-//#define Instantiate(type) (type*)(haven->arenaScene.base + haven->arenaScene.used); \
-//    ArenaPushStruct(&haven->arenaScene, type, "");
-//
-//#define Instantiate(type, transform) (type*)(haven->arenaScene.base + haven->arenaScene.used); \
-//    type* t = ArenaPushStruct(&haven->arenaScene, type, "") \
-//    t->transform = transform;
-
-#define Instantiate(type, _position) ArenaPushStruct(&haven->arenaScene, type, "ent"); \
-{ \
-    Entity* newEntity = (Entity*)(haven->arenaScene.base + haven->arenaScene.used); \
-    newEntity->transform = transform(_position); \
-    ArrayAdd(haven->entities, newEntity); \
-} \
-
-#define Instantiate(type) ArenaPushStruct(&haven->arenaScene, type, "ent"); \
-{ \
-    Entity* newEntity = (Entity*)(haven->arenaScene.base + haven->arenaScene.used); \
-    newEntity->transform = transform(float3(0,0,0)); \
-    ArrayAdd(haven->entities, newEntity); \
-} \
-
-
 
 struct Assets
 {
@@ -262,6 +185,78 @@ static EngineState* haven;
 static Input* input;
 
 static GameMemory* globalGameMemory;
+
+
+
+//#define EntityTypeTable(n, X) \
+//    X(n, StaticMesh) \
+//    X(n, SkinnedMesh) \
+//    X(n, Light) \
+//    X(n, LightDirectional)
+//MakeEnum(EntityType, EntityTypeTable);
+
+//typedef void EntityStart(Entity* entity);
+//typedef void EntityUpdate(Entity* entity);
+
+    //EntityType type; \
+//#define EntityUpdate(entity, name)
+
+#define EntityContents \
+    bool alive; \
+    Transform transform; \
+    const char* type; \
+    char* name[100]; \
+    bool visible; \
+    bool editorOnly;
+
+struct Entity
+{
+    EntityContents;
+};
+
+//struct Light
+//{
+//    EntityContents;
+//    float3 color;
+//    float intensity;
+//    float radius;
+//};
+//
+//struct StaticMesh
+//{
+//    EntityContents;
+//    Mesh* mesh;
+//    Material* material;
+//};
+//
+//struct SkinnedMesh
+//{
+//    EntityContents;
+//    Mesh* mesh;
+//    Material* material;
+//    Animation* animation;
+//    float animationTime;
+//};
+//
+//struct LightDirectional
+//{
+//    EntityContents;
+//    float3 color;
+//    float intensity;
+//    float radius;
+//};
+
+#define Instantiate(_type) (_type*)InstantiateLocal(#_type, sizeof(_type));
+void* InstantiateLocal(const char* type, uint32 size)
+{
+    Entity* newEntity = (Entity*)ArenaPushBytes(&haven->arenaScene, size, "ent");// (haven->arenaScene.base + haven->arenaScene.used);
+    newEntity->transform = transform(float3(0, 0, 0));
+    newEntity->type = type;
+    ArrayAdd(haven->entities, newEntity);
+    return (void*)newEntity;
+}
+
+
 
 #include "ui.cpp"
 #include "profiling.cpp"
@@ -441,6 +436,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     haven = engineState;
     globalGameMemory = gameMemory;
 
+    //Assert(gameMemory->memset, "Critical function missing");
+    //Assert(gameMemory->memcpy, "Critical function missing");
+
     globalMemset = gameMemory->memset;
     globalMemcpy = gameMemory->memcpy;
     gameMemory->engineProfilerBeingSample = &engineProfilerBeingSample;
@@ -502,6 +500,18 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     haven->platformGraphicsLoadShader = gameMemory->platformGraphicsLoadShader;
     haven->platformGraphicsCreateFramebufferTarget = gameMemory->platformGraphicsCreateFramebufferTarget;
     haven->platformGraphicsCreateTextureTarget = gameMemory->platformGraphicsCreateTextureTarget;
+
+    //Assert(haven->platformPrint, "Critical function missing");
+    //Assert(haven->printf, "Critical function missing");
+    //Assert(haven->sprintf, "Critical function missing");
+    //Assert(haven->platformTime, "Critical function missing");
+    //Assert(haven->platformReadFile, "Critical function missing");
+    //Assert(haven->platformWriteFile, "Critical function missing");
+    //Assert(haven->platformGraphicsLoadTexture, "Critical function missing");
+    //Assert(haven->platformGraphicsLoadMesh, "Critical function missing");
+    //Assert(haven->platformGraphicsLoadShader, "Critical function missing");
+    //Assert(haven->platformGraphicsCreateFramebufferTarget, "Critical function missing");
+    //Assert(haven->platformGraphicsCreateTextureTarget, "Critical function missing");
 
     bool firstFrame = false;
     if (!gameMemory->initialized)
@@ -699,16 +709,16 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     //DrawFontMain("Barn bam, The quick brown fox jumps over the lazy dog");
     //DrawFontMain("Hello, this is a test sentence.\nhttps://byork.torvid.net/B-Yorked.htm\ngryph@torvid.net\n$33.99 ((x^2) - 3*4) / 187.0\nvoid main(char* s) { return 0; }\n$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@", float2(400, 420), 200);
 
-    //DrawFont2D("@", float2(600, 600), 5000, 600, haven->hAlign, haven->vAlign);
+    DrawFont2D("@", input->mousePos, 500, 600, haven->hAlign, haven->vAlign);
 
     //DrawFont2D(lorem4, float2(400, 400), 300, 700, haven->hAlign, haven->vAlign);
     //DrawFontCameraFacing(lorem4, center + float3(0, 0, 3), 0.75, 2.0f * 0.75f, haven->hAlign, haven->vAlign);
-    DrawFont(lorem3, transform(center + float3(-1, 0, 2)), 1.0, 2.0f, haven->hAlign, haven->vAlign);
+    //DrawFont(lorem4, transform(center + float3(-1, 0, 2)), 1.0, 2.0f, haven->hAlign, haven->vAlign);
 
     //DrawFont2D("LLL**LLL**", float2(700, 200), 800, 400, haven->hAlign, haven->vAlign);
 
     //DrawText(lorem2, float2(200, 200));
-    DrawText3D(lorem2, center + float3(1, 0, 3));
+    //DrawText3D(lorem2, center + float3(1, 0, 3));
 
     //DrawFontMain("aaaaaaaa\naaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", float2(400, 420), 200);
     //DrawFontMain("^v^ uvu ovo >v> <v< ;v; :> >:3 >:D");
@@ -737,7 +747,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     {
         haven->profiling = !haven->profiling;
     }
-
 
 
     // Mouse cursor

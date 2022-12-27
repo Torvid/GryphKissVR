@@ -569,6 +569,7 @@ float3 operator /(float3 a, float3 b) { return float3(a.x / b.x, a.y / b.y, a.z 
 float3 operator /(float3 a, float b) { return float3(a.x / b, a.y / b, a.z / b); }
 float3 operator /(float a, float3 b) { return float3(a / b.x, a / b.y, a / b.z); }
 bool operator ==(float3 a, float3 b) { return ((a.x == b.x) && (a.y == b.y) && (a.z == b.z)); }
+bool operator !=(float3 a, float3 b) { return ((a.x != b.x) || (a.y != b.y) || (a.z != b.z)); }
 float3 operator -(float3 a) {return float3(-a.x, -a.y, -a.z);} // Negate
 
 
@@ -878,8 +879,6 @@ float round(float x) { return game_roundf(x); }
 float acos(float x) { return game_acosf(x); }
 float sin(float x) { return game_sinf(x); }
 float cos(float x) { return game_cosf(x); }
-float sinTurns(float x) { return game_sinf(x * 3.14152128f * 2.0f); }
-float cosTurns(float x) { return game_cosf(x * 3.14152128f * 2.0f); }
 float sqrt(float x) { return game_sqrtf(x); }
 float atan2(float x, float y)
 {
@@ -887,6 +886,8 @@ float atan2(float x, float y)
 }
 #endif
 
+float sinTurns(float x) { return game_sinf(x * tau); }
+float cosTurns(float x) { return game_cosf(x * tau); }
 
 float2 abs(float2 a) { return float2(game_fabsf(a.x), game_fabsf(a.y)); }
 float3 abs(float3 a){return float3(game_fabsf(a.x), game_fabsf(a.y), game_fabsf(a.z));}
@@ -941,6 +942,11 @@ float dot(float3 a, float3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 fixed dot(fixed2 a, fixed2 b) { return a.x * b.x + a.y * b.y; }
 fixed dot(fixed3 a, fixed3 b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 
+float lengthSquared(float2 a) { return dot(a, a); }
+float lengthSquared(float3 a) { return dot(a, a); }
+fixed lengthSquared(fixed2 a) { return dot(a, a); }
+fixed lengthSquared(fixed3 a) { return dot(a, a); }
+
 float length(float2 a)
 {
     float d = dot(a, a);
@@ -974,6 +980,10 @@ fixed length(fixed3 a)
 }
 
 float distanceSquared(float2 Start, float2 End) { return dot(Start - End, Start - End); }
+float distanceSquared(float3 Start, float3 End) { return dot(Start - End, Start - End); }
+fixed distanceSquared(fixed3 Start, fixed3 End) { return dot(Start - End, Start - End); }
+fixed distanceSquared(fixed2 Start, fixed2 End) { return dot(Start - End, Start - End); }
+
 float distance(float2 Start, float2 End) { return length(Start - End); }
 float distance(float3 Start, float3 End) { return length(Start - End); }
 fixed distance(fixed3 Start, fixed3 End) { return length(Start - End); }
@@ -1024,17 +1034,17 @@ float rand(float2 co)
 
 float2 rotate(float2 v, float angle)
 {
-    float x = v.x * cos(angle * tau) - v.y * sin(angle * tau);
-    float y = v.x * sin(angle * tau) + v.y * cos(angle * tau);
+    float x = v.x * cosTurns(angle) - v.y * sinTurns(angle);
+    float y = v.x * sinTurns(angle) + v.y * cosTurns(angle);
     return float2(x, y);
 }
 
 float3 cross(float3 a, float3 b) { return float3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x); }
 fixed3 cross(fixed3 a, fixed3 b) { return fixed3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x); }
 
-float3 RotateAroundAxis(float3 v, float3 k, float a)
+float3 RotateAroundAxis(float3 point, float3 axis, float angle)
 {
-    return v * cos(a * tau) + cross(k, v) * sin(a * tau) + k * dot(k, v) * (1 - cos(a * tau));
+    return point * cosTurns(angle) + cross(axis, point) * sinTurns(angle) + axis * dot(axis, point) * (1 - cosTurns(angle));
 }
 float3 reflect(float3 v, float3 normal)
 {
@@ -1304,7 +1314,6 @@ float3 BlendColor(float3 a, float3 b, float t)
 
     return sqrt(b);
 }
-
 Transform rotate(Transform t, float3 Axis, float angle)
 {
     t.forward = RotateAroundAxis(t.forward, Axis, angle);
@@ -1341,6 +1350,22 @@ Transform transform(float3 position, float x, float y, float z, float3 scale)
 }
 #define Transform(position, forward, up, scale) ctor_transform((position), (forward), (up), (scale))
 
+Transform rotateAboutPoint(Transform t, float3 pivot, float3 Axis, float angle)
+{
+    t.position -= pivot;
+    t.position = RotateAroundAxis(t.position, Axis, angle);
+    t.position += pivot;
+    //float cosTheta = cosTurns(angle);
+    //float sinTheta = sinTurns(angle);
+    //float newX = (cosTheta * (t.position.x - pivot.x) - sinTheta * (t.position.y - pivot.y) + pivot.x);
+    //float newY = (sinTheta * (t.position.x - pivot.x) + cosTheta * (t.position.y - pivot.y) + pivot.y);
+    //t.position.x = newX;
+    //t.position.y = newY;
+
+    t = rotate(t, Axis, angle);
+
+    return t;
+}
 
 Transform LookRotation(Transform t, float3 forward, float3 up)
 {

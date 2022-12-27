@@ -8,6 +8,8 @@ char* ShaderReadFile(Shader* shader, char* destination, char* scratchBufferFiles
     char* fileStep3 = scratchBufferFilesDepth;
     scratchBufferFilesDepth = (char*)haven->platformReadFile((uint8*)scratchBufferFilesDepth, filename);
 
+    Assert(scratchBufferFilesDepth, "File failed to load.")
+
     // Scan through the whole file and remove all line continuation
     //while (*fileStep2 != 0)
     //{

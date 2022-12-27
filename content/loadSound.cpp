@@ -156,6 +156,7 @@ void soundUpdate(GameMemory* memory)
 
             if (!sound)
                 break;
+
             float x = ((input->mousePos.x / 2500.0f) - 0.5) * 2 * 16;
             int s1 = clamp(channel->currentSample - x, 0, (sound->sampleCount - 1));
             int s2 = clamp(channel->currentSample + x, 0, (sound->sampleCount - 1));

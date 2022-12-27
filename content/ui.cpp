@@ -7,7 +7,7 @@ static const float2 fontSpriteSize = { 6, 13 };
 static const float2 atlasSize = { 32, 4 };
 static const float2 glyphSize = { 6, 13 };
 
-const int quadCountMax = 20000;
+const int quadCountMax = 50000;
 struct UIMeshData
 {
     int quadCount;
@@ -268,7 +268,7 @@ void DrawBox2D(float2 position, float2 size, float3 color = { 1, 1, 1 }, float o
 {
     AppendQuadToUI(position, size, float2(0.95, 0.01), float2(0.01, 0.1), color, opacity);
 }
-void DrawLine2D(float2 start, float2 end, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+void DrawLine2D(float2 start, float2 end, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
     float2 side = normalize(rotate90CW(start - end)) * width * 0.5f;
 
@@ -768,7 +768,7 @@ float3 AngleToVector(float angle, float3 left, float3 right)
     return sinTurns(angle) * left + cosTurns(angle) * right;
 }
 
-void DrawCircle(float3 center, float3 normal, float radius, float width, float3 color = { 1, 1, 1 }, float opacity = 1, int detail = 32)
+void DrawCircle(float3 center, float3 normal, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, int detail = 32)
 {
     float3 direction = normalize(normal);
     float3 offangle = direction == float3(0, 0, 1) ? float3(0, 1, 0) : float3(0, 0, 1);
@@ -798,7 +798,7 @@ void DrawCircle(float3 center, float3 normal, float radius, float width, float3 
     }
 }
 
-void DrawSphere(float3 center, float radius, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+void DrawSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
     for (int i = 0; i < 8; i++)
     {
@@ -810,27 +810,27 @@ void DrawSphere(float3 center, float radius, float width, float3 color = { 1, 1,
     DrawCircle(center + float3(0, 0, -radius * 0.707), float3(0, 0, 1), radius * 0.707, width, color, opacity, 8);
 }
 
-void DrawAxisSphere(float3 center, float radius, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+void DrawAxisSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
-    DrawCircle(center, float3(1, 0, 0), radius, width, color, opacity, 8);
-    DrawCircle(center, float3(0, 1, 0), radius, width, color, opacity, 8);
-    DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, 8);
+    DrawCircle(center, float3(1, 0, 0), radius, width, color, opacity, 24);
+    DrawCircle(center, float3(0, 1, 0), radius, width, color, opacity, 24);
+    DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, 24);
 }
 
-void DrawTransform(Transform transform, float width)
+void DrawTransform(Transform transform, float width = 0.01)
 {
     DrawRay(transform.position, transform.right,   transform.scale.x, width, float3(1, 0, 0));
     DrawRay(transform.position, transform.forward, transform.scale.y, width, float3(0, 1, 0));
     DrawRay(transform.position, transform.up,      transform.scale.z, width, float3(0, 0, 1));
 }
 
-void DrawPoint(float3 position, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+void DrawPoint(float3 position, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
     DrawLine(position - float3(width * 0.5, 0, 0), position + float3(width * 0.5, 0, 0), width, color, opacity);
     DrawLine(position - float3(0, width * 0.5, 0), position + float3(0, width * 0.5, 0), width, color, opacity);
 }
 
-void DrawAABB(float3 center, float3 size, float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+void DrawAABB(float3 center, float3 size, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
     DrawLine(center + size * float3( 1,  1,  1), center + size * float3( 1,  1, -1), width, color, opacity);
     DrawLine(center + size * float3(-1,  1,  1), center + size * float3(-1,  1, -1), width, color, opacity);
@@ -873,7 +873,7 @@ float3 TransformPosition_WorldSpaceToLocalSpace(Transform transform, float3 worl
                   dot(localPos, transform.up));
 }
 
-void DrawBox(Transform transform,  float width, float3 color = { 1, 1, 1 }, float opacity = 1)
+void DrawBox(Transform transform, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
 {
     DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1, -1)), width, color, opacity);
     DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1, -1)), width, color, opacity);
