@@ -1,10 +1,19 @@
 #pragma once
 
 #include "haven.cpp"
-#include "hand.cpp"
-#include "player.cpp"
-#include "staticMesh.cpp"
-#include "lightBaker.cpp"
+
+enum EntityType
+{
+    EntityType_Hand,
+    EntityType_Player,
+    EntityType_StaticMesh,
+    EntityType_LightBaker,
+};
+
+#include "entities/hand.cpp"
+#include "entities/player.cpp"
+#include "entities/staticMesh.cpp"
+#include "entities/lightBaker.cpp"
 
 struct GameState
 {
@@ -27,6 +36,7 @@ struct GameState
     Player* player;
     LightBaker* lightBaker;
 };
+
 
 void gryphkissStart()
 {
@@ -194,8 +204,7 @@ void gryphkissUpdate()
 
     for (int i = 0; i < ArrayCount(haven->entities); i++)
     {
-        char* staticMesh = "StaticMesh";
-        if (haven->entities[i]->type == staticMesh)
+        if (haven->entities[i]->type == EntityType_StaticMesh)
         {
             StaticMeshUpdate((StaticMesh*)haven->entities[i], i);
         }
@@ -208,9 +217,40 @@ void gryphkissUpdate()
     {
         int frameOffset = ((int)gameState->torvidFrame) * assets->torvidTestAnim->boneCount;
         Transform t = assets->torvidTestAnim->transforms[i + frameOffset];
-        // TODO: fix this
         gameState->torvidMat->shaderBoneTransforms[i] = t;
+
+        
+        //DrawBox(LocalToWorld(t,), 0.005);
+        //// Draw bone
+        //if (!engineState->torvidTest->boneHierarchy[i].parent)
+        //    continue;
+        //float3 parentPos = engineState->torvidTestAnimation->transforms[parentIndex + frameOffset].position;
+
     }
+    //// draw torvid bones
+    //for (int i = 0; i < assets->torvidTestAnimation->boneCount; i++)
+    //{
+    //    int frameOffset = ((int)engineState->torvidFrame) * engineState->torvidTestAnimation->boneCount;
+    //    Transform t = engineState->torvidTestAnimation->transforms[i + frameOffset];
+    //    float distanceToParent = 0.5f;
+    //    float boneRadius = 0.03f;
+    //    t.scale = vectorOne * boneRadius;
+    //    DrawMesh(memory, engineState, gameState->boneMaterial, engineState->boneSphere, ApplyTransform(t, monkeyRotation));
+    //    if (!engineState->torvidTest->boneHierarchy[i].parent)
+    //        continue;
+    //
+    //    Transform t2 = t;
+    //    int parentIndex = engineState->torvidTest->boneHierarchy[i].parent->index;
+    //    float3 parentPos = engineState->torvidTestAnimation->transforms[parentIndex + frameOffset].position;
+    //    distanceToParent = distance(parentPos, t2.position);
+    //    t2.forward = normalize(t2.position - parentPos);
+    //    t2.right = normalize(cross(t2.forward, t2.up));
+    //    t2.up = normalize(cross(t2.forward, t2.right));
+    //    t2.position = parentPos + t2.forward * boneRadius;
+    //    t2.scale = float3(boneRadius, distanceToParent - boneRadius * 2, boneRadius);
+    //
+    //    DrawMesh(memory, engineState, gameState->boneMaterial, engineState->bonePyramid, ApplyTransform(t2, monkeyRotation));
+    //}
 
     // Play animation
     float animationFPS = 25.0f;

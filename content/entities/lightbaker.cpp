@@ -48,7 +48,7 @@ bool worldRaycast(float3 pos0, float3 pos1)
 {
     for (int k = 0; k < ArrayCount(haven->entities); k++)
     {
-        if (haven->entities[k]->type == "StaticMesh")
+        if (haven->entities[k]->type == EntityType_StaticMesh)
         {
             StaticMesh* mesh = (StaticMesh*)haven->entities[k];
             Transform t = GetLocalBoundsTransform(mesh);
