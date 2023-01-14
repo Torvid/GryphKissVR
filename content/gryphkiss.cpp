@@ -4,10 +4,10 @@
 #include "hand.cpp"
 #include "player.cpp"
 #include "staticMesh.cpp"
+#include "lightBaker.cpp"
 
 struct GameState
 {
-    MemoryArena arenaGameState;
     MemoryArena arenaScene; // memory arena for all the entities currently alive in the scene.
 
     // Torvid
@@ -25,6 +25,7 @@ struct GameState
     Hand* rightHand;
 
     Player* player;
+    LightBaker* lightBaker;
 };
 
 void gryphkissStart()
@@ -32,8 +33,9 @@ void gryphkissStart()
     haven->gameState = ArenaPushStruct(&haven->arenaEngineState, GameState, "GameState");
     GameState* gameState = haven->gameState;
 
-    ArenaInitialize(&gameState->arenaGameState, Megabytes(64), (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64), "Game State", true), "Game State");
     ArenaInitialize(&gameState->arenaScene, Megabytes(64), (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64), "Scene", true), "Scene");
+
+    gameState->lightBaker = LightBakerStart();
 
     // Load Torvid
     CreateMaterialGlobal(gameState->torvidMat, assets->defaultlit, Material_defaultlit);
@@ -183,6 +185,7 @@ void gryphkissUpdate()
 {
     GameState* gameState = haven->gameState;
 
+
     // Entity Update
     HandUpdate(gameState->leftHand);
     HandUpdate(gameState->rightHand);
@@ -197,6 +200,8 @@ void gryphkissUpdate()
             StaticMeshUpdate((StaticMesh*)haven->entities[i], i);
         }
     }
+
+    LightBakerUpdate(gameState->lightBaker);
 
     // Set up bones
     for (int i = 0; i < assets->torvidTestAnim->boneCount; i++)
@@ -240,6 +245,5 @@ void gryphkissUpdate()
     torvidPos = rotate(torvidPos, torvidPos.up, -0.4);
     
     DrawMesh(gameState->torvidMat, assets->torvidTest, torvidPos);
-
 
 }

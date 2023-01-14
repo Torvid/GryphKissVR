@@ -18,28 +18,48 @@ StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_defaultlit* material, Tra
     return staticMesh;
 }
 
-void StaticMeshUpdate(StaticMesh* staticMesh, int i)
+Transform GetLocalBoundsTransform(StaticMesh* self)
 {
-    float radius = length(staticMesh->transform.scale * staticMesh->mesh->boundsSize) * 0.5;
+    float3 boundsCenterWorldSpace = LocalToWorld(self->transform, self->mesh->boundsCenter);
+    //float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
+    //DrawAxisSphere(boundsCenterWorldSpace, radius, 0.01);
+
+    Transform t = self->transform;
+    t.position = boundsCenterWorldSpace;
+    t.scale *= self->mesh->boundsSize * 0.5;
+
+    if (t.scale.y == 0.0)
+        t.scale.y = 0.01;
+    if (t.scale.x == 0.0)
+        t.scale.x = 0.01;
+    if (t.scale.z == 0.0)
+        t.scale.z = 0.01;
+
+    return t;
+}
+
+void StaticMeshUpdate(StaticMesh* self, int i)
+{
     
-    float3 boundsCenterWorldSpace = LocalToWorld(staticMesh->transform, staticMesh->mesh->boundsCenter);
 
     // frustum culling
     //if (dot(input->head.position - boundsCenterWorldSpace, input->head.forward) > radius)
     //    return;
 
-    if (i == 3)
-    {
-        DrawAxisSphere(boundsCenterWorldSpace, radius, 0.01);
+    //if (i == 8)
+    //{
+    //    float3 boundsCenterWorldSpace = LocalToWorld(self->transform, self->mesh->boundsCenter);
+    //    float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
+    //    DrawAxisSphere(boundsCenterWorldSpace, radius, 0.01);
+    //
+    //    Transform t = GetLocalBoundsTransform(self);// self->transform;
+    //    //t.position = boundsCenterWorldSpace;
+    //    //t.scale *= self->mesh->boundsSize * 0.5;
+    //    DrawBox(t);
+    //    DrawTransform(t);
+    //    DrawTransform(self->transform);
+    //}
 
-        Transform t = staticMesh->transform;
-        t.position = boundsCenterWorldSpace;
-        t.scale *= staticMesh->mesh->boundsSize * 0.5;
-        DrawBox(t);
-        DrawTransform(t);
-        DrawTransform(staticMesh->transform);
-    }
-
-    DrawMesh(staticMesh->material, staticMesh->mesh, staticMesh->transform);
+    DrawMesh(self->material, self->mesh, self->transform);
 }
 

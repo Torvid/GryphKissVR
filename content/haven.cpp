@@ -246,6 +246,14 @@ struct Entity
 //    float radius;
 //};
 
+//bool is(Entity* entity, char* type)
+//{
+//    return StringEquals(entity->type, type);
+//}
+enum EntityType
+{
+    EntityType_StaticMesh,
+};
 #define Instantiate(_type) (_type*)InstantiateLocal(#_type, sizeof(_type));
 void* InstantiateLocal(const char* type, uint32 size)
 {
@@ -526,7 +534,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         ArenaInitialize(&haven->arenaDrawCommands,        Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Draw Commands",        true), "Draw Commands");
         ArenaInitialize(&haven->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Global Draw Commands", true), "Global Draw Commands");
         ArenaInitialize(&haven->arenaEngineState,         Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Engine State",         true), "Engine State");
-        ArenaInitialize(&haven->arenaScene,               Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Scene",                true), "Scene");
+        ArenaInitialize(&haven->arenaScene,               Megabytes(512),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Scene",                true), "Scene");
         
 
         haven->profilingData = ArenaPushStruct(&haven->arenaEngineState, ProfilingData, "Profiling Data");
@@ -686,20 +694,22 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     //fontTest->Color = float3(1.0f, 1.0f, 1.0f);
     //DrawMesh(fontTest, assets->ui_quad, transform(center + float3(0,0,2)));
 
+    haven->hAlign = HAlign_left;
+    haven->vAlign = VAlign_down;
 
-    if (DrawButton("HAlign_right"))
-        haven->hAlign = HAlign_right;
-    if (DrawButton("HAlign_center"))
-        haven->hAlign = HAlign_center;
-    if (DrawButton("HAlign_left"))
-        haven->hAlign = HAlign_left;
-
-    if (DrawButton("VAlign_up"))
-        haven->vAlign = VAlign_up;
-    if (DrawButton("VAlign_center"))
-        haven->vAlign = VAlign_center;
-    if (DrawButton("VAlign_down"))
-        haven->vAlign = VAlign_down;
+    //if (DrawButton("HAlign_right"))
+    //    haven->hAlign = HAlign_right;
+    //if (DrawButton("HAlign_center"))
+    //    haven->hAlign = HAlign_center;
+    //if (DrawButton("HAlign_left"))
+    //    haven->hAlign = HAlign_left;
+    //
+    //if (DrawButton("VAlign_up"))
+    //    haven->vAlign = VAlign_up;
+    //if (DrawButton("VAlign_center"))
+    //    haven->vAlign = VAlign_center;
+    //if (DrawButton("VAlign_down"))
+    //    haven->vAlign = VAlign_down;
 
     char* lorem = "What is #88#*Lorem Ipsum*#ff#?\n\n*Lorem Ipsum* is simply #ff000088#dummy#ffffffff# text of the printing and typesetting industry. *Lorem Ipsum* #10#has #20#been #30#the #40#industry's #50#standard #60#dummy #70#text #80#ever #90#since #a0#the#b0# 1500s, #c0#when #d0#an #e0#unknown #f0#printer took a galley of type and scrambled it to make a type specimen book. **It has survived not only five centuries**, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing#ff0000# *Lorem #ffbf00#Ipsum* #80ff00#passages, #00ff40#and #00ffff#more #0040ff#recently #8000ff#with #ff00bf#desktop #ffffff#publishing software like Aldus PageMaker including versions of *Lorem Ipsum*.";
     char* lorem2 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text \nof the printing and typesetting industry. \nLorem Ipsum has been the industry's \nstandard dummy text ever since the \n1500s, when an unknown printer took \na galley of type and scrambled it to \nmake a type specimen book. It has survived \nnot only five centuries, but also the leap \ninto electronic typesetting, remaining \nessentially unchanged. It was popularised \nin the 1960s with the release of Letraset \nsheets containing Lorem Ipsum passages, \nand more recently with desktop publishing \nsoftware like Aldus PageMaker including \nversions of Lorem Ipsum.";
@@ -739,7 +749,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     profilerUpdate();
     gryphkissUpdate();
 
-    if (input->gDown)
+    if (input->faceButtonLeftDown || input->gDown)
     {
         haven->editor = !haven->editor;
     }

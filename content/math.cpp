@@ -1547,3 +1547,38 @@ float GetSpiralBlurWeight(float Samples, float i)
     Samples += 0.01f;
     return (1.0f - (i / Samples)) / Samples * 2.0;
 }
+
+bool RayBoxIntersect(float3 Start, float3 End)
+{
+    // fudge
+    Start += float3(0.0001f, 0.0002f, 0.0003f);
+
+    float3 RayPos = Start;
+    float dist = distance(Start, End);
+    float3 RayDir = (End - Start) / dist;
+    if (RayDir.x == 0 || RayDir.y == 0 || RayDir.z == 0)
+        return false;
+
+    float3 m = 1.0f / RayDir;
+    float3 n = -m * RayPos;
+    float3 k = abs(m);// *0.5f;
+
+    float3 t1 = n - k;
+    float3 t2 = n + k;
+
+    float tN = max(t1.x, t1.y, t1.z);
+    float tF = min(t2.x, t2.y, t2.z);
+
+    if (tN < 0)
+        return false;
+
+    if (tN > tF || tF < 0.0)
+        return false;
+
+    if(tN > dist)
+        return false;
+
+    //*Normal = -sign(RayDir) * step(float3(t1.y, t1.z, t1.x), float3(t1.x, t1.y, t1.z)) * step(float3(t1.z, t1.x, t1.y), float3(t1.x, t1.y, t1.z));
+
+    return true;
+}
