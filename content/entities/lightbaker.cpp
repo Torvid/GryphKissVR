@@ -1,5 +1,5 @@
 #pragma once
-#include "haven.cpp"
+#include "../haven.cpp"
 
 //const float3 radiosityBoxMin = { -2, -1, -1 };
 //const float3 radiosityBoxMax = { 8, 12, 7 };
@@ -52,8 +52,8 @@ bool worldRaycast(float3 pos0, float3 pos1)
         {
             StaticMesh* mesh = (StaticMesh*)haven->entities[k];
             Transform t = GetLocalBoundsTransform(mesh);
-            float3 startLocal = WorldToLocal(t, pos0);
-            float3 endLocal = WorldToLocal(t, pos1);
+            float3 startLocal = WorldToLocal(pos0, t);
+            float3 endLocal = WorldToLocal(pos1, t);
             if (RayBoxIntersect(startLocal, endLocal))
             {
                 return true;

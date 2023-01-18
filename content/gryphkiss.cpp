@@ -8,12 +8,14 @@ enum EntityType
     EntityType_Player,
     EntityType_StaticMesh,
     EntityType_LightBaker,
+    EntityType_ReflectionProbe,
 };
 
 #include "entities/hand.cpp"
 #include "entities/player.cpp"
 #include "entities/staticMesh.cpp"
 #include "entities/lightBaker.cpp"
+#include "entities/reflectionProbe.cpp"
 
 struct GameState
 {
@@ -79,10 +81,11 @@ void gryphkissStart()
 
     gameState->player = Instantiate(Player);
     PlayerStart(gameState->player);
-
+    
     float3 center = float3(0, 0, 0);// (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
+    
     StaticMeshInstantiate(assets->tonk, gameState->barnWallMat, transform(float3(3, 5, 0), float3(0.1, 0.2, 0.1)));
-    //center += float3(-3, -5, 0);
+
     // left wall
     for (int x = 0; x < 5; x++)
     {
@@ -188,13 +191,11 @@ void gryphkissStart()
             StaticMeshInstantiate(assets->BarnCeiling01, gameState->barnWallCleanMat, transform(center + float3(-x * 0.704f, y * 2, x * 0.704f) + float3(5, 0, 3), 0, -0.125, -0.25));
         }
     }
-    
 }
 
 void gryphkissUpdate()
 {
     GameState* gameState = haven->gameState;
-
 
     // Entity Update
     HandUpdate(gameState->leftHand);
@@ -212,45 +213,37 @@ void gryphkissUpdate()
 
     LightBakerUpdate(gameState->lightBaker);
 
+    Transform torvidTransform = {
+        float3(2.5, 8, 0),
+        input->playspaceStageLeft.right,
+        input->playspaceStageLeft.forward,
+        input->playspaceStageLeft.up,
+        { 1, 1, 1 } };
+    torvidTransform = rotate(torvidTransform, torvidTransform.up, -0.4);
+
+    Animation* torvidAnimation = assets->torvidTestAnim;
     // Set up bones
-    for (int i = 0; i < assets->torvidTestAnim->boneCount; i++)
+    for (int i = 0; i < torvidAnimation->boneCount; i++)
     {
-        int frameOffset = ((int)gameState->torvidFrame) * assets->torvidTestAnim->boneCount;
-        Transform t = assets->torvidTestAnim->transforms[i + frameOffset];
+        int frameOffset = ((int)gameState->torvidFrame) * torvidAnimation->boneCount;
+        Transform t = torvidAnimation->transforms[i + frameOffset];
         gameState->torvidMat->shaderBoneTransforms[i] = t;
 
-        
-        //DrawBox(LocalToWorld(t,), 0.005);
-        //// Draw bone
-        //if (!engineState->torvidTest->boneHierarchy[i].parent)
-        //    continue;
-        //float3 parentPos = engineState->torvidTestAnimation->transforms[parentIndex + frameOffset].position;
-
+        // Draw bone
+        if (haven->editor)
+        {
+            t.scale = vectorOne * 0.05;
+            t = LocalToWorld(t, torvidTransform);
+            DrawBox(t, 0.005);
+            Bone* parentBone = assets->torvidTest->boneHierarchy[i].parent;
+            if (parentBone)
+            {
+                float3 parentPos = torvidAnimation->transforms[parentBone->index + frameOffset].position;
+                parentPos = LocalToWorld(parentPos, torvidTransform);
+                DrawLine(parentPos, t.position);
+            }
+        }
     }
-    //// draw torvid bones
-    //for (int i = 0; i < assets->torvidTestAnimation->boneCount; i++)
-    //{
-    //    int frameOffset = ((int)engineState->torvidFrame) * engineState->torvidTestAnimation->boneCount;
-    //    Transform t = engineState->torvidTestAnimation->transforms[i + frameOffset];
-    //    float distanceToParent = 0.5f;
-    //    float boneRadius = 0.03f;
-    //    t.scale = vectorOne * boneRadius;
-    //    DrawMesh(memory, engineState, gameState->boneMaterial, engineState->boneSphere, ApplyTransform(t, monkeyRotation));
-    //    if (!engineState->torvidTest->boneHierarchy[i].parent)
-    //        continue;
-    //
-    //    Transform t2 = t;
-    //    int parentIndex = engineState->torvidTest->boneHierarchy[i].parent->index;
-    //    float3 parentPos = engineState->torvidTestAnimation->transforms[parentIndex + frameOffset].position;
-    //    distanceToParent = distance(parentPos, t2.position);
-    //    t2.forward = normalize(t2.position - parentPos);
-    //    t2.right = normalize(cross(t2.forward, t2.up));
-    //    t2.up = normalize(cross(t2.forward, t2.right));
-    //    t2.position = parentPos + t2.forward * boneRadius;
-    //    t2.scale = float3(boneRadius, distanceToParent - boneRadius * 2, boneRadius);
-    //
-    //    DrawMesh(memory, engineState, gameState->boneMaterial, engineState->bonePyramid, ApplyTransform(t2, monkeyRotation));
-    //}
 
     // Play animation
     float animationFPS = 25.0f;
@@ -264,26 +257,11 @@ void gryphkissUpdate()
         gameState->torvidFrame = 0.0f;
     }
 
+
     // Draw torvid
-    float3 center = float3(0, 0, 0);// (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
+    DrawMesh(gameState->torvidMat, assets->torvidTest, torvidTransform);
 
-    //DrawMesh(gameState->barnWallMat, assets->tonk, transform(center, float3(0.1, 0.2, 0.1)));
-
-    //center += float3(-3, -5, 0);
-    Transform torvidPos = { center +
-        float3(2.5, 8, 0),
-        input->playspaceStageLeft.right,
-        input->playspaceStageLeft.forward,
-        input->playspaceStageLeft.up,
-        { 1, 1, 1 } };
-
-    //torvidPos = haven->textTransform;
-    //torvidPos.position += -torvidPos.up * 0.9;
-    //torvidPos.position += torvidPos.right * 1.3;
-    //torvidPos.position += -torvidPos.forward * 1.5;
-    //torvidPos = rotate(monkeyRotation, monkeyRotation.up, -45);
-    torvidPos = rotate(torvidPos, torvidPos.up, -0.4);
-    
-    DrawMesh(gameState->torvidMat, assets->torvidTest, torvidPos);
+    //SetRenderTarget()
+    DrawMesh(gameState->barnCeilingMat, assets->BarnWall01, transform(float3(0, 0, 0)));
 
 }

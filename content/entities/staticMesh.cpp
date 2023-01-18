@@ -1,5 +1,5 @@
 #pragma once
-#include "haven.cpp"
+#include "../haven.cpp"
 
 struct StaticMesh
 {
@@ -20,7 +20,7 @@ StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_defaultlit* material, Tra
 
 Transform GetLocalBoundsTransform(StaticMesh* self)
 {
-    float3 boundsCenterWorldSpace = LocalToWorld(self->transform, self->mesh->boundsCenter);
+    float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
     //float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
     //DrawAxisSphere(boundsCenterWorldSpace, radius, 0.01);
 

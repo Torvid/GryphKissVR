@@ -1165,7 +1165,7 @@ Transform ctor_transform(float3 position, float3 forward, float3 up, float3 scal
 }
 
 
-float3 LocalToWorld(Transform Trans, float3 position)
+float3 LocalToWorld(float3 position, Transform Trans)
 {
     Trans.right *= Trans.scale.x;
     Trans.forward *= Trans.scale.y;
@@ -1180,7 +1180,7 @@ float3 LocalToWorld(Transform Trans, float3 position)
         dot(position, BoxForwardTransposed),
         dot(position, BoxUpTransposed)));
 }
-float3 WorldToLocal(Transform Trans, float3 position)
+float3 WorldToLocal(float3 position, Transform Trans)
 {
     return float3(
         dot(position - Trans.position, Trans.right / Trans.scale.x),
@@ -1188,7 +1188,7 @@ float3 WorldToLocal(Transform Trans, float3 position)
         dot(position - Trans.position, Trans.up / Trans.scale.z));
 }
 
-float3 LocalToWorldNoScale(Transform Trans, float3 position)
+float3 LocalToWorldNoScale(float3 position, Transform Trans)
 {
     float3 BoxRightTransposed = float3(Trans.right.x, Trans.forward.x, Trans.up.x);
     float3 BoxForwardTransposed = float3(Trans.right.y, Trans.forward.y, Trans.up.y);
@@ -1199,7 +1199,7 @@ float3 LocalToWorldNoScale(Transform Trans, float3 position)
         dot(position, BoxForwardTransposed),
         dot(position, BoxUpTransposed)));
 }
-float3 WorldToLocalNoScale(Transform Trans, float3 position)
+float3 WorldToLocalNoScale(float3 position, Transform Trans)
 {
     return float3(
         dot(position - Trans.position, Trans.right),
@@ -1207,7 +1207,7 @@ float3 WorldToLocalNoScale(Transform Trans, float3 position)
         dot(position - Trans.position, Trans.up));
 }
 
-float3 LocalToWorldVector(Transform Trans, float3 position)
+float3 LocalToWorldVector(float3 position, Transform Trans)
 {
     Trans.right *= Trans.scale.x;
     Trans.forward *= Trans.scale.y;
@@ -1222,7 +1222,7 @@ float3 LocalToWorldVector(Transform Trans, float3 position)
         dot(position, BoxForwardTransposed),
         dot(position, BoxUpTransposed));
 }
-float3 WorldToLocalVector(Transform Trans, float3 position)
+float3 WorldToLocalVector(float3 position, Transform Trans)
 {
     return float3(
         dot(position, Trans.right / Trans.scale.x),
@@ -1230,7 +1230,7 @@ float3 WorldToLocalVector(Transform Trans, float3 position)
         dot(position, Trans.up / Trans.scale.z));
 }
 
-float3 LocalToWorldVectorNoScale(Transform Trans, float3 position)
+float3 LocalToWorldVectorNoScale(float3 position, Transform Trans)
 {
     float3 BoxRightTransposed = float3(Trans.right.x, Trans.forward.x, Trans.up.x);
     float3 BoxForwardTransposed = float3(Trans.right.y, Trans.forward.y, Trans.up.y);
@@ -1241,29 +1241,28 @@ float3 LocalToWorldVectorNoScale(Transform Trans, float3 position)
         dot(position, BoxForwardTransposed),
         dot(position, BoxUpTransposed));
 }
-float3 WorldToLocalVectorNoScale(Transform Trans, float3 position)
+float3 WorldToLocalVectorNoScale(float3 position, Transform Trans)
 {
     return float3(dot(position, Trans.right),
         dot(position, Trans.forward),
         dot(position, Trans.up));
 }
-
 // A is a world space transform
 Transform LocalToWorld(Transform A, Transform B)
 {
-    B.position  = LocalToWorld(A, B.position);
-    B.right     = LocalToWorldVector(A, B.right);
-    B.forward   = LocalToWorldVector(A, B.forward);
-    B.up        = LocalToWorldVector(A, B.up);
-    return B;
+    A.position  = LocalToWorld(A.position, B);
+    A.right     = LocalToWorldVector(A.right, B);
+    A.forward   = LocalToWorldVector(A.forward, B);
+    A.up        = LocalToWorldVector(A.up, B);
+    return A;
 }
 // A is a world space transform
 Transform WorldToLocal(Transform A, Transform B)
 {
-    B.position  = WorldToLocal(A, B.position);
-    B.right     = WorldToLocalVector(A, B.right);
-    B.forward   = WorldToLocalVector(A, B.forward);
-    B.up        = WorldToLocalVector(A, B.up);
+    B.position  = WorldToLocal(B.position, A);
+    B.right     = WorldToLocalVector(B.right, A);
+    B.forward   = WorldToLocalVector(B.forward, A);
+    B.up        = WorldToLocalVector(B.up, A);
     return B;
 }
 

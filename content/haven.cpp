@@ -680,7 +680,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         haven->profiling = !haven->profiling;
     }
 
-
     // Mouse cursor
     CreateMaterialLocal(mouseCursorCommand, assets->UIShader, Material_UIShader);
     mouseCursorCommand->transform = {};
@@ -745,7 +744,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     DrawMesh(finalOutputCommand);
 
     gameMemory->renderCommands_count = haven->renderCommands_count;
-
 }
 
 #endif

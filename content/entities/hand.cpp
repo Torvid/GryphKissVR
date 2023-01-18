@@ -1,5 +1,5 @@
 #pragma once
-#include "haven.cpp"
+#include "../haven.cpp"
 
 enum HandSide
 {
@@ -25,13 +25,13 @@ void HandUpdate(Hand* hand)
 {
     if (hand->handSide == HandSide_Left)
     {
-        hand->transform = LocalToWorld(input->playspace, input->aimLeft);
+        hand->transform = LocalToWorld(input->aimLeft, input->playspace);
         if (input->faceButtonLeftDown)
             hand->clickCount++;
     }
     if (hand->handSide == HandSide_Right)
     {
-        hand->transform = LocalToWorld(input->playspace, input->aimRight);
+        hand->transform = LocalToWorld(input->aimRight, input->playspace);
         if (input->faceButtonRightDown)
             hand->clickCount++;
     }

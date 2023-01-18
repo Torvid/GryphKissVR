@@ -34,16 +34,41 @@ typedef struct
 } float2;
 typedef struct 
 {
-    float x;
-    float y;
-    float z;
+    union
+    {
+        struct
+        {
+            float x;
+            float y;
+            float z;
+        };
+        struct
+        {
+            float2 xy;
+        };
+    };
 } float3;
 typedef struct 
 {
-    float x;
-    float y;
-    float z;
-    float w;
+    union
+    {
+        struct
+        {
+            float x;
+            float y;
+            float z;
+            float w;
+        };
+        struct
+        {
+            float2 xy;
+            float2 zw;
+        };
+        struct
+        {
+            float3 xyz;
+        };
+    };
 } float4;
 typedef struct
 {
