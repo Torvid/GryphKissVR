@@ -13,30 +13,39 @@ struct Hand
     int clickCount;
     Material_defaultlit* handMaterial;
     HandSide handSide;
+    StaticMesh* tonk;
 };
 
-void HandStart(Hand* hand)
+void HandStart(Hand* self)
 {
-    hand->clickCount = 0;
-    CreateMaterialGlobal(hand->handMaterial, assets->defaultlit, Material_defaultlit);
+    self->clickCount = 0;
+    CreateMaterialGlobal(self->handMaterial, defaultlit);
+    self->tonk = StaticMeshInstantiate(assets->tonk, self->handMaterial, transform(float3(0, 0, 0)));
+    
+
 }
 
-void HandUpdate(Hand* hand)
+void HandUpdate(Hand* self)
 {
-    if (hand->handSide == HandSide_Left)
+    if (self->handSide == HandSide_Left)
     {
-        hand->transform = LocalToWorld(input->aimLeft, input->playspace);
+        self->transform = LocalToWorld(input->aimLeft, input->playspace);
         if (input->faceButtonLeftDown)
-            hand->clickCount++;
+            self->clickCount++;
     }
-    if (hand->handSide == HandSide_Right)
+    if (self->handSide == HandSide_Right)
     {
-        hand->transform = LocalToWorld(input->aimRight, input->playspace);
+        self->transform = LocalToWorld(input->aimRight, input->playspace);
         if (input->faceButtonRightDown)
-            hand->clickCount++;
+            self->clickCount++;
     }
 
-    DrawRay(hand->transform.position, hand->transform.forward, 999, 0.01f);
-    char count = '0' + hand->clickCount % 10;
-    DrawText3D(&count, hand->transform.position, 0.1f);
+    DrawRay(self->transform.position, self->transform.forward, 999, 0.01f);
+    char count = '0' + self->clickCount % 10;
+    DrawText3D(&count, self->transform.position, 0.2f);
+
+    Transform tonkTransform = self->transform;
+    tonkTransform.scale = float3(0.01, 0.01, 0.01);
+    self->tonk->transform = tonkTransform;
+    //DrawMesh(self->handMaterial, assets->tonk, tonkTransform);
 }

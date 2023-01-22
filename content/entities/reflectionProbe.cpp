@@ -15,9 +15,9 @@ ReflectionProbe* ReflectionProbeInstantiate(Transform transform)
 
     for (int i = 0; i < 6; i++)
     {
-        self->cubeTexture[i] = CreateTextureTarget(1024, 1024);
+        self->cubeTexture[i] = CreateTextureTarget(1024, 1024, true);
     }
-    self->octTexture = CreateTextureTarget(64, 64);
+    self->octTexture = CreateTextureTarget(1024, 1024, true);
 
     self->transform = transform;
     return self;
@@ -73,7 +73,7 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
                 camera.orthographic = false;
                 camera.orthoWidth = 10;
                 camera.transform = transforms[i];
-                camera.transform.position = haven->spectatorCamera.position;
+                camera.transform.position = startPos + float3(-0.5, 0, -0.3);// haven->spectatorCamera.position;
                 camera.aspectRatio = 1.0f;
                 DrawMesh(mesh->material, mesh->mesh, mesh->transform, camera, false, "Scene StaticMesh");
             }
@@ -88,7 +88,7 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
             planeTransform = LookRotation(planeTransform, float3(0, 0, -1), float3(0, -1, 0));
         
         
-        CreateMaterialLocal(waterPlane, assets->unlit, Material_unlit);
+        CreateMaterialLocal(waterPlane, unlit);
         waterPlane->ColorTexture = self->cubeTexture[i];
         waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
         waterPlane->BackFaceCulling = true;
@@ -101,7 +101,7 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
 
     SetRenderTarget(self->octTexture, "Probe Capture");
     DrawClear(float3(0, 1, 0));
-    CreateMaterialLocal(octUnwrap, assets->reflectionProbeCubemapToOct, Material_reflectionProbeCubemapToOct);
+    CreateMaterialLocal(octUnwrap, reflectionProbeCubemapToOct);
     octUnwrap->cubeTexture0 = self->cubeTexture[0];
     octUnwrap->cubeTexture1 = self->cubeTexture[1];
     octUnwrap->cubeTexture2 = self->cubeTexture[2];
@@ -118,7 +118,7 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
     planeTransform = transform(startPos + float3(1.5, 0, -0.5) * size);
     planeTransform.scale = float3(size, size, size);
     planeTransform = LookRotation(planeTransform, float3(0, 0, 1), float3(0, -1, 0));
-    CreateMaterialLocal(waterPlane, assets->unlit, Material_unlit);
+    CreateMaterialLocal(waterPlane, unlit);
     waterPlane->ColorTexture = self->octTexture;
     waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
     waterPlane->BackFaceCulling = true;
@@ -126,13 +126,13 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
 
     DrawFont("Octahedral packing: ", transform(planeTransform.position), 1, 2.0f, HAlign_left, VAlign_up);
 
-    CreateMaterialLocal(waterPlane2, assets->defaultlit, Material_defaultlit);
+    CreateMaterialLocal(waterPlane2, defaultlit);
     waterPlane2->texM1 = assets->baseM1;
     waterPlane2->texM2 = assets->baseM2;
     waterPlane2->texCubemap = self->octTexture;
     waterPlane2->Color = float3(1.0f, 1.0f, 1.0f);
     planeTransform.scale = float3(0.25, 0.25, 0.25);
-    planeTransform.position += float3(-1.5, 0, 0);
+    planeTransform.position = startPos + float3(-0.5, 0, -0.3);
     DrawMesh(waterPlane2, assets->sphereMesh, planeTransform, "Probe plane in the scene");
 }
 

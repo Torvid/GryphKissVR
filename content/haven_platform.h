@@ -539,11 +539,11 @@ typedef int GLUploadMesh(Mesh* texture);
 typedef void* Memset(void* str, int c, uint64 n);
 typedef void* Memcpy(void* destination, const void* source, uint64 num);
 
-typedef uint32 PlatformGraphicsLoadTexture(Texture* texture); // Upload a texture to the GPU and return back a handle
+typedef uint32 PlatformGraphicsLoadTexture(Texture* texture, bool clamp); // Upload a texture to the GPU and return back a handle
 typedef uint32 PlatformGraphicsLoadMesh(Mesh* mesh); // Upload a mesh to the GPU and return back a handle
 typedef uint32 PlatformGraphicsLoadShader(Shader* shader); // Compile and upload a unlit to the GPU and return back a handle
 typedef void PlatformGraphicsCreateFramebufferTarget(Texture* texture); // Create a framebuffer, these are special because they contain up to three textures. (left eye, right eye, spectator view)
-typedef void PlatformGraphicsCreateTextureTarget(Texture* texture); // Create a texture target for drawing to. use for GPU sim and such.
+typedef void PlatformGraphicsCreateTextureTarget(Texture* texture, bool clamp); // Create a texture target for drawing to. use for GPU sim and such.
 
 typedef void EngineProfilerBeingSample();
 typedef void EngineProfilerEndSample(char* name);
@@ -553,6 +553,8 @@ typedef struct
 {
     bool initialized;
     bool gameFocused;
+    int lastFrame;
+    int frame;
     PlatformPrint* platformPrint;
     Printf* printf;
     sPrintf* sprintf;

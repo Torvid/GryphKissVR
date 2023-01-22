@@ -44,7 +44,7 @@ void main()
 {
 	float2 UV = PSVertexUV * 8.0;
 
-	FragColor.rgb = Sample(ColorTexture, (PSVertexUV-0.5) * 1.5 + 0.5).rgb * Color;
+	FragColor.rgb = Sample(ColorTexture, PSVertexUV).rgb * Color;
 	//FragColor.rgb = textureLod(ColorTexture, UV, 4.0).rgb * Color;
 	//FragColor.rgb = textureGrad(ColorTexture, UV, float2(0.1, 0), float2(0, 0)).rgb * Color;
 	FragColor.a = 1.0;

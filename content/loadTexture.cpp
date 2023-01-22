@@ -99,7 +99,7 @@ void LoadASTC(Texture* texture, int fileSize)
     }
 
     texture->mipCount = i;
-    texture->GLID = haven->platformGraphicsLoadTexture(texture);
+    texture->GLID = haven->platformGraphicsLoadTexture(texture, false);
 }
 
 void LoadTexture(Texture* texture)
@@ -184,19 +184,19 @@ void LoadTexture(Texture* texture)
         int i = 0;
         for (int y = tga->height - 1; y >= 0; y--)
         {
-            uint8* destination = texture->mips[0] + tga->width * y * 4;
-            uint8* source = (uint8*)tga + sizeof(TGA_HEADER) + tga->width * (tga->height - y) * 4;
-            Copy(source, destination, tga->width * 4);
-            //for (int x = 0; x < tga->width; x++)
-            //{
-            //    //int i = x + y * tga->width;
-            //    int j = x + y * tga->width;
-            //    texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
-            //    texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
-            //    texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
-            //    texture->mips[0][i * 4 + 3] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 3);
-            //    i++;
-            //}
+            //uint8* destination = texture->mips[0] + tga->width * y * 4;
+            //uint8* source = (uint8*)tga + sizeof(TGA_HEADER) + tga->width * (tga->height - y) * 4;
+            //Copy(source, destination, tga->width * 4);
+            for (int x = 0; x < tga->width; x++)
+            {
+                //int i = x + y * tga->width;
+                int j = x + y * tga->width;
+                texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
+                texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
+                texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
+                texture->mips[0][i * 4 + 3] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 3);
+                i++;
+            }
         }
     }
     else if (flipLeftRight)
@@ -236,7 +236,7 @@ void LoadTexture(Texture* texture)
     ProfilerEndSample("Copy");
 
     ProfilerBeingSample();
-    texture->GLID = haven->platformGraphicsLoadTexture(texture);
+    texture->GLID = haven->platformGraphicsLoadTexture(texture, false);
     ProfilerEndSample("Upload");
 }
 

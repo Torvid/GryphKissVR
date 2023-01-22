@@ -145,16 +145,20 @@ void main()
 	float halflambert = NdotL * 0.5 + 0.5;
 	
 
-	float3 cameraVector = normalize(CameraPosition - PSVertexPos);
+	float3 cameraVector = (PSVertexPos - CameraPosition);
 	float3 reflectVector = reflect(cameraVector, PSVertexNormal);
-	reflectVector.x = -reflectVector.x;
-	float2 reflectUV = OctEncode(normalize(reflectVector));
-	float4 cubemap = Sample(texCubemap, reflectUV);
+	//reflectVector.x = -reflectVector.x;
+	reflectVector.yz = -reflectVector.yz;
+	float2 reflectUV = OctEncode((reflectVector));
+	//float4 cubemap = Sample(texCubemap, reflectUV);
+	float4 cubemap = SampleGrad(texCubemap, reflectUV, ddxy(UV*10.0f));
 
 	float3 lighting = float3(saturate(NdotL)) + float3(0.4, 0.3, 0.2) + cubemap.rgb * 2.0f;
 
 	FragColor.rgb =  M1.rgb * lighting;
-	
+
+	//FragColor.rgb = PSVertexNormal;
+	//FragColor.rgb = (CameraPosition - PSVertexPos) * 10.0;
 	if (M2.a < 0.5)
 		discard;
 	

@@ -12,11 +12,12 @@ enum EntityType
     EntityType_Max,
 };
 
-#include "entities/hand.cpp"
-#include "entities/player.cpp"
 #include "entities/staticMesh.cpp"
 #include "entities/lightBaker.cpp"
 #include "entities/reflectionProbe.cpp"
+
+#include "entities/player.cpp"
+#include "entities/hand.cpp"
 
 struct GameState
 {
@@ -51,30 +52,30 @@ void gryphkissStart()
     gameState->lightBaker = LightBakerStart();
 
     // Load Torvid
-    CreateMaterialGlobal(gameState->torvidMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->torvidMat, defaultlit);
     gameState->torvidMat->texM1 = assets->TorvidM1;
     gameState->torvidMat->texM2 = assets->TorvidM2;
     gameState->torvidMat->texCubemap = assets->black;
     gameState->torvidMat->BackFaceCulling = true;
 
     // Create materials and load textures
-    CreateMaterialGlobal(gameState->barnWallMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->barnWallMat, defaultlit);
     gameState->barnWallMat->texM1 = assets->BarnWallM1;
     gameState->barnWallMat->texM2 = assets->BarnWallM2;
     gameState->barnWallMat->texCubemap = assets->black;
-    CreateMaterialGlobal(gameState->barnWallCleanMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->barnWallCleanMat, defaultlit);
     gameState->barnWallCleanMat->texM1 = assets->BarnWallCleanM1;
     gameState->barnWallCleanMat->texM2 = assets->BarnWallCleanM2;
     gameState->barnWallCleanMat->texCubemap = assets->black;
-    CreateMaterialGlobal(gameState->barnCeilingMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->barnCeilingMat, defaultlit);
     gameState->barnCeilingMat->texM1 = assets->BarnCeilingM1;
     gameState->barnCeilingMat->texM2 = assets->BarnCeilingM2;
     gameState->barnCeilingMat->texCubemap = assets->black;
-    CreateMaterialGlobal(gameState->barnTilesMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->barnTilesMat, defaultlit);
     gameState->barnTilesMat->texM1 = assets->TilesM1;
     gameState->barnTilesMat->texM2 = assets->TilesM2;
     gameState->barnTilesMat->texCubemap = assets->black;
-    CreateMaterialGlobal(gameState->StrawPileMat, assets->defaultlit, Material_defaultlit);
+    CreateMaterialGlobal(gameState->StrawPileMat, defaultlit);
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
     gameState->StrawPileMat->texCubemap = assets->black;
