@@ -472,8 +472,6 @@ typedef enum
     bool DisableDepthTest; \
     BlendMode blendMode; \
     bool spectatorOnly; \
-    bool customCameraTransform; \
-    Transform cameraTransform; \
     uint8** parameters;\
     Transform* boneTransforms;
 
@@ -492,16 +490,29 @@ typedef enum
     RenderCommand_SetRenderTarget
 } RenderCommandType;
 
+typedef struct
+{
+    bool enabled;
+    Transform transform;
+    float fov;
+    bool orthographic;
+    float orthoWidth;
+    float maxDepth;
+    float aspectRatio;
+
+} Camera;
+
 typedef struct 
 {
+    const char* name;
+    RenderCommandType type;
     int index;
-
     bool profile;
-
-    RenderCommandType type; // 32
 
     // RenderCommand_DrawMesh
     Material* material;
+    bool customCameraEnabled;
+    Camera customCamera;
 
     // RenderCommand_Clear
     float4 clearColor;

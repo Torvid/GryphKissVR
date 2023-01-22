@@ -1422,6 +1422,7 @@ float3 VectorToPolar(float3 Normal)
 
     return float3(frac(u), frac(v), 0);
 }
+
 // X and Y are UVs, Z is face index
 float3 RayCubemap(float3 v)
 {
@@ -1476,13 +1477,10 @@ float3 RayCubemap(float3 v)
 #endif
 }
 
-
 float3 RaySphereUV(float3 Normal)
 {
     return RayCubemap(Normal);
 }
-
-
 
 float GetT(float t, float alpha, float3 p0, float3 p1)
 {

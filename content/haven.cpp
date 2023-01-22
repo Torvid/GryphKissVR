@@ -180,6 +180,7 @@ struct EngineState
     Assets assets;
     HAlign hAlign;
     VAlign vAlign;
+    float3 clearColor;
 };
 static EngineState* haven;
 static Input* input;
@@ -207,6 +208,7 @@ static GameMemory* globalGameMemory;
 #include "textureCopyShader.shader"
 #include "UIShader.shader"
 #include "unlit.shader"
+#include "reflectionProbeCubemapToOct.shader"
 
 
 void LoadAssets(Assets* assets)
@@ -236,22 +238,24 @@ void LoadAssets(Assets* assets)
     SetShaderDefaults(name);\
 
 
-void DrawClear(float3 color = {0,0,0})
+void DrawClear(float3 color = {0,0,0}, const char* name = 0)
 {
     RenderCommand* result = ArrayAddNew(haven->renderCommands);
     result->type = RenderCommand_Clear;
     result->clearColor = { color.x, color.y, color.z, 1 };
     result->clearColorEnabled = true;
     result->clearDepthEnabled = true;
+    result->name = name;
 }
 
-void DrawClearDepth()
+void DrawClearDepth(const char* name = 0)
 {
     RenderCommand* result = ArrayAddNew(haven->renderCommands);
     result->type = RenderCommand_Clear;
     //result->clearColor = clearColor;
     result->clearColorEnabled = false;
     result->clearDepthEnabled = true;
+    result->name = name;
 }
 void DrawClearColor(float3 color = { 0,0,0 })
 {
@@ -262,9 +266,9 @@ void DrawClearColor(float3 color = { 0,0,0 })
     result->clearDepthEnabled = false;
 }
 
-void SetRenderTarget(Texture* target)
+void SetRenderTarget(Texture* target, const char* name = 0)
 {
-    RenderCommand result = {};
+    RenderCommand* result = ArrayAddNew(haven->renderCommands);
     if (target == 0)
     {
 
@@ -285,9 +289,9 @@ void SetRenderTarget(Texture* target)
         }
     }
 
-    result.type = RenderCommand_SetRenderTarget;
-    result.framebufferTarget = target;
-    ArrayAdd(haven->renderCommands, result);
+    result->type = RenderCommand_SetRenderTarget;
+    result->framebufferTarget = target;
+    result->name = name;
 }
 
 Texture* CreateFramebufferTarget(EngineState* engineState)
@@ -574,8 +578,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     haven->waterRipplesCurrent = temp;
 
     SetRenderTarget(haven->SwapBuffer);
-    DrawClear(float3(0.251, 0.298, 0.373));
-
+    haven->clearColor = float3(0.251, 0.298, 0.373);
+    DrawClear(haven->clearColor);
 
 
     float2 pos = float2(0, 0);
@@ -642,19 +646,19 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     //DrawFontMain("Hello, this is a test sentence.\nhttps://byork.torvid.net/B-Yorked.htm\ngryph@torvid.net\n$33.99 ((x^2) - 3*4) / 187.0\nvoid main(char* s) { return 0; }\n$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@", float2(400, 420), 200);
 
     DrawFont2D("@", input->mousePos, 500, 600, haven->hAlign, haven->vAlign);
-
+    //
     //DrawFont2D(lorem4, float2(400, 400), 300, 700, haven->hAlign, haven->vAlign);
     //DrawFontCameraFacing(lorem4, center + float3(0, 0, 3), 0.75, 2.0f * 0.75f, haven->hAlign, haven->vAlign);
     //DrawFont(lorem4, transform(center + float3(-1, 0, 2)), 1.0, 2.0f, haven->hAlign, haven->vAlign);
 
     //DrawFont2D("LLL**LLL**", float2(700, 200), 800, 400, haven->hAlign, haven->vAlign);
-
+    //
     //DrawText(lorem2, float2(200, 200));
     //DrawText3D(lorem2, center + float3(1, 0, 3));
-
+    //
     //DrawFontMain("aaaaaaaa\naaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", float2(400, 420), 200);
     //DrawFontMain("^v^ uvu ovo >v> <v< ;v; :> >:3 >:D");
-
+    //
     //DrawFontMain("Hello World", float2(100, 100), 50);
     //DrawFontMain("Hello World", float2(100, 120), 100);
     //DrawFontMain("Hello World", float2(100, 180), 500);

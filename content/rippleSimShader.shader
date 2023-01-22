@@ -65,9 +65,9 @@ void main()
 	float delta = (targetHeight - currentHeight);
 
 	float newVelocity = currentVelocity + delta;
-
+	newVelocity *= 0.99f;
 	float newPosition = currentHeight + newVelocity + force;
-
+	newPosition *= 0.95f;
 	FragColor = float4(newPosition, newVelocity, 0, 0);
 }
 #endif

@@ -9,6 +9,7 @@ enum EntityType
     EntityType_StaticMesh,
     EntityType_LightBaker,
     EntityType_ReflectionProbe,
+    EntityType_Max,
 };
 
 #include "entities/hand.cpp"
@@ -53,24 +54,30 @@ void gryphkissStart()
     CreateMaterialGlobal(gameState->torvidMat, assets->defaultlit, Material_defaultlit);
     gameState->torvidMat->texM1 = assets->TorvidM1;
     gameState->torvidMat->texM2 = assets->TorvidM2;
+    gameState->torvidMat->texCubemap = assets->black;
     gameState->torvidMat->BackFaceCulling = true;
 
     // Create materials and load textures
     CreateMaterialGlobal(gameState->barnWallMat, assets->defaultlit, Material_defaultlit);
     gameState->barnWallMat->texM1 = assets->BarnWallM1;
     gameState->barnWallMat->texM2 = assets->BarnWallM2;
+    gameState->barnWallMat->texCubemap = assets->black;
     CreateMaterialGlobal(gameState->barnWallCleanMat, assets->defaultlit, Material_defaultlit);
     gameState->barnWallCleanMat->texM1 = assets->BarnWallCleanM1;
     gameState->barnWallCleanMat->texM2 = assets->BarnWallCleanM2;
+    gameState->barnWallCleanMat->texCubemap = assets->black;
     CreateMaterialGlobal(gameState->barnCeilingMat, assets->defaultlit, Material_defaultlit);
     gameState->barnCeilingMat->texM1 = assets->BarnCeilingM1;
     gameState->barnCeilingMat->texM2 = assets->BarnCeilingM2;
+    gameState->barnCeilingMat->texCubemap = assets->black;
     CreateMaterialGlobal(gameState->barnTilesMat, assets->defaultlit, Material_defaultlit);
     gameState->barnTilesMat->texM1 = assets->TilesM1;
     gameState->barnTilesMat->texM2 = assets->TilesM2;
+    gameState->barnTilesMat->texCubemap = assets->black;
     CreateMaterialGlobal(gameState->StrawPileMat, assets->defaultlit, Material_defaultlit);
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
+    gameState->StrawPileMat->texCubemap = assets->black;
 
     gameState->leftHand  = Instantiate(Hand);
     gameState->rightHand = Instantiate(Hand);
@@ -191,6 +198,10 @@ void gryphkissStart()
             StaticMeshInstantiate(assets->BarnCeiling01, gameState->barnWallCleanMat, transform(center + float3(-x * 0.704f, y * 2, x * 0.704f) + float3(5, 0, 3), 0, -0.125, -0.25));
         }
     }
+
+    StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(center));
+
+    ReflectionProbeInstantiate(transform(float3(0, 0, 0)));
 }
 
 void gryphkissUpdate()
@@ -205,9 +216,14 @@ void gryphkissUpdate()
 
     for (int i = 0; i < ArrayCount(haven->entities); i++)
     {
-        if (haven->entities[i]->type == EntityType_StaticMesh)
+        Entity* entity = haven->entities[i];
+        if (entity->type == EntityType_StaticMesh)
         {
-            StaticMeshUpdate((StaticMesh*)haven->entities[i], i);
+            StaticMeshUpdate((StaticMesh*)entity, i);
+        }
+        if (entity->type == EntityType_ReflectionProbe)
+        {
+            ReflectionProbeUpdate((ReflectionProbe*)entity, i);
         }
     }
 
@@ -257,11 +273,6 @@ void gryphkissUpdate()
         gameState->torvidFrame = 0.0f;
     }
 
-
     // Draw torvid
     DrawMesh(gameState->torvidMat, assets->torvidTest, torvidTransform);
-
-    //SetRenderTarget()
-    DrawMesh(gameState->barnCeilingMat, assets->BarnWall01, transform(float3(0, 0, 0)));
-
 }

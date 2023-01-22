@@ -4,9 +4,10 @@
 #define ShaderName defaultlit
 
 #define Parameters(X) \
-	X(float3, Color)\
-	X(sampler2D, texM1)\
-	X(sampler2D, texM2)\
+	X(float3, Color) \
+	X(sampler2D, texM1) \
+	X(sampler2D, texM2) \
+	X(sampler2D, texCubemap) \
 
 #define addBoneTransforms 1
 
@@ -78,6 +79,10 @@ void main()
 	worldTangent = float3(worldTangent.x, -worldTangent.z, worldTangent.y);
 	worldPos = float3(worldPos.x, -worldPos.z, worldPos.y);
 
+	//float3 cameraPos = float3(3.0, 3.0, 3.0);
+	//float dist = distance(worldPos, cameraPos);
+	//gl_Position = float4(OctEncode(worldPos- cameraPos), 0, 1);// OctEncode(worldPos);// float4(OctEncode(worldPos), 0, 0);
+
 	PSVertexPos = worldPos;
 	PSVertexNormal = normalize(worldNormal);
 	PSVertexTangent = normalize(worldTangent);
@@ -132,7 +137,6 @@ void main()
 
 	// Tangent-Space Normal mapping
 	M2.rg = M2.rg * 2.0 - 1.0;
-
 	float3 worldNormal = PSVertexNormal *1.0 + M2.r * PSVertexTangent + M2.g * PSVertexBitangent;
 	//float3 worldNormal = deriveTangentBasis(PSVertexNormal, worldPos, UV, float3(M2.rg, 1));
 
@@ -140,9 +144,16 @@ void main()
 	float NdotL = dot(worldNormal, float3(0, 1, 1));
 	float halflambert = NdotL * 0.5 + 0.5;
 	
-	float3 lighting = float3(saturate(NdotL)) + float3(0.4, 0.3, 0.2);
-	
-	FragColor.rgb = M1.rgb * lighting;
+
+	float3 cameraVector = normalize(CameraPosition - PSVertexPos);
+	float3 reflectVector = reflect(cameraVector, PSVertexNormal);
+	reflectVector.x = -reflectVector.x;
+	float2 reflectUV = OctEncode(normalize(reflectVector));
+	float4 cubemap = Sample(texCubemap, reflectUV);
+
+	float3 lighting = float3(saturate(NdotL)) + float3(0.4, 0.3, 0.2) + cubemap.rgb * 2.0f;
+
+	FragColor.rgb =  M1.rgb * lighting;
 	
 	if (M2.a < 0.5)
 		discard;

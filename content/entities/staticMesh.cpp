@@ -60,6 +60,6 @@ void StaticMeshUpdate(StaticMesh* self, int i)
     //    DrawTransform(self->transform);
     //}
 
-    DrawMesh(self->material, self->mesh, self->transform);
+    DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
 }
 

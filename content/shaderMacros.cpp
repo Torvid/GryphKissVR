@@ -76,7 +76,7 @@ struct ShaderStructName
     };
 };
 
-void DrawMesh(ShaderStructName* command, bool profile = true)
+void DrawMesh(ShaderStructName* command, bool profile = true, const char* name = 0)
 {
     ShaderStructName* temp;
     //if (text)
@@ -95,7 +95,9 @@ void DrawMesh(ShaderStructName* command, bool profile = true)
     result->material = &temp->mat;
 }
 
-void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, bool profile = true)
+void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, 
+    Camera camera,
+    bool profile = true, const char* name = 0)
 {
     ShaderStructName* temp;
     //if (text)
@@ -118,8 +120,14 @@ void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, bool p
     result->type = RenderCommand_DrawMesh;
     result->profile = profile;
     result->material = &temp->mat;
-}
+    result->name = name;
+    result->customCamera = camera;
 
+}
+void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, bool profile = true, const char* name = 0)
+{
+    DrawMesh(command, mesh, transform, {}, profile, name);
+}
 
 void PASTE(SetupShader_, ShaderName)(Shader* shader)
 {
