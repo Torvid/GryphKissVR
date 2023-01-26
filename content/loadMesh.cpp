@@ -195,8 +195,8 @@ void LoadObj(Mesh* mesh)
     mesh->vertexCount = indexCount / 3;
     mesh->indexCount = indexCount / 3;
 
-    mesh->vertexes = ArenaPushArray(&haven->arenaHotreload, mesh->vertexCount, Vertex, mesh->filename);
-    mesh->indexes = ArenaPushArray(&haven->arenaHotreload, mesh->indexCount, uint32, mesh->filename);
+    mesh->vertexes = ArenaPushArray(&haven->arenaAssets, mesh->vertexCount, Vertex, mesh->filename);
+    mesh->indexes = ArenaPushArray(&haven->arenaAssets, mesh->indexCount, uint32, mesh->filename);
 
     for (int i = 0; i < mesh->vertexCount; i++)
     {
@@ -274,12 +274,12 @@ void LoadMesh(Mesh* mesh)
     }
 
     // Push file into the hoterload arena
-    MESH_HEADER* header = (MESH_HEADER*)(haven->arenaHotreload.base + haven->arenaHotreload.used);
+    MESH_HEADER* header = (MESH_HEADER*)(haven->arenaAssets.base + haven->arenaAssets.used);
     uint8* end = (uint8*)haven->platformReadFile((uint8*)header, mesh->filename);
     
     Assert(end, "File not found");
     
-    ArenaPushBytes(&haven->arenaHotreload, (uint8*)end - (uint8*)header, mesh->filename);
+    ArenaPushBytes(&haven->arenaAssets, (uint8*)end - (uint8*)header, mesh->filename);
 
     // Crash if we read the wrong file
     Assert(Equals((uint8*)header->magicCookie, (uint8*)"h a v e n - mesh", 16));

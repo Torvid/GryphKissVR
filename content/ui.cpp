@@ -848,6 +848,13 @@ void DrawAABB(float3 center, float3 size, float width = 0.01, float3 color = { 1
     DrawLine(center + size * float3(1, -1,  -1), center + size * float3(-1, -1, -1), width, color, opacity);
 }
 
+void DrawAABBMinMax(float3 minPos, float3 maxPos, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+{
+    float3 center = (minPos + maxPos) * 0.5;
+    float3 size = abs(minPos - maxPos) * 0.5;
+    DrawAABB(center, size, width, color, opacity);
+}
+
 float3 TransformPosition_LocalSpaceToWorldSpace(Transform transform, float3 localPosition)
 {
     // Multiply the x/y/z components with the transforms axes.

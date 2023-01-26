@@ -1,8 +1,9 @@
 #pragma once
 #include "haven_platform.h"
-#include "memory.cpp"
+//#include "memory.cpp"
 #include "haven.cpp"
-#include "math.cpp"
+//#include "math.cpp"
+#include "ui.cpp"
 
 static const int timeSampleCount = 2;
 
@@ -45,10 +46,12 @@ void DrawArena(float2* pos,  MemoryArena* arena)
     const int tempStringSize = 2500;
     char text[tempStringSize] = {};
     Clear((uint8*)text, tempStringSize);
-
-    StringAppend(text, arena->name, " Used: ", (int)arena->used / 1024 / 1024);
+    
+    //StringAppend(text, arena->name, " Used: ", (int)(arena->used * 100.0f) / 1024 / 1024);
+    //float u = ((int)arena->used * 100.0f) / 1024 / 1024;
+    //StringAppend(text, arena->name, " Used: ", u);
     StringAppend(text, "/", (int)arena->size / 1024 / 1024);
-    StringAppend(text, " MB - ", (int)arena->usedPercentage, "%");
+    StringAppend(text, " MB - ", (int)(arena->usedPercentage*100.0f), "%");
     bool checkedEntries[ArrayCapacity(arena->memoryArenaEntrys)] = {};
 
     DrawText(text, pos);
@@ -179,8 +182,8 @@ void ProfilerDrawFlameChart(ProfilingData* data)
     }
     lowest /= timeSampleCount;
     highest /= timeSampleCount;
-    //float rightOffset = 2560 / 2;
-    float rightOffset = 720;
+    float rightOffset = haven->Resolution.x / 2;
+    //float rightOffset = 720;
     
     float pixelWidth = haven->Resolution.x / (haven->Resolution.x - rightOffset);
     // Zoom
@@ -314,10 +317,27 @@ void profilerUpdate()
 
         //DrawArena(&pos, &haven->arenaGlobalDrawCommands, textTransform);
         //DrawArena(&pos, &haven->arenaGameState, textTransform);
-        DrawArena(&haven->arenaHotreload);
+        DrawArena(&haven->arenaAssets);
 
         //DrawArena(&pos, &haven->arenaDrawCommands);
         ProfilerDrawTimeChart(haven->profilingData);
         ProfilerDrawFlameChart(haven->profilingData);
+
+        
+        for (int i = 0; i < ArrayCapacity(haven->arenas); i++)
+        {
+            MemoryArena* arena = &haven->arenas[i];
+            int w = arena->size / Megabytes(1);
+
+            float2 pos = float2(300, 200 + 25 * i);
+            DrawBox2D(pos, float2(w, 10), float3(1, 1, 1), 1);
+            DrawBox2D(pos, float2(w * arena->usedPercentage, 10), float3(1, 0, 0), 1);
+            //DrawText()
+            DrawText((char*)haven->arenas[i].name, pos - float2(0, 14));
+            //DrawText(haven->arenas[i].name, pos, float3(1, 1, 1), 1);
+            //DrawText("what", pos, float3(1, 1, 1), 1);
+            //arena->usedPercentage
+        }
+        
     }
 }

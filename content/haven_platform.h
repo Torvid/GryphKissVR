@@ -406,6 +406,7 @@ typedef struct
     int GLID; // OpenGL ID
     int width;
     int height;
+    float aspectRatio;
 
     int mipCount;
     uint8* mips[13];
@@ -487,7 +488,8 @@ typedef enum
     RenderCommand_DrawMesh,
     RenderCommand_Clear,
     RenderCommand_SetFramebufferTarget,
-    RenderCommand_SetRenderTarget
+    RenderCommand_SetRenderTarget,
+    RenderCommand_Max
 } RenderCommandType;
 
 typedef struct
@@ -499,15 +501,15 @@ typedef struct
     float orthoWidth;
     float maxDepth;
     float aspectRatio;
-
 } Camera;
+
+//#define RenderCommandCommon \
 
 typedef struct 
 {
-    const char* name;
     RenderCommandType type;
+    const char* name;
     int index;
-    bool profile;
 
     // RenderCommand_DrawMesh
     Material* material;

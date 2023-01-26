@@ -13,8 +13,8 @@ enum EntityType
 };
 
 #include "entities/staticMesh.cpp"
-#include "entities/lightBaker.cpp"
 #include "entities/reflectionProbe.cpp"
+#include "entities/lightBaker.cpp"
 
 #include "entities/player.cpp"
 #include "entities/hand.cpp"
@@ -50,6 +50,7 @@ void gryphkissStart()
     ArenaInitialize(&gameState->arenaScene, Megabytes(64), (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64), "Scene", true), "Scene");
 
     gameState->lightBaker = LightBakerStart();
+    ReflectionProbeInstantiate(transform(float3(0, 0, 0)));
 
     // Load Torvid
     CreateMaterialGlobal(gameState->torvidMat, defaultlit);
@@ -202,7 +203,6 @@ void gryphkissStart()
 
     StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(center));
 
-    ReflectionProbeInstantiate(transform(float3(0, 0, 0)));
 }
 
 void gryphkissUpdate()

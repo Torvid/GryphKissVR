@@ -46,7 +46,7 @@ void LoadWav(Sound* sound)
     int destinationSampleCount = lengthInSeconds * 44100;
     sound->length = lengthInSeconds;
 
-    sound->data = ArenaPushArray(&haven->arenaHotreload, destinationSampleCount, Sample, sound->filename);
+    sound->data = ArenaPushArray(&haven->arenaAssets, destinationSampleCount, Sample, sound->filename);
 
     Clear((uint8*)sound->data, destinationSampleCount * sizeof(Sample));
 

@@ -26,7 +26,7 @@ int DistanceToNewline(const char* checkString)
     while (true)
     {
         if (checkString[i] == 0 || checkString[i] == '\n')
-            break;
+            break; 
         i++;
     }
     return i;

@@ -12,9 +12,9 @@ struct ANIMATION_HEADER
 void LoadAnimation(Animation* animation)
 {
     // Push file into the hoterload arena
-    ANIMATION_HEADER* header = (ANIMATION_HEADER*)(haven->arenaHotreload.base + haven->arenaHotreload.used);
+    ANIMATION_HEADER* header = (ANIMATION_HEADER*)(haven->arenaAssets.base + haven->arenaAssets.used);
     uint8* end = (uint8*)haven->platformReadFile((uint8*)header, animation->filename);
-    ArenaPushBytes(&haven->arenaHotreload, (uint8*)end - (uint8*)header, animation->filename);
+    ArenaPushBytes(&haven->arenaAssets, (uint8*)end - (uint8*)header, animation->filename);
 
     // Crash if we read the wrong file
     Assert(Equals((uint8*)header->magicCookie, (uint8*)"h a v e n - anim", 16));

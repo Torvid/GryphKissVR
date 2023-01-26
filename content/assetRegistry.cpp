@@ -8,6 +8,7 @@ assetRegistryLoad(FileReadMesh, Mesh, bone_sphere, "bone_sphere.obj");
 assetRegistryLoad(FileReadMesh, Mesh, box, "box.obj");
 assetRegistryLoad(FileReadMesh, Mesh, brace, "brace.obj");
 assetRegistryLoad(FileReadTexture, Texture, coal, "coal.tga");
+assetRegistryLoadShader(FileReadShader, Shader, compose, "compose.shader");
 assetRegistryLoad(FileReadMesh, Mesh, cube, "cube.mesh");
 assetRegistryLoadShader(FileReadShader, Shader, defaultlit, "defaultlit.shader");
 assetRegistryLoad(FileReadFont, Font, FontDataBold, "FontDataBold.font");

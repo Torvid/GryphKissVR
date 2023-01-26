@@ -215,6 +215,7 @@ struct MemoryArenaEntry
 {
     float percentage;
     uint32 size;
+    uint8* entry;
     char name[100];
 };
 
@@ -224,15 +225,14 @@ struct MemoryArena
     uint32 size;
     uint8* base;
     uint32 used;
-    ArrayCreate(MemoryArenaEntry, memoryArenaEntrys, 1000); // max 1000 things?
+    ArrayCreate(MemoryArenaEntry, memoryArenaEntrys, 20000); // max 20000 things?
     char name[100];
 };
 
 void ArenaInitialize(MemoryArena* arena, uint32 Size, uint8* Base, const char* name = 0)
 {
-    if(name)
+    if (name)
         StringCopy(arena->name, name);
-
     arena->size = Size;
     arena->base = Base;
     arena->used = 0;
@@ -253,21 +253,21 @@ void* ArenaPushBytes(MemoryArena* arena, uint32 size, const char* name = 0, bool
 
     Assert((arena->used + (size)) <= arena->size); // Arena ran out of memory
 
-    void* Result = arena->base + arena->used;
+    uint8* result = arena->base + arena->used;
     if(clear)
-        Clear((uint8*)Result, size);
+        Clear(result, size);
 
     arena->used += (size);
-    arena->usedPercentage = ((float)arena->used / (float)arena->size)*100.0f;
+    arena->usedPercentage = ((float)arena->used / (float)arena->size);
 
-    
     MemoryArenaEntry* entry = ArrayAddNew(arena->memoryArenaEntrys);
     entry->size = size;
-    entry->percentage = ((float)size / (float)arena->size) * 100.0f;
+    entry->percentage = ((float)size / (float)arena->size);
     if (name)
     {
         StringCopy(entry->name, name);
     }
-    
-    return Result;
+    entry->entry = result;
+
+    return result;
 }

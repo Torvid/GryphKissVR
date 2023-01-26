@@ -90,7 +90,7 @@ void LoadASTC(Texture* texture, int fileSize)
         texture->mipSizeX[i] = astc.sizeX;
         texture->mipSizeY[i] = astc.sizeY;
 
-        texture->mips[i] = (uint8*)ArenaPushBytes(&haven->arenaHotreload, astc.dataSize, texture->filename);
+        texture->mips[i] = (uint8*)ArenaPushBytes(&haven->arenaAssets, astc.dataSize, texture->filename);
         Copy(astc.dataStart, texture->mips[i], astc.dataSize);
         texture->mipSize[i] = astc.dataSize;
 
@@ -148,7 +148,7 @@ void LoadTexture(Texture* texture)
 
     texture->mipSize[0] = tga->width * tga->height * 4;
     
-    texture->mips[0] = (uint8*)ArenaPushBytes(&haven->arenaHotreload, texture->mipSize[0], texture->filename);
+    texture->mips[0] = (uint8*)ArenaPushBytes(&haven->arenaAssets, texture->mipSize[0], texture->filename);
     texture->width = tga->width;
     texture->height = tga->height;
     texture->mipSizeX[0] = tga->width;

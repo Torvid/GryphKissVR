@@ -120,8 +120,8 @@ void LoadShader(Shader* shader)
 {
     char* scratchBuffer = (char*)(haven->scratchBuffer);
 
-    char* pixelShader  = (char*)ArenaPushBytes(&haven->arenaHotreload, Kilobytes(25), shader->filename, true);
-    char* vertexShader = (char*)ArenaPushBytes(&haven->arenaHotreload, Kilobytes(25), shader->filename, true);
+    char* pixelShader  = (char*)ArenaPushBytes(&haven->arenaAssets, Kilobytes(25), shader->filename, true);
+    char* vertexShader = (char*)ArenaPushBytes(&haven->arenaAssets, Kilobytes(25), shader->filename, true);
     
     const char* pixelAppend = "#version 320 es\n#define pixelShader 1\n#define Cpp 0\n";
     const char* vertexAppend = "#version 320 es\n#define vertexShader 1\n#define Cpp 0\n";

@@ -121,7 +121,7 @@ struct EngineState
     ArrayCreate(Animation, animations, 100);
     ArrayCreate(Font, fonts, 5);
 
-    ArrayCreate(RenderCommand, renderCommands, 5000);
+    ArrayCreate(RenderCommand, renderCommands, 20000);
     ArrayCreate(Entity*, entities, 1000); // pointers to all entities in the scene
 
     Mesh* stringMesh;
@@ -147,11 +147,18 @@ struct EngineState
     MemoryArena arenasArena;
     uint8 arenasArenaData[Megabytes(1024)];
 
-    MemoryArena arenaHotreload; // arena for loaded assets like textures, meshes, etc. cleared on hoterload.
-    MemoryArena arenaDrawCommands; // arena for draw caommands, cleared every frame
-    MemoryArena arenaGlobalDrawCommands; // arena for draw commands, cleared every frame
-    MemoryArena arenaEngineState; // memory arena for stuff of unknown size in the engine that persists forever.
-    MemoryArena arenaScene; // memory arena for the scene, all live entities go here.
+    union
+    {
+        MemoryArena arenas[5];
+        struct
+        {
+            MemoryArena arenaAssets; // arena for loaded assets like textures, meshes, etc. cleared on hoterload.
+            MemoryArena arenaDrawCommands; // arena for draw caommands, cleared every frame
+            MemoryArena arenaGlobalDrawCommands; // arena for draw commands, cleared every frame
+            MemoryArena arenaEngineState; // memory arena for stuff of unknown size in the engine that persists forever.
+            MemoryArena arenaScene; // memory arena for the scene, all live entities go here.
+        };
+    };
 
     uint8 scratchBuffer[Megabytes(256)];
 
@@ -209,6 +216,7 @@ static GameMemory* globalGameMemory;
 #include "UIShader.shader"
 #include "unlit.shader"
 #include "reflectionProbeCubemapToOct.shader"
+#include "compose.shader"
 
 
 void LoadAssets(Assets* assets)
@@ -310,6 +318,7 @@ Texture* CreateTextureTarget(int sizeX, int sizeY, bool clamp = false)
     result->isTextureTarget = true;
     result->width = sizeX;
     result->height = sizeY;
+    result->aspectRatio = (float)sizeX / (float)sizeY;
     haven->platformGraphicsCreateTextureTarget(result, clamp);
     return result;
 }
@@ -410,7 +419,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     {
         ProfilerBeingSample();
         gameMemory->reloadNow = false;
-        ArenaReset(&haven->arenaHotreload);
+        ArenaReset(&haven->arenaAssets);
         haven->coutner++;
 
         ArrayClear(haven->textures);
@@ -460,13 +469,12 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
         ArenaInitialize(&haven->arenasArena, sizeof(haven->arenasArenaData), haven->arenasArenaData);
 
-        ArenaInitialize(&haven->arenaHotreload,           Megabytes(512), (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(512),   "Hotreload",            true), "Hotreload");
-        ArenaInitialize(&haven->arenaDrawCommands,        Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Draw Commands",        true), "Draw Commands");
-        ArenaInitialize(&haven->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Global Draw Commands", true), "Global Draw Commands");
-        ArenaInitialize(&haven->arenaEngineState,         Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Engine State",         true), "Engine State");
-        ArenaInitialize(&haven->arenaScene,               Megabytes(512),  (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64),    "Scene",                true), "Scene");
+        ArenaInitialize(&haven->arenaAssets,              Megabytes(512), (uint8*)ArenaPushBytes(&haven->arenasArena,  Megabytes(512),   "Assets",               true), "Assets");
+        ArenaInitialize(&haven->arenaDrawCommands,        Megabytes(256), (uint8*)ArenaPushBytes(&haven->arenasArena,  Megabytes(256),   "Draw Commands",        true), "Draw Commands");
+        ArenaInitialize(&haven->arenaGlobalDrawCommands,  Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena,  Megabytes(64),    "Global Draw Commands", true), "Global Draw Commands");
+        ArenaInitialize(&haven->arenaEngineState,         Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena,  Megabytes(64),    "Engine State",         true), "Engine State");
+        ArenaInitialize(&haven->arenaScene,               Megabytes(64),  (uint8*)ArenaPushBytes(&haven->arenasArena,  Megabytes(64),    "Scene",                true), "Scene");
         
-
         haven->profilingData = ArenaPushStruct(&haven->arenaEngineState, ProfilingData, "Profiling Data");
         haven->uiMeshData = ArenaPushStruct(&haven->arenaEngineState, UIMeshData, "UI Mesh Data");
 
@@ -673,11 +681,12 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
     DrawText("G: toggle editor");
     DrawText("P: toggle profiling");
+    
     editorUpdate();
     gameMemory->spectatorCamera = haven->spectatorCamera;
 
-    profilerUpdate();
     gryphkissUpdate();
+    profilerUpdate();
 
     if (input->faceButtonLeftDown || input->gDown)
     {
