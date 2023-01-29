@@ -11,8 +11,8 @@ struct TGA_HEADER {
     uint8 colourmapdepth;
     int16 x_origin;
     int16 y_origin;
-    uint16 width;
-    uint16 height;
+    uint16 sizeX;
+    uint16 sizeY;
     uint8 bitsperpixel;
     uint8 imagedescriptor;
 };
@@ -84,8 +84,9 @@ void LoadASTC(Texture* texture, int fileSize)
         unpackedASTC astc = unpackASTCHeader(currentMip);
         if (i == 0)
         {
-            texture->width = astc.sizeX;
-            texture->height = astc.sizeY;
+            texture->sizeX = astc.sizeX;
+            texture->sizeY = astc.sizeY;
+            texture->size = { texture->sizeX, texture->sizeY };
         }
         texture->mipSizeX[i] = astc.sizeX;
         texture->mipSizeY[i] = astc.sizeY;
@@ -112,8 +113,9 @@ void LoadTexture(Texture* texture)
     if (!end)
     {
         Texture* missing        = assets->missingTexture;
-        texture->width          = missing->width;
-        texture->height         = missing->height;
+        texture->sizeX          = missing->sizeX;
+        texture->sizeY          = missing->sizeY;
+        texture->size = { texture->sizeX, texture->sizeY };
         texture->mips[0]        = missing->mips[0];
         texture->mipCount       = missing->mipCount;
         texture->mipSizeX[0]    = missing->mipSizeX[0];
@@ -146,13 +148,14 @@ void LoadTexture(Texture* texture)
     bool flipUpDown = tga->imagedescriptor & 1 << 5;
     bool flipLeftRight = tga->imagedescriptor & 1 << 4;
 
-    texture->mipSize[0] = tga->width * tga->height * 4;
+    texture->mipSize[0] = tga->sizeX * tga->sizeY * 4;
     
     texture->mips[0] = (uint8*)ArenaPushBytes(&haven->arenaAssets, texture->mipSize[0], texture->filename);
-    texture->width = tga->width;
-    texture->height = tga->height;
-    texture->mipSizeX[0] = tga->width;
-    texture->mipSizeY[0] = tga->height;
+    texture->sizeX = tga->sizeX;
+    texture->sizeY = tga->sizeY;
+    texture->size = float2(tga->sizeX, tga->sizeY);
+    texture->mipSizeX[0] = tga->sizeX;
+    texture->mipSizeY[0] = tga->sizeY;
 
     ProfilerEndSample("Misc");
 
@@ -160,9 +163,9 @@ void LoadTexture(Texture* texture)
     if (flipUpDown && flipLeftRight)
     {
         int i = 0;
-        for (int y = tga->height - 1; y >= 0; y--)
+        for (int y = tga->sizeY - 1; y >= 0; y--)
         {
-            for (int x = tga->width - 1; x >= 0; x--)
+            for (int x = tga->sizeX - 1; x >= 0; x--)
             {
                 //int j = x + y * tga->width;
                 //uint32* source = (uint32*)(((uint8*)tga + sizeof(TGA_HEADER) + j * 4));
@@ -170,7 +173,7 @@ void LoadTexture(Texture* texture)
                 //*source = *target;
                 //i++;
 
-                int j = x + y * tga->width;
+                int j = x + y * tga->sizeX;
                 texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
                 texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
                 texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
@@ -182,15 +185,15 @@ void LoadTexture(Texture* texture)
     else if (flipUpDown)
     {
         int i = 0;
-        for (int y = tga->height - 1; y >= 0; y--)
+        for (int y = tga->sizeY - 1; y >= 0; y--)
         {
             //uint8* destination = texture->mips[0] + tga->width * y * 4;
             //uint8* source = (uint8*)tga + sizeof(TGA_HEADER) + tga->width * (tga->height - y) * 4;
             //Copy(source, destination, tga->width * 4);
-            for (int x = 0; x < tga->width; x++)
+            for (int x = 0; x < tga->sizeX; x++)
             {
                 //int i = x + y * tga->width;
-                int j = x + y * tga->width;
+                int j = x + y * tga->sizeX;
                 texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
                 texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
                 texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
@@ -202,12 +205,12 @@ void LoadTexture(Texture* texture)
     else if (flipLeftRight)
     {
         int i = 0;
-        for (int y = 0; y < tga->height; y++)
+        for (int y = 0; y < tga->sizeY; y++)
         {
-            for (int x = tga->width - 1; x >= 0; x--)
+            for (int x = tga->sizeX - 1; x >= 0; x--)
             {
                 //int i = x + y * tga->width;
-                int j = x + y * tga->width;
+                int j = x + y * tga->sizeX;
                 texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
                 texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
                 texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);
@@ -219,12 +222,12 @@ void LoadTexture(Texture* texture)
     else
     {
         int i = 0;
-        for (int y = 0; y < tga->height; y++)
+        for (int y = 0; y < tga->sizeY; y++)
         {
-            for (int x = 0; x < tga->width; x++)
+            for (int x = 0; x < tga->sizeX; x++)
             {
                 //int i = x + y * tga->width;
-                int j = x + y * tga->width;
+                int j = x + y * tga->sizeX;
                 texture->mips[0][i * 4 + 0] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 0);
                 texture->mips[0][i * 4 + 1] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 1);
                 texture->mips[0][i * 4 + 2] = *((uint8*)tga + sizeof(TGA_HEADER) + j * 4 + 2);

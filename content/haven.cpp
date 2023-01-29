@@ -316,8 +316,9 @@ Texture* CreateTextureTarget(int sizeX, int sizeY, bool clamp = false)
 {
     Texture* result = ArrayAddNew(haven->textures);
     result->isTextureTarget = true;
-    result->width = sizeX;
-    result->height = sizeY;
+    result->sizeX = sizeX;
+    result->sizeY = sizeY;
+    result->size = float2(sizeX, sizeY);
     result->aspectRatio = (float)sizeX / (float)sizeY;
     haven->platformGraphicsCreateTextureTarget(result, clamp);
     return result;
@@ -681,6 +682,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
     DrawText("G: toggle editor");
     DrawText("P: toggle profiling");
+    DrawText("space: reset");
     
     editorUpdate();
     gameMemory->spectatorCamera = haven->spectatorCamera;

@@ -128,12 +128,27 @@ ReflectionProbe* ReflectionProbeInstantiate(Transform transform)
     self->transform = transform;
     return self;
 }
-void DrawScreenTexture(Texture* texture)
+
+void DrawScreenTexture(Texture* texture, float2 size, float heightOffset)
 {
-    float size = 0.25;
-    Transform planeTransform = transform(haven->spectatorCamera.position + float3(0, 1, 0));
-    planeTransform.scale = float3(size, size, size);
-    planeTransform = LookRotation(planeTransform, float3(0, 0, 1), float3(0, -1, 0));
+    float scale = 0.04;
+    Transform planeTransform = transform(haven->spectatorCamera.position
+        + haven->spectatorCamera.forward * 0.1
+        + haven->spectatorCamera.right * -0.08
+        + haven->spectatorCamera.up * heightOffset,
+        haven->spectatorCamera.right,
+        haven->spectatorCamera.up,
+        haven->spectatorCamera.forward,
+        float3(size.x, size.y, 1) * scale);
+
+    //float3(1, 0, 0),
+    //float3(0, 0, 1),
+    //float3(0, 1, 0),
+
+    //planeTransform.position += haven->spectatorCamera.forward * 0.1;
+    ////transform(haven->spectatorCamera.position + float3(0, 0.1, 0));
+    //planeTransform.scale = float3(size.x, size.y, 1) * 0.1;
+    ////planeTransform = LookRotation(planeTransform, haven->spectatorCamera.forward, haven->spectatorCamera.up);
     CreateMaterialLocal(waterPlane, unlit);
     waterPlane->ColorTexture = texture;
     waterPlane->Color = float3(1.0f, 1.0f, 1.0f);

@@ -94,8 +94,7 @@ void DrawMesh(ShaderStructName* command, const char* name = 0)
     result->material = &temp->mat;
 }
 
-void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, 
-    Camera camera, const char* name = 0)
+void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, Camera camera, const char* name = 0)
 {
     ShaderStructName* temp;
     //if (text)

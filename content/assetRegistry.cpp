@@ -25,6 +25,8 @@ assetRegistryLoad(FileReadMesh, Mesh, missingMesh, "missingMesh.obj");
 assetRegistryLoad(FileReadTexture, Texture, missingTexture, "missingTexture.tga");
 assetRegistryLoad(FileReadMesh, Mesh, monkey, "monkey.obj");
 assetRegistryLoad(FileReadSound, Sound, MusicTheme_44k_stereo, "MusicTheme_44k_stereo.wav");
+assetRegistryLoad(FileReadTexture, Texture, pixelTest1, "pixelTest1.tga");
+assetRegistryLoad(FileReadTexture, Texture, pixelTest2, "pixelTest2.tga");
 assetRegistryLoad(FileReadMesh, Mesh, plane, "plane.obj");
 assetRegistryLoadShader(FileReadShader, Shader, postProcessTest, "postProcessTest.shader");
 assetRegistryLoadShader(FileReadShader, Shader, reflectionProbeCubemapToOct, "reflectionProbeCubemapToOct.shader");

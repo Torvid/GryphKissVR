@@ -1347,6 +1347,16 @@ Transform transform(float3 position, float x, float y, float z, float3 scale)
 {
     return rotate(ctor_transform(position, float3(0, 1, 0), float3(0, 0, 1), scale), x, y, z);
 }
+Transform transform(float3 position, float3 right, float3 forward, float3 up, float3 scale)
+{
+    Transform t;
+    t.position  = position;
+    t.right     = right   ;
+    t.forward   = forward ;
+    t.up        = up      ;
+    t.scale     = scale   ;
+    return t;
+}
 #define Transform(position, forward, up, scale) ctor_transform((position), (forward), (up), (scale))
 
 Transform rotateAboutPoint(Transform t, float3 pivot, float3 Axis, float angle)

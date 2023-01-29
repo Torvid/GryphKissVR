@@ -404,8 +404,9 @@ typedef struct
 {
     char filename[100];
     int GLID; // OpenGL ID
-    int width;
-    int height;
+    int sizeX;
+    int sizeY;
+    float2 size;
     float aspectRatio;
 
     int mipCount;

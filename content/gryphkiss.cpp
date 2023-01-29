@@ -201,7 +201,7 @@ void gryphkissStart()
         }
     }
 
-    StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(center));
+    StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(center + float3(4,4,4), float3(3, 3, 3)));
 
 }
 
