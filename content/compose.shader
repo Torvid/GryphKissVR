@@ -41,7 +41,6 @@ void main()
 	int compMode = int(composeMode);
 
 	FragColor = a;
-	b = b * 10.0;
 	if (UV.x > 0.00001 && UV.x < 1.0 && UV.y > 0.00001 && UV.y < 1.0)
 	{
 		if (compMode == 0)
@@ -62,6 +61,8 @@ void main()
 				a.y == 0.0 ? b.y : a.y,
 				a.z == 0.0 ? b.z : a.z,
 				a.w == 0.0 ? b.w : a.w);
+		else if (compMode == 7)
+			FragColor = b;
 	}
 }
 #endif

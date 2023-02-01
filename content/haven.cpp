@@ -217,6 +217,7 @@ static GameMemory* globalGameMemory;
 #include "unlit.shader"
 #include "reflectionProbeCubemapToOct.shader"
 #include "compose.shader"
+#include "downsize4x.shader"
 
 
 void LoadAssets(Assets* assets)
@@ -227,9 +228,6 @@ void LoadAssets(Assets* assets)
 #undef assetRegistryLoadShader
 #undef assetRegistryLoad
 }
-
-//assets->
-//Material_
 
 #define CreateMaterialGlobal(name, type) \
     name = (PASTE(Material_, type)*)ArenaPushStruct(&haven->arenaGlobalDrawCommands, PASTE(Material_, type), ""); \
@@ -245,8 +243,8 @@ void LoadAssets(Assets* assets)
     name->transform = Transform(vectorZero, vectorForward, vectorUp, vectorOne); \
     name->BackFaceCulling = true; \
     name->Wireframe = false; \
+    name->mesh = assets->ui_quad; \
     SetShaderDefaults(name); \
-
 
 void DrawClear(float3 color = {0,0,0}, const char* name = 0)
 {
@@ -591,7 +589,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     haven->waterRipplesCurrent = temp;
 
     SetRenderTarget(haven->SwapBuffer);
-    haven->clearColor = float3(0.251, 0.298, 0.373);
+    haven->clearColor = float3(0.251, 0.298, 0.373);// *10.0;
     DrawClear(haven->clearColor);
 
 

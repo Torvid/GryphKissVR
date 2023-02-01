@@ -38,6 +38,8 @@ void DrawScene(Camera camera)
         if (entity->type == EntityType_StaticMesh)
         {
             StaticMesh* mesh = (StaticMesh*)entity;
+            if (CullMesh(mesh, camera.transform))
+                continue;
             DrawMesh(mesh->material, mesh->mesh, mesh->transform, camera, "Scene StaticMesh");
         }
     }
@@ -53,6 +55,11 @@ void RenderOrtho(Transform transform, Texture* target, float orthoWidth, float a
 
 void RenderCubemap(float3 startPos, Texture* cubeTexture[6])
 {
+    for (int i = 0; i < 6; i++)
+    {
+        if (!cubeTexture[i])
+            return;
+    }
     //float2 crossLocation[6]
     //{
     //    float2(1, 1),
@@ -85,7 +92,7 @@ void RenderCubemap(float3 startPos, Texture* cubeTexture[6])
         DrawClear(haven->clearColor);
 
         Transform t = transforms[i];
-        t.position = startPos + float3(-0.5, 0, -0.3);
+        t.position = startPos;
         DrawScene(PerspectiveCamera(t, 90, 1, 100));
     }
     SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
@@ -93,6 +100,14 @@ void RenderCubemap(float3 startPos, Texture* cubeTexture[6])
 
 void PackCubemap(Texture* target, Texture* source[6])
 {
+    if (!target)
+        return;
+
+    for (int i = 0; i < 6; i++)
+    {
+        if (!source[i])
+            return;
+    }
     SetRenderTarget(target, "Probe Capture");
     DrawClear(float3(0, 1, 0));
     CreateMaterialLocal(octUnwrap, reflectionProbeCubemapToOct);
@@ -105,6 +120,24 @@ void PackCubemap(Texture* target, Texture* source[6])
     octUnwrap->mesh = assets->ui_quad;
     DrawMesh(octUnwrap);
 
+    SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+}
+
+// 5x5 tap blur, good for dropping texture resolution by 4x.
+void Downsize4x(Texture* source, Texture* target)
+{
+    if (!source)
+        return;
+    if (!target)
+        return;
+
+    SetRenderTarget(target, "Probe Capture");
+    DrawClear(float3(0, 1, 0));
+    CreateMaterialLocal(octUnwrap, downsize4x);
+    octUnwrap->colorTexture = source;
+    octUnwrap->resolution = target->sizeX;
+    octUnwrap->mesh = assets->ui_quad;
+    DrawMesh(octUnwrap);
     SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
 }
 

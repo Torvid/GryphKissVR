@@ -38,11 +38,24 @@ Transform GetLocalBoundsTransform(StaticMesh* self)
     return t;
 }
 
+bool CullMesh(StaticMesh* self, Transform camera)
+{
+    float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
+    float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
+    if (dot(camera.position - boundsCenterWorldSpace, camera.forward) > radius)
+        return true;
+
+    return false;
+}
+
 void StaticMeshUpdate(StaticMesh* self, int i)
 {
-    
+    //if (CullMesh(self, input->head))
+    //    return;
 
-    // frustum culling
+    //// frustum culling
+    //float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
+    //float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
     //if (dot(input->head.position - boundsCenterWorldSpace, input->head.forward) > radius)
     //    return;
 

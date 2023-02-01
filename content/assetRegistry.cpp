@@ -11,6 +11,7 @@ assetRegistryLoad(FileReadTexture, Texture, coal, "coal.tga");
 assetRegistryLoadShader(FileReadShader, Shader, compose, "compose.shader");
 assetRegistryLoad(FileReadMesh, Mesh, cube, "cube.mesh");
 assetRegistryLoadShader(FileReadShader, Shader, defaultlit, "defaultlit.shader");
+assetRegistryLoadShader(FileReadShader, Shader, downsize4x, "downsize4x.shader");
 assetRegistryLoad(FileReadFont, Font, FontDataBold, "FontDataBold.font");
 assetRegistryLoad(FileReadFont, Font, FontDataItalic, "FontDataItalic.font");
 assetRegistryLoad(FileReadFont, Font, FontDataRegular, "FontDataRegular.font");

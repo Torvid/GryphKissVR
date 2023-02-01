@@ -303,6 +303,9 @@ void profilerUpdate()
 
     if (haven->profiling)
     {
+        //DrawArena(&pos, &haven->arenaDrawCommands);
+        ProfilerDrawTimeChart(haven->profilingData);
+        ProfilerDrawFlameChart(haven->profilingData);
         StringAppend(text, "\nPERFORMANCE:");
         StringAppend(text, "\n    Time: ", input->time);
         StringAppend(text, "\n    FPS: ", 1.0f / input->deltaTime);
@@ -319,9 +322,6 @@ void profilerUpdate()
         //DrawArena(&pos, &haven->arenaGameState, textTransform);
         DrawArena(&haven->arenaAssets);
 
-        //DrawArena(&pos, &haven->arenaDrawCommands);
-        ProfilerDrawTimeChart(haven->profilingData);
-        ProfilerDrawFlameChart(haven->profilingData);
 
         
         for (int i = 0; i < ArrayCapacity(haven->arenas); i++)

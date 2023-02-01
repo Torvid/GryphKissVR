@@ -12,6 +12,9 @@ enum EntityType
     EntityType_Max,
 };
 
+// forward declare stuff that shoudl be available in components
+void SetLightmap(GameState* gameState, Texture* texture, float3 lightmapMin, float3 lightmapMax, float3 lightmapResolution, float radiosityProbeScale);
+
 #include "entities/staticMesh.cpp"
 #include "entities/reflectionProbe.cpp"
 #include "entities/lightBaker.cpp"
@@ -25,22 +28,52 @@ struct GameState
 
     // Torvid
     float torvidFrame;
-    Material_defaultlit* torvidMat;
 
-    // Barn stuff
-    Material_defaultlit* barnWallMat;
-    Material_defaultlit* barnWallCleanMat;
-    Material_defaultlit* barnCeilingMat;
-    Material_defaultlit* barnTilesMat;
-    Material_defaultlit* StrawPileMat;
+    union
+    {
+        Material_defaultlit* materials[6];
+        struct
+        {
+            Material_defaultlit* torvidMat;
+
+            // Barn stuff
+            Material_defaultlit* barnWallMat;
+            Material_defaultlit* barnWallCleanMat;
+            Material_defaultlit* barnCeilingMat;
+            Material_defaultlit* barnTilesMat;
+            Material_defaultlit* StrawPileMat;
+        };
+    };
 
     Hand* leftHand;
     Hand* rightHand;
 
     Player* player;
     LightBaker* lightBaker;
+
+    Texture* cubemap;
+    Texture* lightmap;
 };
 
+void SetCubemap(GameState* gameState, Texture* texture)
+{
+    for (int i = 0; i < ArrayCapacity(gameState->materials); i++)
+    {
+        gameState->materials[i]->texCubemap = texture;
+    }
+}
+
+void SetLightmap(GameState* gameState, Texture* texture, float3 lightmapMin, float3 lightmapMax, float3 lightmapResolution, float radiosityProbeScale)
+{
+    for (int i = 0; i < ArrayCapacity(gameState->materials); i++)
+    {
+        gameState->materials[i]->texLightmap = texture;
+        gameState->materials[i]->lightmapMin = lightmapMin;
+        gameState->materials[i]->lightmapMax = lightmapMax;
+        gameState->materials[i]->lightmapResolution = lightmapResolution;
+        gameState->materials[i]->radiosityProbeScale = radiosityProbeScale;
+    }
+}
 
 void gryphkissStart()
 {
@@ -49,37 +82,39 @@ void gryphkissStart()
 
     ArenaInitialize(&gameState->arenaScene, Megabytes(64), (uint8*)ArenaPushBytes(&haven->arenasArena, Megabytes(64), "Scene", true), "Scene");
 
-    gameState->lightBaker = LightBakerStart();
-    ReflectionProbeInstantiate(transform(float3(0, 0, 0)));
+    gameState->lightBaker = LightBakerInstantiate();
+    ReflectionProbe* reflectionProbe = ReflectionProbeInstantiate(transform(float3(0, 0, 0)));
+
 
     // Load Torvid
     CreateMaterialGlobal(gameState->torvidMat, defaultlit);
     gameState->torvidMat->texM1 = assets->TorvidM1;
     gameState->torvidMat->texM2 = assets->TorvidM2;
-    gameState->torvidMat->texCubemap = assets->black;
     gameState->torvidMat->BackFaceCulling = true;
 
     // Create materials and load textures
     CreateMaterialGlobal(gameState->barnWallMat, defaultlit);
     gameState->barnWallMat->texM1 = assets->BarnWallM1;
     gameState->barnWallMat->texM2 = assets->BarnWallM2;
-    gameState->barnWallMat->texCubemap = assets->black;
+
     CreateMaterialGlobal(gameState->barnWallCleanMat, defaultlit);
     gameState->barnWallCleanMat->texM1 = assets->BarnWallCleanM1;
     gameState->barnWallCleanMat->texM2 = assets->BarnWallCleanM2;
-    gameState->barnWallCleanMat->texCubemap = assets->black;
+
     CreateMaterialGlobal(gameState->barnCeilingMat, defaultlit);
     gameState->barnCeilingMat->texM1 = assets->BarnCeilingM1;
     gameState->barnCeilingMat->texM2 = assets->BarnCeilingM2;
-    gameState->barnCeilingMat->texCubemap = assets->black;
+
     CreateMaterialGlobal(gameState->barnTilesMat, defaultlit);
     gameState->barnTilesMat->texM1 = assets->TilesM1;
     gameState->barnTilesMat->texM2 = assets->TilesM2;
-    gameState->barnTilesMat->texCubemap = assets->black;
+
     CreateMaterialGlobal(gameState->StrawPileMat, defaultlit);
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
-    gameState->StrawPileMat->texCubemap = assets->black;
+
+    SetCubemap(gameState, assets->black);
+    SetLightmap(gameState, assets->black, float3(0, 0, 0), float3(1, 1, 1), float3(2, 2, 2), 1.0f);
 
     gameState->leftHand  = Instantiate(Hand);
     gameState->rightHand = Instantiate(Hand);
@@ -168,9 +203,8 @@ void gryphkissStart()
     StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(5, 0, 1), 0, 0, 0.0));
 
     // doors
-    StaticMeshInstantiate(assets->BarnDoor, gameState->barnWallCleanMat, transform(center + float3(1, 0, 2), 0, 0, 0.0, float3(-1, 1, -1)));
-    StaticMeshInstantiate(assets->BarnDoor, gameState->barnWallCleanMat, transform(center + float3(3, 0, 0), 0, 0, 0.0));
-
+    //StaticMeshInstantiate(assets->BarnDoor, gameState->barnWallCleanMat, transform(center + float3(1, 0, 2), 0, 0, 0.0, float3(-1, 1, -1)));
+    //StaticMeshInstantiate(assets->BarnDoor, gameState->barnWallCleanMat, transform(center + float3(3, 0, 0), 0, 0, 0.0));
 
     // back wall
     for (int x = 0; x < 3; x++)
@@ -201,7 +235,7 @@ void gryphkissStart()
         }
     }
 
-    StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(center + float3(4,4,4), float3(3, 3, 3)));
+    //StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(center + float3(4,4,4), float3(3, 3, 3)));
 
 }
 
@@ -214,6 +248,7 @@ void gryphkissUpdate()
     HandUpdate(gameState->rightHand);
 
     PlayerUpdate(gameState->player);
+
 
     for (int i = 0; i < ArrayCount(haven->entities); i++)
     {

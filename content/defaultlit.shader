@@ -8,6 +8,11 @@
 	X(sampler2D, texM1) \
 	X(sampler2D, texM2) \
 	X(sampler2D, texCubemap) \
+	X(sampler2D, texLightmap) \
+	X(float3, lightmapMin) \
+	X(float3, lightmapMax) \
+	X(float3, lightmapResolution) \
+	X(float, radiosityProbeScale) \
 
 #define addBoneTransforms 1
 
@@ -79,9 +84,13 @@ void main()
 	worldTangent = float3(worldTangent.x, -worldTangent.z, worldTangent.y);
 	worldPos = float3(worldPos.x, -worldPos.z, worldPos.y);
 
+	float3 cameraPos = CameraPosition;
 	//float3 cameraPos = float3(3.0, 3.0, 3.0);
-	//float dist = distance(worldPos, cameraPos);
-	//gl_Position = float4(OctEncode(worldPos- cameraPos), 0, 1);// OctEncode(worldPos);// float4(OctEncode(worldPos), 0, 0);
+	float dist = distance(worldPos, cameraPos);
+	
+	//dist = dist / (1.0 + abs(dist));
+	////float3 angle = AngleDecode(float2());
+	//gl_Position = float4(OctEncode(normalize(worldPos - cameraPos)), dist, 1);// OctEncode(worldPos);// float4(OctEncode(worldPos), 0, 0);
 
 	PSVertexPos = worldPos;
 	PSVertexNormal = normalize(worldNormal);
@@ -127,6 +136,14 @@ flat in int PSMaterialID;
 
 out float4 FragColor;
 
+float2 PosToUV(float3 pos)
+{
+	float2 LightmapUV = float2(pos.x + lightmapResolution.x * pos.y, pos.z);
+	LightmapUV /= float2(lightmapResolution.x * lightmapResolution.y, lightmapResolution.z);
+
+	return LightmapUV;
+}
+
 void main()
 {
 	float2 UV = PSVertexUV;
@@ -143,7 +160,42 @@ void main()
 	// Lighting
 	float NdotL = dot(worldNormal, float3(0, 1, 1));
 	float halflambert = NdotL * 0.5 + 0.5;
+
+	float3 bakedAmbientSampleValue = floor((worldPos - lightmapMin) / radiosityProbeScale);
+	float3 bakedAmbientSampleBlend = frac((worldPos - lightmapMin) / radiosityProbeScale);
+	bakedAmbientSampleValue += float3(1.5, 1.5, 1.5) + floor(float3(6.7, -1.9, -0.3));// floor(CameraPosition);
+	//float3 bakedAmbientSampleUV = (worldPos - lightmapMin) / abs(lightmapMin - lightmapMax);
+
+	float2 LightmapUV000 = PosToUV(bakedAmbientSampleValue + float3(0, 0, 0));
+	float2 LightmapUV100 = PosToUV(bakedAmbientSampleValue + float3(1, 0, 0));
+	float2 LightmapUV010 = PosToUV(bakedAmbientSampleValue + float3(0, 1, 0));
+	float2 LightmapUV110 = PosToUV(bakedAmbientSampleValue + float3(1, 1, 0));
+	float2 LightmapUV001 = PosToUV(bakedAmbientSampleValue + float3(0, 0, 1));
+	float2 LightmapUV101 = PosToUV(bakedAmbientSampleValue + float3(1, 0, 1));
+	float2 LightmapUV011 = PosToUV(bakedAmbientSampleValue + float3(0, 1, 1));
+	float2 LightmapUV111 = PosToUV(bakedAmbientSampleValue + float3(1, 1, 1));
+
+	float3 lightmapSample000 = Sample(texLightmap, LightmapUV000).rgb;
+	float3 lightmapSample100 = Sample(texLightmap, LightmapUV100).rgb;
+	float3 lightmapSample010 = Sample(texLightmap, LightmapUV010).rgb;
+	float3 lightmapSample110 = Sample(texLightmap, LightmapUV110).rgb;
+	float3 lightmapSample001 = Sample(texLightmap, LightmapUV001).rgb;
+	float3 lightmapSample101 = Sample(texLightmap, LightmapUV101).rgb;
+	float3 lightmapSample011 = Sample(texLightmap, LightmapUV011).rgb;
+	float3 lightmapSample111 = Sample(texLightmap, LightmapUV111).rgb;
 	
+	float3 lightmap =
+		lerp(lerp(lerp(lightmapSample000, lightmapSample100, bakedAmbientSampleBlend.x),
+				  lerp(lightmapSample001, lightmapSample101, bakedAmbientSampleBlend.x), bakedAmbientSampleBlend.z),
+			 lerp(lerp(lightmapSample010, lightmapSample110, bakedAmbientSampleBlend.x),
+			 lerp(	   lightmapSample011, lightmapSample111, bakedAmbientSampleBlend.x), bakedAmbientSampleBlend.z), bakedAmbientSampleBlend.y);
+	lightmap *= 3.0;
+	//lightmap *= 0.5;
+	//lightmap = saturate(float3(LightmapUV, 0));
+
+	//int3 bakedAmbientSamplePos = int3(floor(bakedAmbientSamplePos01 * lightmapResolution));
+	//float2 bakedAmbientUV = 
+	//float3 bakedAmbientLight = 
 
 	float3 cameraVector = (PSVertexPos - CameraPosition);
 	float3 reflectVector = reflect(cameraVector, PSVertexNormal);
@@ -155,7 +207,8 @@ void main()
 
 	float3 lighting = float3(saturate(NdotL)) + float3(0.4, 0.3, 0.2) + cubemap.rgb * 2.0f;
 
-	FragColor.rgb =  M1.rgb * lighting;
+	FragColor.rgb = M1.rgb * lightmap;// lighting;
+	//FragColor.rgb = lightmap;
 
 	//FragColor.rgb = PSVertexNormal;
 	//FragColor.rgb = (CameraPosition - PSVertexPos) * 10.0;
