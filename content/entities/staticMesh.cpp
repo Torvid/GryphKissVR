@@ -4,19 +4,33 @@
 struct StaticMesh
 {
     EntityContents;
+    bool isSky;
     Material_defaultlit* material;
+    Material_skydomeShader* materialSky;
     Mesh* mesh;
 };
-
 
 StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_defaultlit* material, Transform transform)
 {
     StaticMesh* staticMesh = Instantiate(StaticMesh);
-    staticMesh->material = material;// gameState->barnWallCleanMat;
-    staticMesh->mesh = mesh;// assets->BarnWall02;
-    staticMesh->transform = transform;// transform(center + float3(0, x * 2, y), 0, 0, -0.25);
+    staticMesh->isSky = false;
+    staticMesh->material = material;
+    staticMesh->materialSky = 0;
+    staticMesh->mesh = mesh;
+    staticMesh->transform = transform;
     return staticMesh;
 }
+StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_skydomeShader* material, Transform transform)
+{
+    StaticMesh* staticMesh = Instantiate(StaticMesh);
+    staticMesh->isSky = true;
+    staticMesh->material = 0;
+    staticMesh->materialSky = material;
+    staticMesh->mesh = mesh;
+    staticMesh->transform = transform;
+    return staticMesh;
+}
+
 
 Transform GetLocalBoundsTransform(StaticMesh* self)
 {
@@ -48,6 +62,21 @@ bool CullMesh(StaticMesh* self, Transform camera)
     return false;
 }
 
+void DrawStaticMesh(StaticMesh* self, Camera camera)
+{
+    if(self->isSky)
+        DrawMesh(self->materialSky, self->mesh, self->transform, camera, "Scene StaticMesh");
+    else
+        DrawMesh(self->material, self->mesh, self->transform, camera, "Scene StaticMesh");
+}
+void DrawStaticMesh(StaticMesh* self)
+{
+    if (self->isSky)
+        DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
+    else
+        DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
+}
+
 void StaticMeshUpdate(StaticMesh* self, int i)
 {
     //if (CullMesh(self, input->head))
@@ -72,7 +101,11 @@ void StaticMeshUpdate(StaticMesh* self, int i)
     //    DrawTransform(t);
     //    DrawTransform(self->transform);
     //}
-
-    DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
+    
+    DrawStaticMesh(self);
+    //if(self->isSky)
+    //    DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
+    //else
+    //    DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
 }
 

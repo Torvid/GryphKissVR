@@ -218,6 +218,8 @@ static GameMemory* globalGameMemory;
 #include "reflectionProbeCubemapToOct.shader"
 #include "compose.shader"
 #include "downsize4x.shader"
+#include "skydomeShader.shader"
+#include "reflectionProbeToSphericalHarmonic.shader"
 
 
 void LoadAssets(Assets* assets)

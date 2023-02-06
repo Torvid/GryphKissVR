@@ -45,6 +45,8 @@ struct GameState
         };
     };
 
+    Material_skydomeShader* skydomeMat;
+
     Hand* leftHand;
     Hand* rightHand;
 
@@ -113,6 +115,12 @@ void gryphkissStart()
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
 
+    CreateMaterialGlobal(gameState->skydomeMat, skydomeShader);
+    gameState->skydomeMat->Color = float3(1, 1, 1);
+    gameState->skydomeMat->ColorTexture = assets->StrawPileM1;
+    //gameState->skydomeMat.text
+    //skydomeMat
+
     SetCubemap(gameState, assets->black);
     SetLightmap(gameState, assets->black, float3(0, 0, 0), float3(1, 1, 1), float3(2, 2, 2), 1.0f);
 
@@ -126,8 +134,6 @@ void gryphkissStart()
     gameState->player = Instantiate(Player);
     PlayerStart(gameState->player);
     
-    float3 center = float3(0, 0, 0);// (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
-    
     StaticMeshInstantiate(assets->tonk, gameState->barnWallMat, transform(float3(3, 5, 0), float3(0.1, 0.2, 0.1)));
 
     // left wall
@@ -137,43 +143,20 @@ void gryphkissStart()
         {
             if (y == 1)
             {
-                StaticMeshInstantiate(assets->BarnWall02, gameState->barnWallCleanMat, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
+                StaticMeshInstantiate(assets->BarnWall02, gameState->barnWallCleanMat, transform(float3(0, x * 2, y), 0, 0, -0.25));
             }
             else
             {
-                StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
+                StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(0, x * 2, y), 0, 0, -0.25));
             }
         }
     }
-
-    
-    // Draw barn?
-    //DrawMesh(gameState->barnWallCleanMat, gameState->barnCeiling, transformIdentity);
-
-    // left wall
-    //for (int x = 0; x < 5; x++)
-    //{
-    //    for (int y = 0; y < 3; y++)
-    //    {
-    //        if (y == 1)
-    //        {
-    //            //&& x % 2 == 0
-    //            StaticMeshInstantiate(assets->BarnWall02, gameState->barnWallCleanMat, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
-    //        }
-    //        else
-    //        {
-    //            StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(0, x * 2, y), 0, 0, -0.25));
-    //        }
-    //    }
-    //}
-
-
     // right wall
     for (int x = 0; x < 5; x++)
     {
         for (int y = 0; y < 3; y++)
         {
-            StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(5, x * 2 + 2, y), 0, 0, 0.25));
+            StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(5, x * 2 + 2, y), 0, 0, 0.25));
         }
     }
 
@@ -182,7 +165,7 @@ void gryphkissStart()
     {
         for (int y = 0; y < 5; y++)
         {
-            StaticMeshInstantiate(assets->ui_quad, gameState->barnTilesMat, transform(center + float3(x, y, 0)*2, float3(2,2,2)));
+            StaticMeshInstantiate(assets->ui_quad, gameState->barnTilesMat, transform(float3(x, y, 0)*2, float3(2,2,2)));
         }
     }
 
@@ -191,38 +174,38 @@ void gryphkissStart()
     {
         for (int y = 0; y < 2; y++)
         {
-            StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(x*2+2, 0, y+2), 0, 0, 0.0));
+            StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(x*2+2, 0, y+2), 0, 0, 0.0));
         }
     }
-    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(3, 0, 4), 0, 0, 0.0));
-    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(5, 0, 4), 0, 0, 0.0));
-    StaticMeshInstantiate(assets->BarnWall02, gameState->barnWallCleanMat, transform(center + float3(1, 0, 0), 0, 0, 0.0));
-    StaticMeshInstantiate(assets->BarnWall02, gameState->barnWallCleanMat, transform(center + float3(1, 0, 1), 0, 0, 0.0));
+    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(3, 0, 4), 0, 0, 0.0));
+    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(5, 0, 4), 0, 0, 0.0));
+    StaticMeshInstantiate(assets->BarnWall02, gameState->barnWallCleanMat, transform(float3(1, 0, 0), 0, 0, 0.0));
+    StaticMeshInstantiate(assets->BarnWall02, gameState->barnWallCleanMat, transform(float3(1, 0, 1), 0, 0, 0.0));
 
-    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(5, 0, 0), 0, 0, 0.0));
-    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(5, 0, 1), 0, 0, 0.0));
+    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(5, 0, 0), 0, 0, 0.0));
+    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(5, 0, 1), 0, 0, 0.0));
 
     // doors
-    //StaticMeshInstantiate(assets->BarnDoor, gameState->barnWallCleanMat, transform(center + float3(1, 0, 2), 0, 0, 0.0, float3(-1, 1, -1)));
-    //StaticMeshInstantiate(assets->BarnDoor, gameState->barnWallCleanMat, transform(center + float3(3, 0, 0), 0, 0, 0.0));
+    //StaticMeshInstantiate(assets->BarnDoor, gameState->barnWallCleanMat, transform(float3(1, 0, 2), 0, 0, 0.0, float3(-1, 1, -1)));
+    //StaticMeshInstantiate(assets->BarnDoor, gameState->barnWallCleanMat, transform(float3(3, 0, 0), 0, 0, 0.0));
 
     // back wall
     for (int x = 0; x < 3; x++)
     {
         for (int y = 0; y < 4; y++)
         {
-            StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(x * 2 , 10, y), 0, 0, 0.5));
+            StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(x * 2 , 10, y), 0, 0, 0.5));
         }
     }
-    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(1, 10, 4), 0, 0, 0.5));
-    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(center + float3(3, 10, 4), 0, 0, 0.5));
+    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(1, 10, 4), 0, 0, 0.5));
+    StaticMeshInstantiate(assets->BarnWall01, gameState->barnWallCleanMat, transform(float3(3, 10, 4), 0, 0, 0.5));
 
     // ceiling left
     for (int x = 0; x < 3; x++)
     {
         for (int y = 0; y < 5; y++)
         {
-            StaticMeshInstantiate(assets->BarnCeiling01, gameState->barnWallCleanMat, transform(center + float3(x*0.704f, y*2, x * 0.704f) + float3(0, 2, 3), 0, 0.125, 0.25));
+            StaticMeshInstantiate(assets->BarnCeiling01, gameState->barnWallCleanMat, transform(float3(x*0.704f, y*2, x * 0.704f) + float3(0, 2, 3), 0, 0.125, 0.25));
         }
     }
 
@@ -231,11 +214,13 @@ void gryphkissStart()
     {
         for (int y = 0; y < 5; y++)
         {
-            StaticMeshInstantiate(assets->BarnCeiling01, gameState->barnWallCleanMat, transform(center + float3(-x * 0.704f, y * 2, x * 0.704f) + float3(5, 0, 3), 0, -0.125, -0.25));
+            StaticMeshInstantiate(assets->BarnCeiling01, gameState->barnWallCleanMat, transform(float3(-x * 0.704f, y * 2, x * 0.704f) + float3(5, 0, 3), 0, -0.125, -0.25));
         }
     }
 
-    //StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(center + float3(4,4,4), float3(3, 3, 3)));
+    //StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(float3(4,4,4), float3(3, 3, 3)));
+    
+    StaticMeshInstantiate(assets->skydome, gameState->skydomeMat, transform(float3(0, 0, 0), float3(80, 80, 80)));
 
 }
 

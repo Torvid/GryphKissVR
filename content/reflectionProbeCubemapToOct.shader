@@ -1,7 +1,7 @@
 
 #include "macros.shaderinc"
 
-#define ShaderName reflectionProbeCubemapToOct
+#define ShaderName reflectionProbeToSphericalHarmonic
 
 #define Parameters(X) \
 	X(sampler2D, cubeTexture0)\

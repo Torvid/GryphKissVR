@@ -40,7 +40,8 @@ void DrawScene(Camera camera)
             StaticMesh* mesh = (StaticMesh*)entity;
             if (CullMesh(mesh, camera.transform))
                 continue;
-            DrawMesh(mesh->material, mesh->mesh, mesh->transform, camera, "Scene StaticMesh");
+            DrawStaticMesh(mesh, camera);
+            //DrawMesh(mesh->material, mesh->mesh, mesh->transform, camera, "Scene StaticMesh");
         }
     }
 }
