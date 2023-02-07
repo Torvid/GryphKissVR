@@ -3,7 +3,12 @@
 
 struct StaticMesh
 {
-    EntityContents;
+    bool alive; \
+    Transform transform; \
+    int type; \
+    char* name[100]; \
+    bool visible; \
+    bool editorOnly;
     bool isSky;
     Material_defaultlit* material;
     Material_skydomeShader* materialSky;

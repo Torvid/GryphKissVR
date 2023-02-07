@@ -50,7 +50,8 @@ void main()
 
 	float3 sunDirection = normalize(float3(-1, 0.8, 1));
 	float sun = saturate(dot(cameraVector, sunDirection));// pow(saturate(dot(PSVertexPos, sunDirection)), 9999.0);
-	sun = pow(sun, 250.0) * 1000.0;
+	sun = pow(sun, 250.0) * 10000.0;
+	sun = 0.0;
 
 	float3 result = skyColor;
 	result += sun * sunColor;

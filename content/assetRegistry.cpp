@@ -42,6 +42,7 @@ assetRegistryLoad(FileReadTexture, Texture, SpriteFont, "SpriteFont.tga");
 assetRegistryLoad(FileReadTexture, Texture, testImage, "testImage.tga");
 assetRegistryLoad(FileReadTexture, Texture, texAxes, "texAxes.tga");
 assetRegistryLoadShader(FileReadShader, Shader, textureCopyShader, "textureCopyShader.shader");
+assetRegistryLoad(FileReadMesh, Mesh, tileFloor, "tileFloor.mesh");
 assetRegistryLoad(FileReadMesh, Mesh, tonk, "tonk.mesh");
 assetRegistryLoad(FileReadTexture, Texture, TorvidM1, "TorvidM1.tga");
 assetRegistryLoad(FileReadTexture, Texture, TorvidM2, "TorvidM2.tga");

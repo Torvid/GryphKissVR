@@ -36,6 +36,13 @@ void DrawClear(CustomRenderTexture* texture)
     DrawClear();
     SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
 }
+void DrawClear(Texture* texture)
+{
+    SetRenderTarget(texture);
+    DrawClear();
+    SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+}
+
 
 struct LightBaker
 {
@@ -48,11 +55,7 @@ struct LightBaker
     Transform transform;
 
     Texture* cubeTexture[6];
-    Texture* blurDownsize0;
-    Texture* blurDownsize1;
-    Texture* blurDownsize2;
-    Texture* blurDownsize3;
-    Texture* blurDownsize4;
+    Texture* SphericalHarmonic;
     bool rendering;
     int x;
     int y;
@@ -88,6 +91,7 @@ void ComposeTextures(CustomRenderTexture* target, Texture* source, float2 pos, C
     DrawMesh(comp);
     SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
 }
+static int harmonicCount = 9;
 
 LightBaker* LightBakerInstantiate()
 {
@@ -99,17 +103,13 @@ LightBaker* LightBakerInstantiate()
 
     self->totalCount = radiosityProbeCountX * radiosityProbeCountY * radiosityProbeCountZ;
 
-    self->targetTexture = CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z, true);
+    self->targetTexture = CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z * harmonicCount, true);
 
     for (int i = 0; i < 6; i++)
     {
         self->cubeTexture[i] = CreateTextureTarget(64, 64, true);
     }
-    self->blurDownsize0 = CreateTextureTarget(256, 256, true);
-    self->blurDownsize1 = CreateTextureTarget(64, 64, true);
-    self->blurDownsize2 = CreateTextureTarget(16, 16, true);
-    self->blurDownsize3 = CreateTextureTarget(4, 4, true);
-    self->blurDownsize4 = CreateTextureTarget(1, 1, true);
+    self->SphericalHarmonic = CreateTextureTarget(1, harmonicCount, true);
     return self;
 }
 
@@ -118,26 +118,54 @@ float2 WorldPosToTexturePos(LightBaker* self, float3 worldPos)
     int x = (worldPos.x - self->boxMin.x) / radiosityProbeScale;
     int y = (worldPos.y - self->boxMin.y) / radiosityProbeScale;
     int z = (worldPos.z - self->boxMin.z) / radiosityProbeScale;
-    return float2(x + (int)self->count.x * y, z);
+    return float2(x + (int)self->count.x * y, z * harmonicCount);
 }
-float3 TexturePosToWorldPos(LightBaker* self, float2 texturePos)
+//float3 TexturePosToWorldPos(LightBaker* self, float2 texturePos)
+//{
+//    int x = texturePos.x;
+//    int y = texturePos.y;
+//    return float3(x, x % (int)self->count.x, y);
+//}
+
+void CubemapToSphericalHarmonic(Texture* target, Texture* source[6])
 {
-    int x = texturePos.x;
-    int y = texturePos.y;
-    return float3(x, x % (int)self->count.x, y);
+    if (!target)
+        return;
+
+    for (int i = 0; i < 6; i++)
+    {
+        if (!source[i])
+            return;
+    }
+
+    SetRenderTarget(target, "Probe Capture");
+    DrawClear(float3(0, 1, 0));
+    CreateMaterialLocal(octUnwrap, reflectionProbeToSphericalHarmonic);
+    octUnwrap->cubeTexture0 = source[0];
+    octUnwrap->cubeTexture1 = source[1];
+    octUnwrap->cubeTexture2 = source[2];
+    octUnwrap->cubeTexture3 = source[3];
+    octUnwrap->cubeTexture4 = source[4];
+    octUnwrap->cubeTexture5 = source[5];
+    octUnwrap->mesh = assets->ui_quad;
+    DrawMesh(octUnwrap);
+
+    SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
 }
+
 
 void RenderWorld(LightBaker* self, float3 pos, bool apply = true)
 {
     //float3 pos = haven->spectatorCamera.position;
     RenderCubemap(pos, self->cubeTexture);
-    PackCubemap(self->blurDownsize0, self->cubeTexture);
-    Downsize4x(self->blurDownsize0, self->blurDownsize1);
-    Downsize4x(self->blurDownsize1, self->blurDownsize2);
-    Downsize4x(self->blurDownsize2, self->blurDownsize3);
-    Downsize4x(self->blurDownsize3, self->blurDownsize4);
+    CubemapToSphericalHarmonic(self->SphericalHarmonic, self->cubeTexture);
+    //PackCubemap(self->blurDownsize0, self->cubeTexture);
+    //Downsize4x(self->blurDownsize0, self->blurDownsize1);
+    //Downsize4x(self->blurDownsize1, self->blurDownsize2);
+    //Downsize4x(self->blurDownsize2, self->blurDownsize3);
+    //Downsize4x(self->blurDownsize3, self->blurDownsize4);
     if(apply)
-        ComposeTextures(self->targetTexture, self->blurDownsize4, WorldPosToTexturePos(self, pos), ComposeTexturesMode_Overwrite);
+        ComposeTextures(self->targetTexture, self->SphericalHarmonic, WorldPosToTexturePos(self, pos), ComposeTexturesMode_Overwrite);
 }
 
 #define crBegin static int state=0; switch(state) { case 0:
@@ -170,6 +198,7 @@ void LightBakerUpdate(LightBaker* self)
     DrawAABBMinMax(self->boxMin, self->boxMax, 0.02);
     float3 boxCenter = (self->boxMin + self->boxMax) * 0.5;
 
+    DrawClear(self->SphericalHarmonic);
     if (DrawButton("Radiosity"))
     {
         self->rendering = true;
@@ -193,7 +222,7 @@ void LightBakerUpdate(LightBaker* self)
     }
     else
     {
-        RenderWorld(self, haven->spectatorCamera.position, false);
+        //RenderWorld(self, haven->spectatorCamera.position, false);
     }
 
     //for (int x = 0; x < self->count.x; x++)
@@ -208,6 +237,15 @@ void LightBakerUpdate(LightBaker* self)
     //    }
     //}
 
+    //DrawScreenTexture(self->targetTexture->current, self->targetTexture->current->size * 0.015 * radiosityProbeScale, 0.015);
+    
+    //float scale = 0.1;
+    //DrawScreenTexture(self->SphericalHarmonic, float2(1, 1) * scale, 0 * 0.01 * scale * 4.0 - 0.05);
+    //DrawScreenTexture(self->blurDownsize1, float2(1, 1) * scale, 1 * 0.01 * scale * 4.0 - 0.05);
+    //DrawScreenTexture(self->blurDownsize2, float2(1, 1) * scale, 2 * 0.01 * scale * 4.0 - 0.05);
+    //DrawScreenTexture(self->blurDownsize3, float2(1, 1) * scale, 3 * 0.01 * scale * 4.0 - 0.05);
+    //DrawScreenTexture(self->blurDownsize4, float2(1, 1) * scale, 4 * 0.01 * scale * 4.0 - 0.05);
+
     SetLightmap(haven->gameState,
         self->targetTexture->current,
         self->boxMin,
@@ -215,12 +253,24 @@ void LightBakerUpdate(LightBaker* self)
         self->count,
         radiosityProbeScale);
 
-    DrawScreenTexture(self->targetTexture->current, self->targetTexture->current->size * 0.02 * radiosityProbeScale, 0.02);
+    Transform planeTransform = transform(float3(0,0,0),
+        haven->spectatorCamera.right,
+        haven->spectatorCamera.up,
+        haven->spectatorCamera.forward,
+        float3(1, 1, 1));
 
-    float scale = 0.3;
-    DrawScreenTexture(self->blurDownsize0, float2(1, 1) * scale, 0 * 0.01 * scale * 4.0 - 0.05);
-    DrawScreenTexture(self->blurDownsize1, float2(1, 1) * scale, 1 * 0.01 * scale * 4.0 - 0.05);
-    DrawScreenTexture(self->blurDownsize2, float2(1, 1) * scale, 2 * 0.01 * scale * 4.0 - 0.05);
-    DrawScreenTexture(self->blurDownsize3, float2(1, 1) * scale, 3 * 0.01 * scale * 4.0 - 0.05);
-    DrawScreenTexture(self->blurDownsize4, float2(1, 1) * scale, 4 * 0.01 * scale * 4.0 - 0.05);
+    CreateMaterialLocal(waterPlane2, defaultlit);
+    //waterPlane2->BackFaceCulling = false;
+    waterPlane2->texM1 = assets->baseM1;
+    waterPlane2->texM2 = assets->baseM2;
+    //waterPlane2->texM1 = assets->BarnWallM1;
+    //waterPlane2->texM2 = assets->BarnWallM2;
+    //waterPlane2->texCubemap = self->octTexture;
+    waterPlane2->texLightmap = self->targetTexture->current;
+    waterPlane2->Color = float3(1.0f, 1.0f, 1.0f);
+    planeTransform.scale = -float3(0.15, 0.15, 0.15);
+
+    planeTransform.position = haven->spectatorCamera.position + haven->spectatorCamera.forward;
+    // float3(-0.2, 7.45, 1.6);
+    //DrawMesh(waterPlane2, assets->sphere, planeTransform, "Probe plane in the scene");
 }

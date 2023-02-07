@@ -192,7 +192,7 @@ void ProfilerDrawFlameChart(ProfilingData* data)
         profilingData->zoom -= profilingData->zoom * input->mouseScrollDelta * 0.1f;
         profilingData->zoom = max(profilingData->zoom, 0.1f);
     }
-    profilingData->zoom = 1.0f;
+    profilingData->zoom = 10.f;
 
     int64 length = highest - lowest;
     float sampleCount = (300000 * profilingData->zoom) * pixelWidth + 15000;
@@ -312,6 +312,7 @@ void profilerUpdate()
         StringAppend(text, "\n    Internal Time: ", (int)haven->internalTime, " microseconds");
         StringAppend(text, "\n    External Time: ", (int)haven->externalTime, " microseconds");
         StringAppend(text, "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds");
+        StringAppend(text, "\n    Drawcalls: ", (int)(haven->arenaDrawCommands.memoryArenaEntrys_count), " ");
         DrawText(text);
 
         Clear((uint8*)text, tempStringSize);

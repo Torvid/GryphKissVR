@@ -194,27 +194,28 @@ void main()
 	L20	 /= 100.0;
 	L22	 /= 100.0;
 
-	float height = PSVertexUV.y * 9.0f;
-	float3 result = 0.0f;
+	float height = PSVertexUV.y * 9.0;
+	float3 result = float3(0.0);
 
 	if (height < 1.0)
-		FragColor = L00;
+		result = L00;
 	else if (height < 2.0)
-		FragColor = L11;
+		result = L11;
 	else if (height < 3.0)
-		FragColor = L10;
+		result = L10;
 	else if (height < 4.0)
-		FragColor = L1_1;
+		result = L1_1;
 	else if (height < 5.0)
-		FragColor = L21;
+		result = L21;
 	else if (height < 6.0)
-		FragColor = L2_1;
+		result = L2_1;
 	else if (height < 7.0)
-		FragColor = L2_2;
+		result = L2_2;
 	else if (height < 8.0)
-		FragColor = L20;
+		result = L20;
 	else if (height < 9.0)
-		FragColor = L22;
+		result = L22;
 
+	FragColor = float4(result * 10.0, 1.0);
 }
 #endif

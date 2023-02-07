@@ -22,6 +22,10 @@ void SetLightmap(GameState* gameState, Texture* texture, float3 lightmapMin, flo
 #include "entities/player.cpp"
 #include "entities/hand.cpp"
 
+#define CreateSceneMaterial(name) \
+    CreateMaterialGlobal(name, defaultlit); \
+    ArrayAdd(haven->sceneMaterials, name);
+
 struct GameState
 {
     MemoryArena arenaScene; // memory arena for all the entities currently alive in the scene.
@@ -29,21 +33,14 @@ struct GameState
     // Torvid
     float torvidFrame;
 
-    union
-    {
-        Material_defaultlit* materials[6];
-        struct
-        {
-            Material_defaultlit* torvidMat;
+    Material_defaultlit* torvidMat;
 
-            // Barn stuff
-            Material_defaultlit* barnWallMat;
-            Material_defaultlit* barnWallCleanMat;
-            Material_defaultlit* barnCeilingMat;
-            Material_defaultlit* barnTilesMat;
-            Material_defaultlit* StrawPileMat;
-        };
-    };
+    // Barn stuff
+    Material_defaultlit* barnWallMat;
+    Material_defaultlit* barnWallCleanMat;
+    Material_defaultlit* barnCeilingMat;
+    Material_defaultlit* barnTilesMat;
+    Material_defaultlit* StrawPileMat;
 
     Material_skydomeShader* skydomeMat;
 
@@ -59,22 +56,23 @@ struct GameState
 
 void SetCubemap(GameState* gameState, Texture* texture)
 {
-    for (int i = 0; i < ArrayCapacity(gameState->materials); i++)
+    for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
     {
-        gameState->materials[i]->texCubemap = texture;
+        haven->sceneMaterials[i]->texCubemap = texture;
     }
 }
 
 void SetLightmap(GameState* gameState, Texture* texture, float3 lightmapMin, float3 lightmapMax, float3 lightmapResolution, float radiosityProbeScale)
 {
-    for (int i = 0; i < ArrayCapacity(gameState->materials); i++)
+    for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
     {
-        gameState->materials[i]->texLightmap = texture;
-        gameState->materials[i]->lightmapMin = lightmapMin;
-        gameState->materials[i]->lightmapMax = lightmapMax;
-        gameState->materials[i]->lightmapResolution = lightmapResolution;
-        gameState->materials[i]->radiosityProbeScale = radiosityProbeScale;
+        haven->sceneMaterials[i]->texLightmap = texture;
+        haven->sceneMaterials[i]->lightmapMin = lightmapMin;
+        haven->sceneMaterials[i]->lightmapMax = lightmapMax;
+        haven->sceneMaterials[i]->lightmapResolution = lightmapResolution;
+        haven->sceneMaterials[i]->radiosityProbeScale = radiosityProbeScale;
     }
+    
 }
 
 void gryphkissStart()
@@ -89,29 +87,29 @@ void gryphkissStart()
 
 
     // Load Torvid
-    CreateMaterialGlobal(gameState->torvidMat, defaultlit);
+    CreateSceneMaterial(gameState->torvidMat);
     gameState->torvidMat->texM1 = assets->TorvidM1;
     gameState->torvidMat->texM2 = assets->TorvidM2;
     gameState->torvidMat->BackFaceCulling = true;
 
     // Create materials and load textures
-    CreateMaterialGlobal(gameState->barnWallMat, defaultlit);
+    CreateSceneMaterial(gameState->barnWallMat);
     gameState->barnWallMat->texM1 = assets->BarnWallM1;
     gameState->barnWallMat->texM2 = assets->BarnWallM2;
 
-    CreateMaterialGlobal(gameState->barnWallCleanMat, defaultlit);
+    CreateSceneMaterial(gameState->barnWallCleanMat);
     gameState->barnWallCleanMat->texM1 = assets->BarnWallCleanM1;
     gameState->barnWallCleanMat->texM2 = assets->BarnWallCleanM2;
 
-    CreateMaterialGlobal(gameState->barnCeilingMat, defaultlit);
+    CreateSceneMaterial(gameState->barnCeilingMat);
     gameState->barnCeilingMat->texM1 = assets->BarnCeilingM1;
     gameState->barnCeilingMat->texM2 = assets->BarnCeilingM2;
 
-    CreateMaterialGlobal(gameState->barnTilesMat, defaultlit);
+    CreateSceneMaterial(gameState->barnTilesMat);
     gameState->barnTilesMat->texM1 = assets->TilesM1;
     gameState->barnTilesMat->texM2 = assets->TilesM2;
 
-    CreateMaterialGlobal(gameState->StrawPileMat, defaultlit);
+    CreateSceneMaterial(gameState->StrawPileMat);
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
 
@@ -165,7 +163,7 @@ void gryphkissStart()
     {
         for (int y = 0; y < 5; y++)
         {
-            StaticMeshInstantiate(assets->ui_quad, gameState->barnTilesMat, transform(float3(x, y, 0)*2, float3(2,2,2)));
+            StaticMeshInstantiate(assets->tileFloor, gameState->barnTilesMat, transform(float3(x+ 0.5, y+0.5, 0) * 2, float3(1, 1, 1)));
         }
     }
 
@@ -231,10 +229,10 @@ void gryphkissUpdate()
     // Entity Update
     HandUpdate(gameState->leftHand);
     HandUpdate(gameState->rightHand);
-
+    
     PlayerUpdate(gameState->player);
-
-
+    
+    
     for (int i = 0; i < ArrayCount(haven->entities); i++)
     {
         Entity* entity = haven->entities[i];
@@ -247,9 +245,9 @@ void gryphkissUpdate()
             ReflectionProbeUpdate((ReflectionProbe*)entity, i);
         }
     }
-
+    
     LightBakerUpdate(gameState->lightBaker);
-
+    
     Transform torvidTransform = {
         float3(2.5, 8, 0),
         input->playspaceStageLeft.right,
@@ -257,7 +255,7 @@ void gryphkissUpdate()
         input->playspaceStageLeft.up,
         { 1, 1, 1 } };
     torvidTransform = rotate(torvidTransform, torvidTransform.up, -0.4);
-
+    
     Animation* torvidAnimation = assets->torvidTestAnim;
     // Set up bones
     for (int i = 0; i < torvidAnimation->boneCount; i++)
@@ -265,7 +263,7 @@ void gryphkissUpdate()
         int frameOffset = ((int)gameState->torvidFrame) * torvidAnimation->boneCount;
         Transform t = torvidAnimation->transforms[i + frameOffset];
         gameState->torvidMat->shaderBoneTransforms[i] = t;
-
+    
         // Draw bone
         if (haven->editor)
         {
@@ -281,7 +279,7 @@ void gryphkissUpdate()
             }
         }
     }
-
+    
     // Play animation
     float animationFPS = 25.0f;
     if (gameState->torvidFrame == 0.0f)
@@ -293,7 +291,9 @@ void gryphkissUpdate()
     {
         gameState->torvidFrame = 0.0f;
     }
-
+    
     // Draw torvid
     DrawMesh(gameState->torvidMat, assets->torvidTest, torvidTransform);
+    //torvidTransform.position = float3(2, 0.8, 0);
+    //DrawMesh(gameState->torvidMat, assets->torvidTest, torvidTransform);
 }

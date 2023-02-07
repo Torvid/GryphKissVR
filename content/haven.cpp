@@ -72,6 +72,7 @@ struct ProfilingData;
 struct UIMeshData;
 struct SoundChannel;
 struct Material_unlit;
+struct Material_defaultlit;
 
 struct Entity;
 struct EngineState;
@@ -139,6 +140,7 @@ struct EngineState
     Material_unlit* green;
     Material_unlit* blue;
 
+    ArrayCreate(Material_defaultlit*, sceneMaterials, 100);
 
     Transform spectatorCamera;
 

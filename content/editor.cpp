@@ -120,7 +120,7 @@ void editorUpdate()
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "\n\nINPUT: ");
         StringAppend(text, "\n    Mouse pos: ", input->mousePos);
-        StringAppend(text, "\n    Eye pos: ", input->eyeLeft.position);
+        StringAppend(text, "\n    Spectator pos: ", haven->spectatorCamera.position);
         DrawText(text);
 
         Clear((uint8*)text, tempStringSize);

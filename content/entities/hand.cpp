@@ -20,9 +20,9 @@ void HandStart(Hand* self)
 {
     self->clickCount = 0;
     CreateMaterialGlobal(self->handMaterial, defaultlit);
+    ArrayAdd(haven->sceneMaterials, self->handMaterial);
     self->tonk = StaticMeshInstantiate(assets->tonk, self->handMaterial, transform(float3(0, 0, 0)));
     
-
 }
 
 void HandUpdate(Hand* self)

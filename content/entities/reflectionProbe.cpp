@@ -141,7 +141,6 @@ void Downsize4x(Texture* source, Texture* target)
     DrawMesh(octUnwrap);
     SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
 }
-
 struct ReflectionProbe
 {
     EntityContents;
@@ -191,6 +190,7 @@ void DrawScreenTexture(Texture* texture, float2 size, float heightOffset)
 }
 void ReflectionProbeUpdate(ReflectionProbe* self, int i)
 {
+    return;
     float3 startPos = haven->spectatorCamera.position + float3(-0.5, 2, -0.5);
     RenderCubemap(startPos, self->cubeTexture);
     PackCubemap(self->octTexture, self->cubeTexture);
