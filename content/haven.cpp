@@ -235,17 +235,18 @@ void LoadAssets(Assets* assets)
 #undef assetRegistryLoad
 }
 
-#define CreateMaterialGlobal(name, type) \
+
+#define CreateMaterialGlobal(name, _shader, type) \
     name = (PASTE(Material_, type)*)ArenaPushStruct(&haven->arenaGlobalDrawCommands, PASTE(Material_, type), ""); \
-    name->shader = PASTE(assets->, type); \
+    name->shader = _shader; \
     name->BackFaceCulling = true; \
     name->Wireframe = false; \
     SetShaderDefaults(name);
 
-#define CreateMaterialLocal(name, type) \
+#define CreateMaterialLocal(name, _shader, type) \
     PASTE(Material_, type) name##Data = {}; \
     PASTE(Material_, type)* name = &name##Data; \
-    name->shader = PASTE(assets->, type); \
+    name->shader = _shader; \
     name->transform = Transform(vectorZero, vectorForward, vectorUp, vectorOne); \
     name->BackFaceCulling = true; \
     name->Wireframe = false; \
@@ -499,12 +500,12 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
 
 
-        CreateMaterialGlobal(haven->axesMaterial, unlit);
+        CreateMaterialGlobal(haven->axesMaterial, assets->unlit, unlit);
         haven->axesMaterial->ColorTexture = assets->texAxes;
         haven->axesMaterial->Color = float3(1, 1, 1);
         haven->axesMaterial->BackFaceCulling = true;
 
-        CreateMaterialGlobal(haven->boneMaterial, unlit);
+        CreateMaterialGlobal(haven->boneMaterial, assets->unlit, unlit);
         haven->boneMaterial->shader = assets->unlit;
         haven->boneMaterial->ColorTexture = assets->white;
         haven->boneMaterial->Color = float3(38.0f / 255.0f, 0, 67.0f / 255.0f);
@@ -531,17 +532,17 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         profilerStart();
 
 
-        CreateMaterialGlobal(haven->red, unlit);
+        CreateMaterialGlobal(haven->red, assets->unlit, unlit);
         haven->red->ColorTexture = assets->white;
         haven->red->Color = float3(1, 0, 0);
         haven->red->BackFaceCulling = true;
 
-        CreateMaterialGlobal(haven->green, unlit);
+        CreateMaterialGlobal(haven->green, assets->unlit, unlit);
         haven->green->ColorTexture = assets->white;
         haven->green->Color = float3(0, 1, 0);
         haven->green->BackFaceCulling = true;
 
-        CreateMaterialGlobal(haven->blue, unlit);
+        CreateMaterialGlobal(haven->blue, assets->unlit, unlit);
         haven->blue->ColorTexture = assets->white;
         haven->blue->Color = float3(0, 0, 1);
         haven->blue->BackFaceCulling = true;
@@ -549,7 +550,28 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         return;
     }
 
+#if 1
+    // clear backbuffer
+    SetRenderTarget(0);
+    DrawClear(float3(0.2, 0.5, 0.2));
 
+    // clear swapbuffer
+    SetRenderTarget(haven->SwapBuffer);
+    haven->clearColor = float3(0.251, 0.298, 0.373);
+    DrawClear(haven->clearColor);
+
+    SetRenderTarget(0);
+    // do postprocessing
+    CreateMaterialLocal(finalOutputCommand, assets->postProcessTest, postProcessTest);
+    finalOutputCommand->mesh = assets->ui_quad;
+    finalOutputCommand->ColorTexture = haven->SwapBuffer;
+    finalOutputCommand->TexRipples = haven->waterRipplesCurrent;
+    DrawMesh(finalOutputCommand);
+
+    gameMemory->renderCommands_count = haven->renderCommands_count;
+    return;
+
+#else
     soundUpdate(gameMemory);
 
     input->head = input->eyeLeft;
@@ -567,7 +589,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         SetRenderTarget(haven->waterRipplesPrevious);
         DrawClear();
 
-        CreateMaterialLocal(copyTexture, textureCopyShader);
+        CreateMaterialLocal(copyTexture, assets->textureCopyShader, textureCopyShader);
         copyTexture->mesh = assets->ui_quad;
         copyTexture->ColorTexture = assets->coal;
         DrawMesh(copyTexture);
@@ -584,7 +606,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     SetRenderTarget(haven->waterRipplesCurrent);
     DrawClear();
 
-    CreateMaterialLocal(rippleSim, rippleSimShader);
+    CreateMaterialLocal(rippleSim, assets->rippleSimShader, rippleSimShader);
     rippleSim->mesh = assets->ui_quad;
     rippleSim->TexPrevious = haven->waterRipplesPrevious;
     rippleSim->mousePos = input->mousePos / haven->Resolution;
@@ -598,7 +620,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     haven->waterRipplesCurrent = temp;
 
     SetRenderTarget(haven->SwapBuffer);
-    haven->clearColor = float3(0.251, 0.298, 0.373);// *10.0;
+    haven->clearColor = float3(0.251, 0.298, 0.373);
     DrawClear(haven->clearColor);
 
 
@@ -626,7 +648,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
     // Simulation plane
     Transform identity = Transform(vectorDown * 2.0, vectorForward, vectorUp, vectorOne);
-    CreateMaterialLocal(waterPlane, unlit);
+    CreateMaterialLocal(waterPlane, assets->unlit, unlit);
     waterPlane->ColorTexture = haven->waterRipplesCurrent;
     waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
     waterPlane->mesh = assets->ui_quad;
@@ -635,7 +657,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     DrawMesh(waterPlane, assets->ui_quad, transform(center));
 
 
-    //CreateMaterialLocal(fontTest, unlit);
+    //CreateMaterialLocal(fontTest, assets->unlit, unlit);
     //fontTest->ColorTexture = assets->FontRegular;
     //fontTest->Color = float3(1.0f, 1.0f, 1.0f);
     //DrawMesh(fontTest, assets->ui_quad, transform(center + float3(0,0,2)));
@@ -734,7 +756,7 @@ Key systems so far:
     }
 
     // Mouse cursor
-    CreateMaterialLocal(mouseCursorCommand, UIShader);
+    CreateMaterialLocal(mouseCursorCommand, assets->UIShader, UIShader);
     mouseCursorCommand->transform = {};
     mouseCursorCommand->mesh = assets->ui_circle;
     mouseCursorCommand->BackFaceCulling = false;
@@ -754,7 +776,7 @@ Key systems so far:
         haven->uiMeshData->indexes, 
         haven->uiMeshData->quadCount * 6);
 
-    CreateMaterialLocal(uiCommand, UIShader);
+    CreateMaterialLocal(uiCommand, assets->UIShader, UIShader);
     uiCommand->mesh = haven->stringMesh;
     uiCommand->transform = transformIdentity;
     uiCommand->BackFaceCulling = false;
@@ -776,7 +798,7 @@ Key systems so far:
     uiCommand->SpectatorCameraRight = haven->spectatorCamera.right;
 
     // Clear depth so UI is drawn on top.
-    DrawMesh(uiCommand, false);
+    DrawMesh(uiCommand);
     haven->uiMeshData->quadCount = 0;
 
     ProfilerEndSample("GryphKissVR");
@@ -788,7 +810,7 @@ Key systems so far:
     SetRenderTarget(0);
     DrawClear();
 
-    CreateMaterialLocal(finalOutputCommand, postProcessTest);
+    CreateMaterialLocal(finalOutputCommand, assets->postProcessTest, postProcessTest);
     finalOutputCommand->mesh = assets->ui_quad;
 
     finalOutputCommand->ColorTexture = haven->SwapBuffer;
@@ -797,6 +819,8 @@ Key systems so far:
     DrawMesh(finalOutputCommand);
 
     gameMemory->renderCommands_count = haven->renderCommands_count;
+#endif
+
 }
 
 #endif

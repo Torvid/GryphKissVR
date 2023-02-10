@@ -111,7 +111,7 @@ void PackCubemap(Texture* target, Texture* source[6])
     }
     SetRenderTarget(target, "Probe Capture");
     DrawClear(float3(0, 1, 0));
-    CreateMaterialLocal(octUnwrap, reflectionProbeCubemapToOct);
+    CreateMaterialLocal(octUnwrap, assets->reflectionProbeCubemapToOct, reflectionProbeCubemapToOct);
     octUnwrap->cubeTexture0 = source[0];
     octUnwrap->cubeTexture1 = source[1];
     octUnwrap->cubeTexture2 = source[2];
@@ -134,7 +134,7 @@ void Downsize4x(Texture* source, Texture* target)
 
     SetRenderTarget(target, "Probe Capture");
     DrawClear(float3(0, 1, 0));
-    CreateMaterialLocal(octUnwrap, downsize4x);
+    CreateMaterialLocal(octUnwrap, assets->downsize4x, downsize4x);
     octUnwrap->colorTexture = source;
     octUnwrap->resolution = target->sizeX;
     octUnwrap->mesh = assets->ui_quad;
@@ -182,7 +182,7 @@ void DrawScreenTexture(Texture* texture, float2 size, float heightOffset)
     ////transform(haven->spectatorCamera.position + float3(0, 0.1, 0));
     //planeTransform.scale = float3(size.x, size.y, 1) * 0.1;
     ////planeTransform = LookRotation(planeTransform, haven->spectatorCamera.forward, haven->spectatorCamera.up);
-    CreateMaterialLocal(waterPlane, unlit);
+    CreateMaterialLocal(waterPlane, assets->unlit, unlit);
     waterPlane->ColorTexture = texture;
     waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
     waterPlane->BackFaceCulling = true;

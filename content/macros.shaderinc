@@ -1,0 +1,159 @@
+
+#if Cpp
+
+#else
+
+
+precision highp float;
+precision highp int;
+precision lowp sampler2D;
+precision lowp samplerCube;
+
+#define float2 vec2
+#define float3 vec3
+#define float4 vec4
+
+#define float2x2 mat2
+#define float3x3 mat3
+#define float4x4 mat4
+
+#define int2 ivec2
+#define int3 ivec3
+#define int4 ivec4
+
+#define frac fract
+#define lerp mix
+#define saturate(x) clamp(x, 0.0, 1.0)
+#define rcp(x) 1.0f / x 
+#define atan2 atan
+
+//#define ddx dFdxFine
+//#define ddy dFdyFine
+
+
+#define ddx dFdx
+#define ddy dFdy
+
+float3 rsqrt(float3 a)
+{
+	return float3(pow(a.x, -0.5), pow(a.y, -0.5), pow(a.z, -0.5));
+}
+float rsqrt(float a)
+{
+	return pow(a, -0.5);
+}
+float contrast(float x, float c) { return (x - 0.5) * c + 0.5; }
+float2 contrast(float2 x, float c) { return (x - 0.5) * c + 0.5; }
+float3 contrast(float3 x, float c) { return (x - 0.5) * c + 0.5; }
+float4 contrast(float4 x, float c) { return (x - 0.5) * c + 0.5; }
+
+uniform float4x4 ModelViewProjection;
+uniform float4x4 WorldToModel;
+uniform float2 Resolution;
+uniform float IsSpectatorView;
+uniform float IsSkinned;
+uniform float3 CameraPosition;
+uniform float3 CameraForward;
+
+float4 Sample(sampler2D Texture, float2 UV)
+{
+	return texture(Texture, UV);
+}
+float4 SampleLod(sampler2D Texture, float2 UV, float lod)
+{
+	return textureLod(Texture, UV, lod);
+}
+float4 SampleBias(sampler2D Texture, float2 UV, float bias)
+{
+	return texture(Texture, UV, bias);
+}
+float4 SampleGrad(sampler2D Texture, float2 UV, float4 derivative)
+{
+    return textureGrad(Texture, UV, derivative.xy, derivative.zw);
+}
+
+float4 ddxy(float2 uv)
+{
+    return float4(ddx(uv), ddy(uv));
+}
+
+
+float signNotZero(float f)
+{
+    return(f >= 0.0) ? 1.0 : -1.0;
+}
+vec2 signNotZero(vec2 v)
+{
+    return vec2(signNotZero(v.x), signNotZero(v.y));
+}
+vec2 OctEncode(in vec3 v)
+{
+    float l1norm = abs(v.x) + abs(v.y) + abs(v.z);
+    vec2 result = v.xy * (1.0 / l1norm);
+    if (v.z < 0.0) {
+        result = (1.0 - abs(result.yx)) * signNotZero(result.xy);
+    }
+    result = result * 0.5f + 0.5f;
+    return result;
+}
+vec3 OctDecode(vec2 o)
+{
+    o = o * 2.0f - 1.0f;
+    vec3 v = vec3(o.x, o.y, 1.0 - abs(o.x) - abs(o.y));
+    if (v.z < 0.0) {
+        v.xy = (1.0 - abs(v.yx)) * signNotZero(v.xy);
+    }
+    return normalize(v);
+}
+
+float2 AngleEncode(float3 v)
+{
+    float X = v.x;
+    float Y = v.y;
+    float Z = v.z;
+    float radius = sqrt(X * X + Y * Y + Z * Z);
+    float theta = atan2(Y, X);
+    float phi = acos(Z / radius);
+    return float2(theta, phi);
+}
+
+float3 AngleDecode(float2 v)
+{
+    float theta = v.x;
+    float phi = v.y;
+    float radius = 1.0;
+    float X = cos(theta) * cos(phi) * radius;
+    float Y = sin(theta) * cos(phi) * radius;
+    float Z = sin(phi) * radius;
+    return float3(X, Y, Z);
+}
+
+// X and Y are UVs, Z is face index
+float3 RayCubemap(float3 v)
+{
+    float3 vAbs = abs(v);
+    float3 habs = 0.5f / vAbs;
+    if (vAbs.z >= vAbs.x && vAbs.z >= vAbs.y)
+    {
+        return float3(
+            (v.z < 0.0f ? -v.x : v.x) * (0.5f / vAbs.z) + 0.5f,
+            (-v.y) * (0.5f / vAbs.z) + 0.5f,
+            v.z < 0.0f ? 5.0f : 4.0f);
+    }
+    else if (vAbs.y >= vAbs.x)
+    {
+        return float3(
+            (v.y < 0.0f ? v.x : -v.x) * (0.5f / vAbs.y) + 0.5f,
+            (-v.z) * (0.5f / vAbs.y) + 0.5f,
+            v.y < 0.0f ? 3.0f : 2.0f);
+    }
+    else
+    {
+        return float3(
+            (v.x < 0.0f ? -v.y : v.y) * (0.5f / vAbs.x) + 0.5f,
+            (-v.z) * (0.5f / vAbs.x) + 0.5f,
+            v.x < 0.0f ? 1.0f : 0.0f);
+    }
+}
+
+#endif

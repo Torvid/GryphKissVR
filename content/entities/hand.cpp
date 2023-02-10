@@ -19,7 +19,7 @@ struct Hand
 void HandStart(Hand* self)
 {
     self->clickCount = 0;
-    CreateMaterialGlobal(self->handMaterial, defaultlit);
+    CreateMaterialGlobal(self->handMaterial, assets->defaultlit, defaultlit);
     ArrayAdd(haven->sceneMaterials, self->handMaterial);
     self->tonk = StaticMeshInstantiate(assets->tonk, self->handMaterial, transform(float3(0, 0, 0)));
     

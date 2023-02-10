@@ -105,6 +105,8 @@ void DrawArena(MemoryArena* arena)
 void ProfilerBeingSample()
 {
     ProfilingData* data = haven->profilingData;
+    if (data->currentDepth > 100)
+        return;
 
     data->timeStack[data->currentDepth][data->frameNumber] = haven->platformTime();
     data->currentDepth++;
@@ -114,6 +116,10 @@ void ProfilerBeingSample()
 void ProfilerEndSample(const char* name)
 {
     ProfilingData* data = haven->profilingData;
+    if (data->index > 100)
+        return;
+    if (data->currentDepth > 100)
+        return;
 
     data->enterTime[data->index][data->frameNumber] = data->timeStack[data->currentDepth - 1][data->frameNumber];
     data->exitTime[data->index][data->frameNumber] = haven->platformTime();

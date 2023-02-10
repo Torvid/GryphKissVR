@@ -71,7 +71,7 @@ void ComposeTextures(CustomRenderTexture* target, Texture* source, float2 pos, C
     float2 sourceSize = float2(source->sizeX, source->sizeY);
 
     Swap(target);
-    CreateMaterialLocal(comp, compose);
+    CreateMaterialLocal(comp, assets->compose, compose);
     comp->mesh = assets->ui_quad;
     comp->texA = target->previous; 
     comp->texB = source;
@@ -131,7 +131,7 @@ void CubemapToSphericalHarmonic(Texture* target, Texture* source[6])
 
     SetRenderTarget(target, "Probe Capture");
     DrawClear(float3(0, 1, 0));
-    CreateMaterialLocal(octUnwrap, reflectionProbeToSphericalHarmonic);
+    CreateMaterialLocal(octUnwrap, assets->reflectionProbeToSphericalHarmonic, reflectionProbeToSphericalHarmonic);
     octUnwrap->cubeTexture0 = source[0];
     octUnwrap->cubeTexture1 = source[1];
     octUnwrap->cubeTexture2 = source[2];
@@ -300,7 +300,7 @@ void LightBakerUpdate(LightBaker* self)
         haven->spectatorCamera.forward,
         float3(1, 1, 1));
 
-    CreateMaterialLocal(waterPlane2, defaultlit);
+    CreateMaterialLocal(waterPlane2, assets->defaultlit, defaultlit);
     //waterPlane2->BackFaceCulling = false;
     waterPlane2->texM1 = assets->baseM1;
     waterPlane2->texM2 = assets->baseM2;

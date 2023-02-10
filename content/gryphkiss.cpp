@@ -23,7 +23,7 @@ void SetLightmap(GameState* gameState, Texture* texture, float3 lightmapMin, flo
 #include "entities/hand.cpp"
 
 #define CreateSceneMaterial(name) \
-    CreateMaterialGlobal(name, defaultlit); \
+    CreateMaterialGlobal(name, assets->defaultlit, defaultlit); \
     ArrayAdd(haven->sceneMaterials, name);
 
 struct GameState
@@ -113,7 +113,7 @@ void gryphkissStart()
     gameState->StrawPileMat->texM1 = assets->StrawPileM1;
     gameState->StrawPileMat->texM2 = assets->StrawPileM2;
 
-    CreateMaterialGlobal(gameState->skydomeMat, skydomeShader);
+    CreateMaterialGlobal(gameState->skydomeMat, assets->skydomeShader, skydomeShader);
     gameState->skydomeMat->Color = float3(1, 1, 1);
     gameState->skydomeMat->ColorTexture = assets->StrawPileM1;
     //gameState->skydomeMat.text
@@ -297,7 +297,7 @@ void gryphkissUpdate()
 
 
     // Gradient for testing color bit-depth
-    CreateMaterialLocal(gradientMateiral, unlit);
+    CreateMaterialLocal(gradientMateiral, assets->unlit, unlit);
     gradientMateiral->ColorTexture = assets->LightBake;// assets->gradient;
     gradientMateiral->Color = float3(1, 1, 1);
     DrawMesh(gradientMateiral, assets->ui_quad, transform(float3(2, 3, 0.1)));

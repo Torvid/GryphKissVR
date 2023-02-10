@@ -76,7 +76,7 @@ struct ShaderStructName
     };
 };
 
-void DrawMesh(ShaderStructName* command, const char* name = 0)
+void DrawMesh(ShaderStructName* command)
 {
     ShaderStructName* temp;
     //if (text)
