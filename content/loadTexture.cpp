@@ -1,5 +1,6 @@
 #pragma once
 #include "haven.cpp"
+#include "entities/lightbaker.h"
 
 #pragma pack(push, 1)
 struct TGA_HEADER {
@@ -60,7 +61,6 @@ unpackedASTC unpackASTCHeader(uint8* fileData)
     int yblocks = (ysize + astc->block_y - 1) / astc->block_y;
     int zblocks = (zsize + astc->block_z - 1) / astc->block_z;
 
-
     Result.sizeX = xsize;// astc->dim_x[0] + (astc->dim_x[1] << 8) + (astc->dim_x[2] << 16);
     Result.sizeY = ysize;// astc->dim_y[0] + (astc->dim_y[1] << 8) + (astc->dim_y[2] << 16);
     Result.header = astc;
@@ -74,6 +74,7 @@ unpackedASTC unpackASTCHeader(uint8* fileData)
 void LoadASTC(Texture* texture, int fileSize)
 {
     texture->ASTC = true;
+    texture->HDR = false;
 
     uint8* currentMip = haven->scratchBuffer;
 
@@ -86,7 +87,8 @@ void LoadASTC(Texture* texture, int fileSize)
         {
             texture->sizeX = astc.sizeX;
             texture->sizeY = astc.sizeY;
-            texture->size = { texture->sizeX, texture->sizeY };
+            texture->size.x = texture->sizeX;
+            texture->size.y = texture->sizeY;
         }
         texture->mipSizeX[i] = astc.sizeX;
         texture->mipSizeY[i] = astc.sizeY;
@@ -100,64 +102,28 @@ void LoadASTC(Texture* texture, int fileSize)
     }
 
     texture->mipCount = i;
-    texture->GLID = haven->platformGraphicsLoadTexture(texture, false);
+    texture->GLID = haven->platformGraphicsLoadTexture(texture, false, false);
 }
 
-void LoadTexture(Texture* texture)
+void LoadTga(Texture* texture)
 {
-    ProfilerBeingSample();
-    uint8* end = haven->platformReadFile(haven->scratchBuffer, texture->filename);
-    ProfilerEndSample("Read File");
-
-    ProfilerBeingSample();
-    if (!end)
-    {
-        Texture* missing        = assets->missingTexture;
-        texture->sizeX          = missing->sizeX;
-        texture->sizeY          = missing->sizeY;
-        texture->size = { texture->sizeX, texture->sizeY };
-        texture->mips[0]        = missing->mips[0];
-        texture->mipCount       = missing->mipCount;
-        texture->mipSizeX[0]    = missing->mipSizeX[0];
-        texture->mipSizeY[0]    = missing->mipSizeY[0];
-        texture->GLID           = missing->GLID;
-        return;
-    }
-    // File failed to read!
-    //Assert(end);
-
-    texture->mipCount = 0;
-    for (int i = 0; i < ArrayCapacity(texture->mips); i++)
-    {
-        texture->mips[i] = 0;
-        texture->mipSize[i] = 0;
-    }
-
-    // Check if it's an ASTC compressed texture (android). If it is, load it that way.
-    ASTC_HEADER* astc = (ASTC_HEADER*)haven->scratchBuffer;
-    if (astc->magic[0] == 0x13 &&
-        astc->magic[1] == 0xAB &&
-        astc->magic[2] == 0xA1 &&
-        astc->magic[3] == 0x5C)
-    {
-        LoadASTC(texture, end - haven->scratchBuffer);
-        return;
-    }
-
     TGA_HEADER* tga = (TGA_HEADER*)haven->scratchBuffer;
     bool flipUpDown = tga->imagedescriptor & 1 << 5;
     bool flipLeftRight = tga->imagedescriptor & 1 << 4;
 
-    texture->mipSize[0] = tga->sizeX * tga->sizeY * 4;
-    
+    int ChannelCount = 4;
+    int BytesPerChannel = 1;
+    texture->mipSize[0] = tga->sizeX * tga->sizeY * ChannelCount * BytesPerChannel;
+
     texture->mips[0] = (uint8*)ArenaPushBytes(&haven->arenaAssets, texture->mipSize[0], texture->filename);
     texture->sizeX = tga->sizeX;
     texture->sizeY = tga->sizeY;
     texture->size = float2(tga->sizeX, tga->sizeY);
     texture->mipSizeX[0] = tga->sizeX;
     texture->mipSizeY[0] = tga->sizeY;
+    texture->ASTC           = false;
+    texture->HDR            = false;
 
-    ProfilerEndSample("Misc");
 
     ProfilerBeingSample();
     if (flipUpDown && flipLeftRight)
@@ -239,8 +205,89 @@ void LoadTexture(Texture* texture)
     ProfilerEndSample("Copy");
 
     ProfilerBeingSample();
-    texture->GLID = haven->platformGraphicsLoadTexture(texture, false);
+    texture->GLID = haven->platformGraphicsLoadTexture(texture, false, true);
     ProfilerEndSample("Upload");
+}
+
+// load "radiosity" texture (voxel array of baked lighting data)
+void LoadRad(Texture* texture)
+{
+    int sizeX = radiosityTextureSizeX;
+    int sizeY = radiosityTextureSizeY;
+    int ChannelCount = 4;
+    int BytesPerChannel = 4;
+    texture->mipSize[0] = sizeX * sizeY * ChannelCount * BytesPerChannel;
+
+    ProfilerBeingSample();
+    texture->mips[0] = (uint8*)ArenaPushBytes(&haven->arenaAssets, texture->mipSize[0], texture->filename);
+    texture->sizeX = sizeX;
+    texture->sizeY = sizeY;
+    texture->size = float2(sizeX, sizeY);
+    texture->mipSizeX[0] = sizeX;
+    texture->mipSizeY[0] = sizeY;
+    texture->ASTC = false;
+    texture->HDR = true;
+    Copy(haven->scratchBuffer, texture->mips[0], texture->mipSize[0]);
+    ProfilerEndSample("Copy");
+
+    ProfilerBeingSample();
+    texture->GLID = haven->platformGraphicsLoadTexture(texture, true, false);
+    ProfilerEndSample("Upload");
+}
+
+void LoadTexture(Texture* texture)
+{
+    ProfilerBeingSample();
+    uint8* end = haven->platformReadFile(haven->scratchBuffer, texture->filename);
+    ProfilerEndSample("Read file from disk.");
+
+    // failed to read texture, return the 'missing' texture.
+    if (!end)
+    {
+        Texture* missing        = assets->missingTexture;
+        texture->sizeX          = missing->sizeX;
+        texture->sizeY          = missing->sizeY;
+        texture->size.x = texture->sizeX;
+        texture->size.y = texture->sizeY;
+        texture->mips[0]        = missing->mips[0];
+        texture->mipCount       = missing->mipCount;
+        texture->mipSizeX[0]    = missing->mipSizeX[0];
+        texture->mipSizeY[0]    = missing->mipSizeY[0];
+        texture->GLID           = missing->GLID;
+        texture->ASTC           = false;
+        texture->HDR            = false;
+        return;
+    }
+    // Clear the mip data
+    texture->mipCount = 0;
+    for (int i = 0; i < ArrayCapacity(texture->mips); i++)
+    {
+        texture->mips[i] = 0;
+        texture->mipSize[i] = 0;
+    }
+
+    // Check if it's an ASTC compressed texture (android). If it is, load it that way.
+    if (isASTC(haven->scratchBuffer))
+    {
+        LoadASTC(texture, end - haven->scratchBuffer);
+        return;
+    }
+
+    // Check if it's a .tga targa file. If it is, load it that way.
+    if (EndsWith(texture->filename, ".tga"))
+    {
+        LoadTga(texture);
+        return;
+    }
+
+    if (EndsWith(texture->filename, ".rad"))
+    {
+        LoadRad(texture);
+        return;
+    }
+
+    Assert(false, "Failed to figure out what kind of texture this is.");
+
 }
 
 Texture* FileReadTexture(const char* filename)

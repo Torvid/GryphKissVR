@@ -114,6 +114,8 @@ struct EngineState
     PlatformGraphicsLoadShader* platformGraphicsLoadShader;
     PlatformGraphicsCreateFramebufferTarget* platformGraphicsCreateFramebufferTarget;
     PlatformGraphicsCreateTextureTarget* platformGraphicsCreateTextureTarget;
+    PlatformGraphicsReadbackTexture* platformGraphicsReadbackTexture;
+    PlatformGraphicsReadbackTextureHDR* platformGraphicsReadbackTextureHDR;
 
     ArrayCreate(Texture, textures, 100);
     ArrayCreate(Mesh, meshes, 100);
@@ -235,21 +237,21 @@ void LoadAssets(Assets* assets)
 
 #define CreateMaterialGlobal(name, type) \
     name = (PASTE(Material_, type)*)ArenaPushStruct(&haven->arenaGlobalDrawCommands, PASTE(Material_, type), ""); \
-    name->shader = PASTE(assets->,type); \
+    name->shader = PASTE(assets->, type); \
     name->BackFaceCulling = true; \
     name->Wireframe = false; \
-    SetShaderDefaults(name); \
+    SetShaderDefaults(name);
 
 #define CreateMaterialLocal(name, type) \
     PASTE(Material_, type) name##Data = {}; \
     PASTE(Material_, type)* name = &name##Data; \
-    name->shader = PASTE(assets->,type); \
+    name->shader = PASTE(assets->, type); \
     name->transform = Transform(vectorZero, vectorForward, vectorUp, vectorOne); \
     name->BackFaceCulling = true; \
     name->Wireframe = false; \
     name->mesh = assets->ui_quad; \
-    SetShaderDefaults(name); \
-
+    SetShaderDefaults(name);
+    
 void DrawClear(float3 color = {0,0,0}, const char* name = 0)
 {
     RenderCommand* result = ArrayAddNew(haven->renderCommands);
@@ -450,6 +452,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     haven->platformGraphicsLoadShader = gameMemory->platformGraphicsLoadShader;
     haven->platformGraphicsCreateFramebufferTarget = gameMemory->platformGraphicsCreateFramebufferTarget;
     haven->platformGraphicsCreateTextureTarget = gameMemory->platformGraphicsCreateTextureTarget;
+
+    haven->platformGraphicsReadbackTexture = gameMemory->platformGraphicsReadbackTexture;
+    haven->platformGraphicsReadbackTextureHDR = gameMemory->platformGraphicsReadbackTextureHDR;
 
     //Assert(haven->platformPrint, "Critical function missing");
     //Assert(haven->printf, "Critical function missing");
@@ -660,11 +665,39 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     //DrawFontMain("Barn bam, The quick brown fox jumps over the lazy dog");
     //DrawFontMain("Hello, this is a test sentence.\nhttps://byork.torvid.net/B-Yorked.htm\ngryph@torvid.net\n$33.99 ((x^2) - 3*4) / 187.0\nvoid main(char* s) { return 0; }\n$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@", float2(400, 420), 200);
 
+    char* my_str = R"(
+Hello.
+This is a demo program running natively on Quest 2, Written 
+from scratch in C/C++. Right now it's just an empty-ish scene. 
+I am slowly adding features and building it out.
+
+Check out #6c84daff#torvid.net#ffffff# for more stuff. :>
+
+Controls: 
+ - **Walk**: Left thumbstick.
+ - **Rotate**: Right thumbstick.
+
+Key systems so far:
+ - Skeletal Animation.
+ - Baked lighting using Spherical Harmonics.
+ - Text Rendering.
+ - Custom 3D model and animation format.
+ - Scene with #ff0000ff#X-right#ffffffff#, #00ff00ff#Y-forward#ffffffff# and #0000ffff#Z-up#ffffffff# (as god intended).
+)";
+
+    //
+    //Key APIs, Librariesand tools used :
+    //-OpenXR from VR input.
+    //    - OpenGL - ES for graphics.
+    //    - OpenSL - ES for sound.
+    //    - ASTC texture compression.
+    //    - "Atkinson Hyperlegible" Font.
+
     DrawFont2D("@", input->mousePos, 500, 600, haven->hAlign, haven->vAlign);
     //
     //DrawFont2D(lorem4, float2(400, 400), 300, 700, haven->hAlign, haven->vAlign);
     //DrawFontCameraFacing(lorem4, center + float3(0, 0, 3), 0.75, 2.0f * 0.75f, haven->hAlign, haven->vAlign);
-    //DrawFont(lorem4, transform(center + float3(-1, 0, 2)), 1.0, 2.0f, haven->hAlign, haven->vAlign);
+    DrawFont(my_str, transform(center + float3(5-0.1, 2, 4.5), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
 
     //DrawFont2D("LLL**LLL**", float2(700, 200), 800, 400, haven->hAlign, haven->vAlign);
     //
@@ -681,7 +714,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     //DrawFontMain("Hello World", float2(100, 500), 2000);
     //DrawFont3D(lorem, center + float3(0, 8, 0), 2, wrap, haven->hAlign, haven->vAlign);
     //DrawText3D("Hello World", center + float3(0, 0, 2), 2);
-
     DrawText("G: toggle editor");
     DrawText("P: toggle profiling");
     DrawText("space: reset");

@@ -294,6 +294,11 @@ void gryphkissUpdate()
     
     // Draw torvid
     DrawMesh(gameState->torvidMat, assets->torvidTest, torvidTransform);
-    //torvidTransform.position = float3(2, 0.8, 0);
-    //DrawMesh(gameState->torvidMat, assets->torvidTest, torvidTransform);
+
+
+    // Gradient for testing color bit-depth
+    CreateMaterialLocal(gradientMateiral, unlit);
+    gradientMateiral->ColorTexture = assets->LightBake;// assets->gradient;
+    gradientMateiral->Color = float3(1, 1, 1);
+    DrawMesh(gradientMateiral, assets->ui_quad, transform(float3(2, 3, 0.1)));
 }

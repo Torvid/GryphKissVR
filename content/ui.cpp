@@ -515,7 +515,6 @@ void DrawFontMain(char* text, Transform transform, float inScale, float maxLineW
     bool italic = false;
     for (int i = 0; i < StringLength(text); i++)
     {
-
         if (EscapeSequenceBold(&text[i]))
         {
             int escapeCount = EscapeSequenceBold(&text[i]);
@@ -631,11 +630,16 @@ void DrawFontMain(char* text, Transform transform, float inScale, float maxLineW
                 float2 p = pos + PivotOffset;
                 float2 s = UVsize * scale;
 
-                float3 pos0 = transform.position + transform.right * (p.x) - transform.up * (p.y) + float3(0,   0,   0);
-                float3 pos1 = transform.position + transform.right * (p.x) - transform.up * (p.y) + float3(s.x, 0,   0);
-                float3 pos2 = transform.position + transform.right * (p.x) - transform.up * (p.y) + float3(s.x, 0, -s.y);
-                float3 pos3 = transform.position + transform.right * (p.x) - transform.up * (p.y) + float3(0,   0, -s.y);
+                float3 pos0 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * 0   + normalize(transform.up) * 0;
+                float3 pos1 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * s.x + normalize(transform.up) * 0;
+                float3 pos2 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * s.x + normalize(transform.up) * -s.y;
+                float3 pos3 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * 0   + normalize(transform.up) * -s.y;
 
+                //float2 uv0 = UVposition + float2(0, 0) * UVsize;
+                //float2 uv1 = UVposition + float2(1, 0) * UVsize;
+                //float2 uv2 = UVposition + float2(1, 1) * UVsize;
+                //float2 uv3 = UVposition + float2(0, 1) * UVsize;
+                
                 float2 uv0 = UVposition + float2(0, 0) * UVsize;
                 float2 uv1 = UVposition + float2(1, 0) * UVsize;
                 float2 uv2 = UVposition + float2(1, 1) * UVsize;

@@ -176,6 +176,7 @@ float3 SampleSphericalHarmonic(float3 voxelPos, float3 lightNormal)
 	float yValue = voxelPos.z * 9.0;
 	float2 LightmapUV = float2(xValue, yValue);
 
+
 	float3 L00  = SampleLoad(texLightmap, LightmapUV + float2(0, 0), textureResolution).rgb;
 	float3 L11  = SampleLoad(texLightmap, LightmapUV + float2(0, 1), textureResolution).rgb;
 	float3 L10  = SampleLoad(texLightmap, LightmapUV + float2(0, 2), textureResolution).rgb;
@@ -186,7 +187,9 @@ float3 SampleSphericalHarmonic(float3 voxelPos, float3 lightNormal)
 	float3 L20  = SampleLoad(texLightmap, LightmapUV + float2(0, 7), textureResolution).rgb;
 	float3 L22  = SampleLoad(texLightmap, LightmapUV + float2(0, 8), textureResolution).rgb;
 	
-	//return L00 * 0.8;
+	//return max((A0 * Y00 * L00), 0.0)
+	//	+ max((A1 * Y1_1 * L1_1), 0.0) + max((A1 * Y10 * L10), 0.0) + max((A1 * Y11 * L11), 0.0)
+	//	+ max((A2 * Y2_2 * L2_2), 0.0) + max((A2 * Y2_1 * L2_1), 0.0) + max((A2 * Y20 * L20), 0.0) + max((A2 * Y21 * L21), 0.0) + max((A2 * Y22 * L22), 0.0);
 
 	return (A0 * Y00 * L00)
 		 + (A1 * Y1_1 * L1_1) + (A1 * Y10 * L10) + (A1 * Y11 * L11)

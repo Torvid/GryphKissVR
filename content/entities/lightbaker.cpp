@@ -1,14 +1,6 @@
 #pragma once
 #include "../haven.cpp"
-
-const int radiosityProbePosX = -1;
-const int radiosityProbePosY = -1;
-const int radiosityProbePosZ = -1;
-const int radiosityProbeMultiplier = 2;
-const int radiosityProbeCountX = 7 * radiosityProbeMultiplier;
-const int radiosityProbeCountY = 12 * radiosityProbeMultiplier;
-const int radiosityProbeCountZ = 7 * radiosityProbeMultiplier;
-const float radiosityProbeScale = 1.0 / (float)radiosityProbeMultiplier;
+#include "lightbaker.h"
 
 struct CustomRenderTexture
 {
@@ -91,7 +83,6 @@ void ComposeTextures(CustomRenderTexture* target, Texture* source, float2 pos, C
     DrawMesh(comp);
     SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
 }
-static int harmonicCount = 9;
 
 LightBaker* LightBakerInstantiate()
 {
@@ -214,15 +205,50 @@ void LightBakerUpdate(LightBaker* self)
             self->count,
             radiosityProbeScale);
         int w = testFunction(self);
-        haven->printf("test: w: %d\n", w);
+        //haven->printf("test: w: %d\n", w);
         if (w == -1)
         {
             self->rendering = false;
+
+            // Done baking, write the result to disk.
+            Texture* current = self->targetTexture->current;
+
+            // read the texture into the scratch buffer
+            Clear(haven->scratchBuffer, sizeof(haven->scratchBuffer));
+            haven->platformGraphicsReadbackTextureHDR(current, haven->scratchBuffer);
+            for (int y = 0; y < current->sizeY; y++)
+            {
+                for (int x = 0; x < current->sizeX; x++)
+                {
+                    int i = (y * current->sizeX + x) * 4;
+                    float* currentPixel = (float*)haven->scratchBuffer + i;
+
+                    // RGBA TO BGRA
+                    float R = *(currentPixel + 0);
+                    float G = *(currentPixel + 1);
+                    float B = *(currentPixel + 2);
+                    float A = *(currentPixel + 3);
+
+                    *(currentPixel + 0) = B;
+                    *(currentPixel + 1) = G;
+                    *(currentPixel + 2) = R;
+                    *(currentPixel + 3) = A;
+                }
+            }
+            int NumberOfChannels = 4;
+            int BytesPerChannel = 4;
+            haven->platformWriteFile(haven->scratchBuffer, current->sizeX * current->sizeY * NumberOfChannels * BytesPerChannel, "LightBake.rad");
         }
+        SetLightmap(haven->gameState,
+            self->targetTexture->current,
+            self->boxMin,
+            self->boxMax,
+            self->count,
+            radiosityProbeScale);
     }
     else
     {
-        //RenderWorld(self, haven->spectatorCamera.position, false);
+        RenderWorld(self, haven->spectatorCamera.position, false);
     }
 
     //for (int x = 0; x < self->count.x; x++)
@@ -237,21 +263,36 @@ void LightBakerUpdate(LightBaker* self)
     //    }
     //}
 
-    //DrawScreenTexture(self->targetTexture->current, self->targetTexture->current->size * 0.015 * radiosityProbeScale, 0.015);
+    // draw SH bake texture
+    bool debug = false;
+    if (debug)
+    {
+        DrawScreenTexture(self->targetTexture->current, self->targetTexture->current->size * 0.015 * radiosityProbeScale, 0.015);
+        DrawScreenTexture(assets->LightBake, assets->LightBake->size * 0.015 * radiosityProbeScale, -0.05);
+    }
     
-    //float scale = 0.1;
+    //float scale = 1.0;
     //DrawScreenTexture(self->SphericalHarmonic, float2(1, 1) * scale, 0 * 0.01 * scale * 4.0 - 0.05);
     //DrawScreenTexture(self->blurDownsize1, float2(1, 1) * scale, 1 * 0.01 * scale * 4.0 - 0.05);
     //DrawScreenTexture(self->blurDownsize2, float2(1, 1) * scale, 2 * 0.01 * scale * 4.0 - 0.05);
     //DrawScreenTexture(self->blurDownsize3, float2(1, 1) * scale, 3 * 0.01 * scale * 4.0 - 0.05);
     //DrawScreenTexture(self->blurDownsize4, float2(1, 1) * scale, 4 * 0.01 * scale * 4.0 - 0.05);
 
-    SetLightmap(haven->gameState,
-        self->targetTexture->current,
-        self->boxMin,
-        self->boxMax,
-        self->count,
-        radiosityProbeScale);
+
+    //if (DrawButton("Load Baked data"))
+    //{
+    //    //Texture* texture;
+    //    //LoadTexture(texture)
+    //}
+    if (!self->rendering)
+    {
+        SetLightmap(haven->gameState,
+            assets->LightBake,
+            self->boxMin,
+            self->boxMax,
+            self->count,
+            radiosityProbeScale);
+    }
 
     Transform planeTransform = transform(float3(0,0,0),
         haven->spectatorCamera.right,

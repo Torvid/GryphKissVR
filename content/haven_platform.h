@@ -415,7 +415,8 @@ typedef struct
     int mipSizeX[13];
     int mipSizeY[13];
 
-    bool ASTC;
+    bool ASTC; // compressed
+    bool HDR; // float32
 
     bool isFramebufferTarget;
     int GLID_left; // left eye
@@ -542,11 +543,14 @@ typedef int GLUploadMesh(Mesh* texture);
 typedef void* Memset(void* str, int c, uint64 n);
 typedef void* Memcpy(void* destination, const void* source, uint64 num);
 
-typedef uint32 PlatformGraphicsLoadTexture(Texture* texture, bool clamp); // Upload a texture to the GPU and return back a handle
+typedef uint32 PlatformGraphicsLoadTexture(Texture* texture, bool clamp, bool generateMipmaps); // Upload a texture to the GPU and return back a handle
 typedef uint32 PlatformGraphicsLoadMesh(Mesh* mesh); // Upload a mesh to the GPU and return back a handle
 typedef uint32 PlatformGraphicsLoadShader(Shader* shader); // Compile and upload a unlit to the GPU and return back a handle
 typedef void PlatformGraphicsCreateFramebufferTarget(Texture* texture); // Create a framebuffer, these are special because they contain up to three textures. (left eye, right eye, spectator view)
 typedef void PlatformGraphicsCreateTextureTarget(Texture* texture, bool clamp); // Create a texture target for drawing to. use for GPU sim and such.
+
+typedef void PlatformGraphicsReadbackTexture(Texture* texture, void* pixels); // Create a texture target for drawing to. use for GPU sim and such.
+typedef void PlatformGraphicsReadbackTextureHDR(Texture* texture, void* pixels); // Create a texture target for drawing to. use for GPU sim and such.
 
 typedef void EngineProfilerBeingSample();
 typedef void EngineProfilerEndSample(char* name);
@@ -573,6 +577,8 @@ typedef struct
     PlatformGraphicsLoadShader* platformGraphicsLoadShader;
     PlatformGraphicsCreateFramebufferTarget* platformGraphicsCreateFramebufferTarget;
     PlatformGraphicsCreateTextureTarget* platformGraphicsCreateTextureTarget;
+    PlatformGraphicsReadbackTexture* platformGraphicsReadbackTexture;
+    PlatformGraphicsReadbackTextureHDR* platformGraphicsReadbackTextureHDR;
 
     EngineProfilerBeingSample* engineProfilerBeingSample;
     EngineProfilerEndSample* engineProfilerEndSample;

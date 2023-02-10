@@ -53,6 +53,7 @@ void PlayerUpdate(Player* player)
         player->transform = rotateAboutPoint(player->transform, headLocal.position, float3(0, 0, 1), -(1.0f / snapTurnSteps));
 
     Transform headbox = headLocal;
+    headbox.position -= headLocal.forward * 0.25;
     headbox.scale = float3(0.2, 0.1, 0.1);
     DrawBox(headbox, 0.01f);
     //DrawTransform(input->head);

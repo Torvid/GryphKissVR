@@ -118,10 +118,12 @@ void print_fuck_android(char* string)
 
 void LoadShader(Shader* shader)
 {
+    int maxSize = Kilobytes(100);
+
     char* scratchBuffer = (char*)(haven->scratchBuffer);
 
-    char* pixelShader  = (char*)ArenaPushBytes(&haven->arenaAssets, Kilobytes(25), shader->filename, true);
-    char* vertexShader = (char*)ArenaPushBytes(&haven->arenaAssets, Kilobytes(25), shader->filename, true);
+    char* pixelShader  = (char*)ArenaPushBytes(&haven->arenaAssets, maxSize, shader->filename, true);
+    char* vertexShader = (char*)ArenaPushBytes(&haven->arenaAssets, maxSize, shader->filename, true);
     
     const char* pixelAppend = "#version 320 es\n#define pixelShader 1\n#define Cpp 0\n";
     const char* vertexAppend = "#version 320 es\n#define vertexShader 1\n#define Cpp 0\n";
@@ -136,8 +138,8 @@ void LoadShader(Shader* shader)
 
     //print_fuck_android(memory, vertexShader);
 
-    Assert(pixelShaderLength < Kilobytes(25));
-    Assert(vertexShaderLength < Kilobytes(25));
+    Assert(pixelShaderLength < maxSize);
+    Assert(vertexShaderLength < maxSize);
 
     shader->pixelShaderText = pixelShader;
     shader->vertexShaderText = vertexShader;
