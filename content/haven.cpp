@@ -550,28 +550,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         return;
     }
 
-#if 1
-    // clear backbuffer
-    SetRenderTarget(0);
-    DrawClear(float3(0.2, 0.5, 0.2));
-
-    // clear swapbuffer
-    SetRenderTarget(haven->SwapBuffer);
-    haven->clearColor = float3(0.251, 0.298, 0.373);
-    DrawClear(haven->clearColor);
-
-    SetRenderTarget(0);
-    // do postprocessing
-    CreateMaterialLocal(finalOutputCommand, assets->postProcessTest, postProcessTest);
-    finalOutputCommand->mesh = assets->ui_quad;
-    finalOutputCommand->ColorTexture = haven->SwapBuffer;
-    finalOutputCommand->TexRipples = haven->waterRipplesCurrent;
-    DrawMesh(finalOutputCommand);
-
-    gameMemory->renderCommands_count = haven->renderCommands_count;
-    return;
-
-#else
     soundUpdate(gameMemory);
 
     input->head = input->eyeLeft;
@@ -819,7 +797,6 @@ Key systems so far:
     DrawMesh(finalOutputCommand);
 
     gameMemory->renderCommands_count = haven->renderCommands_count;
-#endif
 
 }
 

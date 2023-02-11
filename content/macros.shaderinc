@@ -2,6 +2,7 @@
 #if Cpp
 
 #else
+#extension GL_OES_standard_derivatives : enable
 
 
 precision highp float;
@@ -72,10 +73,19 @@ float4 SampleGrad(sampler2D Texture, float2 UV, float4 derivative)
     return textureGrad(Texture, UV, derivative.xy, derivative.zw);
 }
 
-float4 ddxy(float2 uv)
+//float4 ddxy(float2 uv)
+//{
+//    return float4(ddx(uv), ddy(uv));
+//}
+
+float4 SampleLoad(sampler2D Texture, float2 UV, float2 resolution)
 {
-    return float4(ddx(uv), ddy(uv));
+    return texture(Texture, (UV + 0.5) / resolution);
 }
+float  inverselerp(float  a, float  b, float  f) { return (f - a) / (b - a); }
+float2 inverselerp(float2 a, float2 b, float2 f) { return (f - a) / (b - a); }
+float3 inverselerp(float3 a, float3 b, float3 f) { return (f - a) / (b - a); }
+float4 inverselerp(float4 a, float4 b, float4 f) { return (f - a) / (b - a); }
 
 
 float signNotZero(float f)

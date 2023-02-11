@@ -49,8 +49,19 @@ out float3 PSVertexPos;
 out float3 PSVertexNormal;
 out float3 PSVertexTangent;
 out float3 PSVertexBitangent;
-out float2 PSVertexUV;
+out float2 PSVertexUV0;
+out float2 PSVertexUV1;
 out int PSMaterialID;
+
+out float3 L00;
+out float3 L11;
+out float3 L10;
+out float3 L1_1;
+out float3 L21;
+out float3 L2_1;
+out float3 L2_2;
+out float3 L20;
+out float3 L22;
 
 void main()
 {
@@ -96,7 +107,8 @@ void main()
 	PSVertexNormal = normalize(worldNormal);
 	PSVertexTangent = normalize(worldTangent);
 	PSVertexBitangent = normalize(cross(VertexTangent, worldNormal));
-	PSVertexUV = VertexUV0;
+	PSVertexUV0 = VertexUV0;
+	PSVertexUV1 = VertexUV1;
 	PSMaterialID = MaterialID;
 }
 
@@ -131,8 +143,18 @@ in float3 PSVertexPos;
 in float3 PSVertexNormal;
 in float3 PSVertexTangent;
 in float3 PSVertexBitangent;
-in float2 PSVertexUV;
+in float2 PSVertexUV0;
+in float2 PSVertexUV1;
 flat in int PSMaterialID;
+in float3 L00;
+in float3 L11;
+in float3 L10;
+in float3 L1_1;
+in float3 L21;
+in float3 L2_1;
+in float3 L2_2;
+in float3 L20;
+in float3 L22;
 
 out float4 FragColor;
 
@@ -144,15 +166,6 @@ float2 PosToUV(float3 pos)
 	return LightmapUV;
 }
 
-
-float4 SampleLoad(sampler2D Texture, float2 UV, float2 resolution)
-{
-	return texture(Texture, (UV + 0.5) / resolution);
-}
-float  inverselerp(float  a, float  b, float  f) { return (f - a) / (b - a); }
-float2 inverselerp(float2 a, float2 b, float2 f) { return (f - a) / (b - a); }
-float3 inverselerp(float3 a, float3 b, float3 f) { return (f - a) / (b - a); }
-float4 inverselerp(float4 a, float4 b, float4 f) { return (f - a) / (b - a); }
 
 float3 SampleSphericalHarmonic(float3 voxelPos, float3 lightNormal)
 {
@@ -199,7 +212,7 @@ float3 SampleSphericalHarmonic(float3 voxelPos, float3 lightNormal)
 
 void main()
 {
-	float2 UV = PSVertexUV;
+	float2 UV = PSVertexUV0;
 	float3 worldPos = PSVertexPos;
 	
 	float4 M1 = Sample(texM1, UV);
@@ -242,12 +255,13 @@ void main()
 	float3 reflectVector = reflect(cameraVector, PSVertexNormal);
 	reflectVector.yz = -reflectVector.yz;
 	float2 reflectUV = OctEncode((reflectVector));
-	float4 cubemap = SampleGrad(texCubemap, reflectUV, ddxy(UV*10.0f));
+	//float4 cubemap = SampleGrad(texCubemap, reflectUV, ddxy(UV*10.0f));
 
 	//float3 lighting = float3(saturate(NdotL)) + float3(0.4, 0.3, 0.2) + cubemap.rgb * 2.0f;
 
 	FragColor.rgb = M1.rgb * lightmap;
 	//FragColor.rgb = abs(PSVertexTangent) * 10000.0;
+
 
 	if (M2.a < 0.5)
 		discard;
