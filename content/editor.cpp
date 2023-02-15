@@ -141,14 +141,13 @@ void editorUpdate()
 
         //haven->headsetView = DrawToggle(input, "Headset View: ", haven->headsetView);
 
-        if (DrawButton("Play a sound") || input->faceButtonLeftDown)
-        {
-            PlaySound(assets->HitWoodDome_22k_mono, 1.0f, false);
-        }
+        //if (DrawButton("Play a sound") || input->faceButtonLeftDown)
+        //{
+        //    PlaySound(assets->HitWoodDome_22k_mono, 1.0f, false);
+        //}
 
         Transform testTransform = transform(float3(12, 0, 0), 0.1, 0.2, 0.3, float3(1, 0.75, 0.5) * 0.75);
 
-        DrawText3D("Hello Debug Text\novo", float3(4, 0, 0), 2.0f);
         DrawLine(float3(4, 0, 0), float3(5, 1, 1), 0.05f, float3(0.6,0.1,0.2));
         DrawCircle(float3(6, 0, 0), float3(0, 0, 1), 0.75, 0.05f);
         DrawSphere(float3(8, 0, 0), 0.75, 0.05f);

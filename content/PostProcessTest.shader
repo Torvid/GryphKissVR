@@ -58,21 +58,21 @@ float3 pow3(float3 a, float b)
 
 void main()
 {
-	float PI = 3.14152128;
-
-	float effectRadius = .2;
-	float effectAngle = 1.0 * PI;
-
-	float2 center = float2(0.5, 0.5);
-	float2 uv = PSVertexUV - center;
-
-	float len = length(uv);
-	float angle = atan(uv.y, uv.x) + effectAngle * smoothstep(effectRadius, 0., len);
-	float radius = length(uv);
-	uv = float2(radius * cos(angle), radius * sin(angle)) + center;
-
-
-	float4 Ripples = Sample(TexRipples, PSVertexUV);
+	//float PI = 3.14152128;
+	//
+	//float effectRadius = .2;
+	//float effectAngle = 1.0 * PI;
+	//
+	//float2 center = float2(0.5, 0.5);
+	//float2 uv = PSVertexUV - center;
+	//
+	//float len = length(uv);
+	//float angle = atan(uv.y, uv.x) + effectAngle * smoothstep(effectRadius, 0., len);
+	//float radius = length(uv);
+	//uv = float2(radius * cos(angle), radius * sin(angle)) + center;
+	//
+	//
+	//float4 Ripples = Sample(TexRipples, PSVertexUV);
 	float4 M1 = Sample(ColorTexture, PSVertexUV);
 
 	if (IsSpectatorView < 0.5)

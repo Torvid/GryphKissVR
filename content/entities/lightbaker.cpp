@@ -173,7 +173,7 @@ int testFunction(LightBaker* self)
         {
             for (int z = 0; z < self->count.z; z++)
             {
-                haven->printf("test: x: %d, y: %d, z: %d\n", self->x, self->y, z);
+                //haven->printf("test: x: %d, y: %d, z: %d\n", self->x, self->y, z);
                 float3 pos = float3(self->x, self->y, z) * radiosityProbeScale + self->boxMin;
                 RenderWorld(self, pos);
             }
@@ -216,25 +216,25 @@ void LightBakerUpdate(LightBaker* self)
             // read the texture into the scratch buffer
             Clear(haven->scratchBuffer, sizeof(haven->scratchBuffer));
             haven->platformGraphicsReadbackTextureHDR(current, haven->scratchBuffer);
-            for (int y = 0; y < current->sizeY; y++)
-            {
-                for (int x = 0; x < current->sizeX; x++)
-                {
-                    int i = (y * current->sizeX + x) * 4;
-                    float* currentPixel = (float*)haven->scratchBuffer + i;
-
-                    // RGBA TO BGRA
-                    float R = *(currentPixel + 0);
-                    float G = *(currentPixel + 1);
-                    float B = *(currentPixel + 2);
-                    float A = *(currentPixel + 3);
-
-                    *(currentPixel + 0) = B;
-                    *(currentPixel + 1) = G;
-                    *(currentPixel + 2) = R;
-                    *(currentPixel + 3) = A;
-                }
-            }
+            //for (int y = 0; y < current->sizeY; y++)
+            //{
+            //    for (int x = 0; x < current->sizeX; x++)
+            //    {
+            //        int i = (y * current->sizeX + x) * 4;
+            //        float* currentPixel = (float*)haven->scratchBuffer + i;
+            //
+            //        // RGBA TO BGRA
+            //        float R = *(currentPixel + 0);
+            //        float G = *(currentPixel + 1);
+            //        float B = *(currentPixel + 2);
+            //        float A = *(currentPixel + 3);
+            //
+            //        *(currentPixel + 0) = B;
+            //        *(currentPixel + 1) = G;
+            //        *(currentPixel + 2) = R;
+            //        *(currentPixel + 3) = A;
+            //    }
+            //}
             int NumberOfChannels = 4;
             int BytesPerChannel = 4;
             haven->platformWriteFile(haven->scratchBuffer, current->sizeX * current->sizeY * NumberOfChannels * BytesPerChannel, "LightBake.rad");
@@ -248,7 +248,7 @@ void LightBakerUpdate(LightBaker* self)
     }
     else
     {
-        RenderWorld(self, haven->spectatorCamera.position, false);
+        //RenderWorld(self, haven->spectatorCamera.position, false);
     }
 
     //for (int x = 0; x < self->count.x; x++)

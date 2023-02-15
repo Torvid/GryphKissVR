@@ -41,7 +41,7 @@ void PlayerUpdate(Player* player)
     float2 delta = input->thumbstickLeft;
     delta = MoveTowards(delta, float2(0, 0), 0.35f); // deadzone
     
-    Transform headLocal = LocalToWorld(input->head, input->playspace);
+    Transform headLocal = input->head;// LocalToWorld(input->head, input->playspace);
 
     player->transform.position += (headLocal.right * float3(1, 1, 0)) * delta.x * input->deltaTime * moveSpeed;
     player->transform.position += (headLocal.forward * float3(1, 1, 0)) * delta.y * input->deltaTime * moveSpeed;

@@ -21,6 +21,8 @@ void HandStart(Hand* self)
     self->clickCount = 0;
     CreateMaterialGlobal(self->handMaterial, assets->defaultlit, defaultlit);
     ArrayAdd(haven->sceneMaterials, self->handMaterial);
+    self->handMaterial->texM1 = assets->BarnWallM1;
+    self->handMaterial->texM2 = assets->BarnWallM2;
     self->tonk = StaticMeshInstantiate(assets->tonk, self->handMaterial, transform(float3(0, 0, 0)));
     
 }
@@ -41,8 +43,11 @@ void HandUpdate(Hand* self)
     }
 
     DrawRay(self->transform.position, self->transform.forward, 999, 0.01f);
-    char count = '0' + self->clickCount % 10;
-    DrawText3D(&count, self->transform.position, 0.2f);
+    char text[2];
+    text[0] = '0' + self->clickCount % 10;
+    text[1] = 0;
+    //DrawText3D(&count, self->transform.position, 0.2f);
+    DrawFontCameraFacing(text, self->transform.position + float3(0,0,0.1), 0.8, 8.0f, HAlign_center, VAlign_center);
 
     Transform tonkTransform = self->transform;
     tonkTransform.scale = float3(0.01, 0.01, 0.01);

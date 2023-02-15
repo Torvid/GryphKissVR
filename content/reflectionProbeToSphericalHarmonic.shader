@@ -417,6 +417,6 @@ void main()
 	else if (height < 9.0)
 		result = L22;
 
-	FragColor = float4(result * 10.0, 1.0);
+	FragColor = float4(result * 30.0, 1.0);
 }
 #endif

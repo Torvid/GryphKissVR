@@ -297,8 +297,8 @@ void gryphkissUpdate()
 
 
     // Gradient for testing color bit-depth
-    CreateMaterialLocal(gradientMateiral, assets->unlit, unlit);
-    gradientMateiral->ColorTexture = assets->LightBake;// assets->gradient;
-    gradientMateiral->Color = float3(1, 1, 1);
-    DrawMesh(gradientMateiral, assets->ui_quad, transform(float3(2, 3, 0.1)));
+    //CreateMaterialLocal(gradientMateiral, assets->unlit, unlit);
+    //gradientMateiral->ColorTexture = assets->pixelTest1;// assets->gradient;
+    //gradientMateiral->Color = float3(1, 1, 1);
+    //DrawMesh(gradientMateiral, assets->ui_quad, transform(float3(2, 3, 0.1)));
 }

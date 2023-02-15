@@ -515,8 +515,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
 
         haven->SwapBuffer = CreateFramebufferTarget(engineState);
-        haven->waterRipples0 = CreateTextureTarget(256, 256);
-        haven->waterRipples1 = CreateTextureTarget(256, 256);
+        //haven->waterRipples0 = CreateTextureTarget(256, 256);
+        //haven->waterRipples1 = CreateTextureTarget(256, 256);
 
         haven->stringMesh = ArrayAddNew(haven->meshes);
 
@@ -550,52 +550,56 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         return;
     }
 
+    Transform headLocal;
+    headLocal = input->eyeLeft;
+    headLocal.position = float3(0, 0, 0);
+    headLocal.position += input->eyeLeft.position;
+    headLocal.position += input->eyeRight.position;
+    headLocal.position *= 0.5f;
+    // transform it to world-space
+    input->head = LocalToWorld(headLocal, input->playspace);
+
     soundUpdate(gameMemory);
 
-    input->head = input->eyeLeft;
-    input->head.position = float3(0, 0, 0);
-    input->head.position += input->eyeLeft.position;
-    input->head.position += input->eyeRight.position;
-    input->head.position *= 0.5f;
-
-    if (input->mouseLeftDown || input->faceButtonRight || firstFrame)
-    {
-        haven->waterRipplesPrevious = haven->waterRipples0;
-        haven->waterRipplesCurrent = haven->waterRipples1;
-
-        // setup
-        SetRenderTarget(haven->waterRipplesPrevious);
-        DrawClear();
-
-        CreateMaterialLocal(copyTexture, assets->textureCopyShader, textureCopyShader);
-        copyTexture->mesh = assets->ui_quad;
-        copyTexture->ColorTexture = assets->coal;
-        DrawMesh(copyTexture);
 
 
-        SetRenderTarget(haven->waterRipplesCurrent);
-        DrawClear();
+    // RIPPLE SIM!!
 
-        copyTexture->ColorTexture = assets->coal;
-        DrawMesh(copyTexture);
-    }
-
+    //if (input->mouseLeftDown || input->faceButtonRight || firstFrame)
+    //{
+    //    haven->waterRipplesPrevious = haven->waterRipples0;
+    //    haven->waterRipplesCurrent = haven->waterRipples1;
+    //
+    //    // setup
+    //    SetRenderTarget(haven->waterRipplesPrevious);
+    //    DrawClear();
+    //
+    //    CreateMaterialLocal(copyTexture, assets->textureCopyShader, textureCopyShader);
+    //    copyTexture->mesh = assets->ui_quad;
+    //    copyTexture->ColorTexture = assets->coal;
+    //    DrawMesh(copyTexture);
+    //
+    //
+    //    SetRenderTarget(haven->waterRipplesCurrent);
+    //    DrawClear();
+    //
+    //    copyTexture->ColorTexture = assets->coal;
+    //    DrawMesh(copyTexture);
+    //}
     // draw
-    SetRenderTarget(haven->waterRipplesCurrent);
-    DrawClear();
-
-    CreateMaterialLocal(rippleSim, assets->rippleSimShader, rippleSimShader);
-    rippleSim->mesh = assets->ui_quad;
-    rippleSim->TexPrevious = haven->waterRipplesPrevious;
-    rippleSim->mousePos = input->mousePos / haven->Resolution;
-    DrawMesh(rippleSim);
-
-
+    //SetRenderTarget(haven->waterRipplesCurrent);
+    //DrawClear();
+    //
+    //CreateMaterialLocal(rippleSim, assets->rippleSimShader, rippleSimShader);
+    //rippleSim->mesh = assets->ui_quad;
+    //rippleSim->TexPrevious = haven->waterRipplesPrevious;
+    //rippleSim->mousePos = input->mousePos / haven->Resolution;
+    //DrawMesh(rippleSim);
     // swap
-    Texture* temp;
-    temp = haven->waterRipplesPrevious;
-    haven->waterRipplesPrevious = haven->waterRipplesCurrent;
-    haven->waterRipplesCurrent = temp;
+    //Texture* temp;
+    //temp = haven->waterRipplesPrevious;
+    //haven->waterRipplesPrevious = haven->waterRipplesCurrent;
+    //haven->waterRipplesCurrent = temp;
 
     SetRenderTarget(haven->SwapBuffer);
     haven->clearColor = float3(0.251, 0.298, 0.373);
@@ -614,7 +618,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     input->aimRight.scale = { 0.1f, 0.1f, 0.1f };
     input->aimLeft.scale = { 0.1f, 0.1f, 0.1f };
 
-    float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
+    float3 center = float3(0, 0, 0);// (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
     Transform monkeyRotation = { center +
         float3(-1, 0, 0),
         input->playspaceStageLeft.right,
@@ -625,14 +629,12 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
 
     // Simulation plane
-    Transform identity = Transform(vectorDown * 2.0, vectorForward, vectorUp, vectorOne);
     CreateMaterialLocal(waterPlane, assets->unlit, unlit);
     waterPlane->ColorTexture = haven->waterRipplesCurrent;
     waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
     waterPlane->mesh = assets->ui_quad;
     waterPlane->BackFaceCulling = true;
-    waterPlane->transform = identity;
-    DrawMesh(waterPlane, assets->ui_quad, transform(center));
+    DrawMesh(waterPlane, assets->ui_quad, transform(float3(0, 0, 0.1)));
 
 
     //CreateMaterialLocal(fontTest, assets->unlit, unlit);
@@ -666,12 +668,14 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     //DrawFontMain("Hello, this is a test sentence.\nhttps://byork.torvid.net/B-Yorked.htm\ngryph@torvid.net\n$33.99 ((x^2) - 3*4) / 187.0\nvoid main(char* s) { return 0; }\n$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@", float2(400, 420), 200);
 
     char* my_str = R"(
+
+
 Hello.
 This is a demo program running natively on Quest 2, Written 
 from scratch in C/C++. Right now it's just an empty-ish scene. 
 I am slowly adding features and building it out.
 
-Check out #6c84daff#torvid.net#ffffff# for more stuff. :>
+Check out #6c84daff#torvid.net#ffffff# to see my other projects. :>
 
 Controls: 
  - **Walk**: Left thumbstick.
@@ -697,7 +701,7 @@ Key systems so far:
     //
     //DrawFont2D(lorem4, float2(400, 400), 300, 700, haven->hAlign, haven->vAlign);
     //DrawFontCameraFacing(lorem4, center + float3(0, 0, 3), 0.75, 2.0f * 0.75f, haven->hAlign, haven->vAlign);
-    DrawFont(my_str, transform(center + float3(5-0.1, 2, 4.5), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
+    DrawFont(my_str, transform(center + float3(5-0.1, 4, 2.5), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
 
     //DrawFont2D("LLL**LLL**", float2(700, 200), 800, 400, haven->hAlign, haven->vAlign);
     //
@@ -728,7 +732,7 @@ Key systems so far:
     {
         haven->editor = !haven->editor;
     }
-    if (input->pDown)
+    if (input->faceButtonRightDown || input->pDown)
     {
         haven->profiling = !haven->profiling;
     }

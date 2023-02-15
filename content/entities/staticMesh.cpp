@@ -84,18 +84,19 @@ void DrawStaticMesh(StaticMesh* self)
 
 void StaticMeshUpdate(StaticMesh* self, int i)
 {
-    //if (CullMesh(self, input->head))
-    //    return;
+    Transform headLocal = input->head;// LocalToWorld(input->head, input->playspace);
+    if (CullMesh(self, headLocal))
+        return;
 
     //// frustum culling
     //float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
     //float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
-    //if (dot(input->head.position - boundsCenterWorldSpace, input->head.forward) > radius)
+    //if (dot(input->head.position - boundsCenterWorldSpace, input->head.forward) > 0)
     //    return;
-
+    //
     //if (i == 8)
     //{
-    //    float3 boundsCenterWorldSpace = LocalToWorld(self->transform, self->mesh->boundsCenter);
+    //    float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
     //    float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
     //    DrawAxisSphere(boundsCenterWorldSpace, radius, 0.01);
     //
@@ -105,6 +106,8 @@ void StaticMeshUpdate(StaticMesh* self, int i)
     //    DrawBox(t);
     //    DrawTransform(t);
     //    DrawTransform(self->transform);
+    //
+    //    DrawSphere(input->head.position, 0.5, 0.01, float3(1, 0, 0));
     //}
     
     DrawStaticMesh(self);
