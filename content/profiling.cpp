@@ -54,7 +54,7 @@ void DrawArena(float2* pos,  MemoryArena* arena)
     StringAppend(text, " MB - ", (int)(arena->usedPercentage*100.0f), "%");
     bool checkedEntries[ArrayCapacity(arena->memoryArenaEntrys)] = {};
 
-    DrawText(text, pos);
+    Drawing::DrawText(text, pos);
     Clear((uint8*)text, tempStringSize);
 
     for (int i = 0; i < ArrayCount(arena->memoryArenaEntrys); i++)
@@ -91,11 +91,11 @@ void DrawArena(float2* pos,  MemoryArena* arena)
         StringAppend(text, "\n");
         if (StringLength(text) > (tempStringSize - 500))
         {
-            DrawText(text, pos);
+            Drawing::DrawText(text, pos);
             Clear((uint8*)text, tempStringSize);
         }
     }
-    DrawText(text, pos);
+    Drawing::DrawText(text, pos);
 }
 void DrawArena(MemoryArena* arena)
 {
@@ -210,21 +210,21 @@ void ProfilerDrawFlameChart(ProfilingData* data)
     
     float flipOffset = 80;
 
-    DrawBox2D(float2(rightOffset, flipOffset - 80), float2(haven->Resolution.x - rightOffset, 80), float3(0.0, 0.0, 0.0), 0.5);
+    Drawing::DrawBox2D(float2(rightOffset, flipOffset - 80), float2(haven->Resolution.x - rightOffset, 80), float3(0.0, 0.0, 0.0), 0.5);
     
-    DrawLine2D(float2(rightOffset, flipOffset), float2(haven->Resolution.x, flipOffset), 1);
+    Drawing::DrawLine2D(float2(rightOffset, flipOffset), float2(haven->Resolution.x, flipOffset), 1);
     //DrawLine2D(videoBuffer, float2(rightOffset, videoBuffer->Height - 1), float2(videoBuffer->Width, videoBuffer->Height - 1));
     for (int i = 0; i < 21; i++)
     {
         int point = (((float)i * 10000 * q) / ((float)sampleCount)) * haven->Resolution.x + rightOffset;
-        DrawLine2D(float2(point,     flipOffset), float2(point,     flipOffset - 8), 1);
-        DrawLine2D(float2(point + 1, flipOffset), float2(point + 1, flipOffset - 8), 1);
+        Drawing::DrawLine2D(float2(point,     flipOffset), float2(point,     flipOffset - 8), 1);
+        Drawing::DrawLine2D(float2(point + 1, flipOffset), float2(point + 1, flipOffset - 8), 1);
         //DrawLine2D(videoBuffer, float2(point, videoBuffer->Height - 0), float2(point, videoBuffer->Height - 8));
         //DrawLine2D(videoBuffer, float2(point + 1, videoBuffer->Height - 0), float2(point + 1, videoBuffer->Height - 8));
         char time[100] = {};
         StringAppend(time, (int)(i * q));
         StringAppend(time, "ms");
-        DrawText(time, float2(point + 2, flipOffset - 20), float3(1, 1, 1));
+        Drawing::DrawText(time, float2(point + 2, flipOffset - 20), float3(1, 1, 1));
     }
     float pos = 0;
 
@@ -250,13 +250,13 @@ void ProfilerDrawFlameChart(ProfilingData* data)
         float height = flipOffset - (17 * profilingData->depth[i]);
         float2 pos = float2(round(startNormalized), height) + float2(rightOffset, 0);
         float2 size = float2(round(endNormalized - startNormalized) - 1, 16);
-        DrawBox2D(pos, size, float3(0.5, 0.5, 0.5), 1.0f);
+        Drawing::DrawBox2D(pos, size, float3(0.5, 0.5, 0.5), 1.0f);
         char time[100] = {};
         StringAppend(time, name);
         StringAppend(time, ": ");
         StringAppend(time, (int)((end - start) / 10));
         StringAppend(time, "us");
-        DrawText(time, float2(startNormalized + rightOffset + 2, height), float3(1,1,1));
+        Drawing::DrawText(time, float2(startNormalized + rightOffset + 2, height), float3(1,1,1));
         //DrawFont(haven->fontSpritesheet, videoBuffer, startNormalized + rightOffset + 2, height, time);
     }
 }
@@ -265,7 +265,7 @@ void ProfilerDrawTimeChart(ProfilingData* data)
 {
     ProfilingData* profilingData = data;
 
-    DrawBox2D(float2(0, haven->Resolution.y - 200), float2(200, 200), float3(0.0, 0.0, 0.0), 0.5);
+    Drawing::DrawBox2D(float2(0, haven->Resolution.y - 200), float2(200, 200), float3(0.0, 0.0, 0.0), 0.5);
 
     float FPS = (float)(1.0f / input->deltaTime);
     float Delta = (float)(profilingData->Delta) / 10000000;
@@ -292,7 +292,7 @@ void ProfilerDrawTimeChart(ProfilingData* data)
     char text[100] = {};
     StringAppend(text, TotalTimeDelta * 1000);
     StringAppend(text, "ms");
-    DrawText(text, float2(200, fpscurrentheight));
+    Drawing::DrawText(text, float2(200, fpscurrentheight));
 }
 
 void profilerStart()
@@ -319,11 +319,11 @@ void profilerUpdate()
         StringAppend(text, "\n    External Time: ", (int)haven->externalTime, " microseconds");
         StringAppend(text, "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds");
         StringAppend(text, "\n    Drawcalls: ", (int)(haven->arenaDrawCommands.memoryArenaEntrys_count), " ");
-        DrawText(text);
+        Drawing::DrawText(text);
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "\n\nMEMORY:");
-        DrawText(text);
+        Drawing::DrawText(text);
 
         //DrawArena(&pos, &haven->arenaGlobalDrawCommands, textTransform);
         //DrawArena(&pos, &haven->arenaGameState, textTransform);
@@ -337,10 +337,10 @@ void profilerUpdate()
             int w = arena->size / Megabytes(1);
 
             float2 pos = float2(300, 200 + 25 * i);
-            DrawBox2D(pos, float2(w, 10), float3(1, 1, 1), 1);
-            DrawBox2D(pos, float2(w * arena->usedPercentage, 10), float3(1, 0, 0), 1);
+            Drawing::DrawBox2D(pos, float2(w, 10), float3(1, 1, 1), 1);
+            Drawing::DrawBox2D(pos, float2(w * arena->usedPercentage, 10), float3(1, 0, 0), 1);
             //DrawText()
-            DrawText((char*)haven->arenas[i].name, pos - float2(0, 14));
+            Drawing::DrawText((char*)haven->arenas[i].name, pos - float2(0, 14));
             //DrawText(haven->arenas[i].name, pos, float3(1, 1, 1), 1);
             //DrawText("what", pos, float3(1, 1, 1), 1);
             //arena->usedPercentage

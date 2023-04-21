@@ -56,39 +56,39 @@ void editorUpdate()
             //memory->printf("Save\n");
             haven->platformWriteFile((uint8*)haven, 2048, "scene.cpp");
         }
-        if (DrawButton("Load"))
+        if (Drawing::DrawButton("Load"))
         {
 
         }
 
-        DrawMesh(haven->axesMaterial, assets->axes, input->handRight);
-        DrawMesh(haven->axesMaterial, assets->axes, input->handLeft);
-        DrawMesh(haven->axesMaterial, assets->axes, input->aimRight);
-        DrawMesh(haven->axesMaterial, assets->axes, input->aimLeft);
-        DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStage);
-        DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageLeft);
-        DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageRight);
-        DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageLeftRotated);
-        DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageRightRotated);
+        Drawing::DrawMesh(haven->axesMaterial, assets->axes, input->handRight);
+        Drawing::DrawMesh(haven->axesMaterial, assets->axes, input->handLeft);
+        Drawing::DrawMesh(haven->axesMaterial, assets->axes, input->aimRight);
+        Drawing::DrawMesh(haven->axesMaterial, assets->axes, input->aimLeft);
+        Drawing::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStage);
+        Drawing::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageLeft);
+        Drawing::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageRight);
+        Drawing::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageLeftRotated);
+        Drawing::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageRightRotated);
 
-        DrawText3D("World Origin", vectorOne * 0.1f);
-        DrawText3D("Stage", input->playspaceStage.position + vectorOne * 0.1f);
-        DrawText3D("Stage Left", input->playspaceStageLeft.position + vectorOne * 0.1f);
-        DrawText3D("Stage Right", input->playspaceStageRight.position + vectorOne * 0.1f);
-
+        Drawing::DrawText3D("World Origin", vectorOne * 0.1f);
+        Drawing::DrawText3D("Stage", input->playspaceStage.position + vectorOne * 0.1f);
+        Drawing::DrawText3D("Stage Left", input->playspaceStageLeft.position + vectorOne * 0.1f);
+        Drawing::DrawText3D("Stage Right", input->playspaceStageRight.position + vectorOne * 0.1f);
+        Drawing::
         DrawText3D("Left Hand", input->handLeft.position + 
             (input->handLeft.forward + 
              input->handLeft.right + 
              input->handLeft.up) * 0.05f, 0.1f);
-        DrawText3D("Right Hand", input->handRight.position +
+        Drawing::DrawText3D("Right Hand", input->handRight.position +
             (input->handRight.forward +
              input->handRight.right +
              input->handRight.up) * 0.05f, 0.1f);
-        DrawText3D("Left Aim", input->aimLeft.position +
+        Drawing::DrawText3D("Left Aim", input->aimLeft.position +
             (input->aimLeft.forward +
              input->aimLeft.right +
              input->aimLeft.up) * 0.05f, 0.1f);
-        DrawText3D("Right Aim", input->aimRight.position +
+        Drawing::DrawText3D("Right Aim", input->aimRight.position +
             (input->aimRight.forward +
              input->aimRight.right +
              input->aimRight.up) * 0.05f, 0.1f);
@@ -101,9 +101,9 @@ void editorUpdate()
     {
         float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
 
-        DrawMesh(haven->red, assets->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
-        DrawMesh(haven->green, assets->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
-        DrawMesh(haven->blue, assets->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
+        Drawing::DrawMesh(haven->red, assets->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
+        Drawing::DrawMesh(haven->green, assets->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
+        Drawing::DrawMesh(haven->blue, assets->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
 
         //Transform monkeyRotation2 = { center + float3(0, -6, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
         //DrawMesh(gameState->axesMaterial, haven->monkey, monkeyRotation2);
@@ -121,7 +121,7 @@ void editorUpdate()
         StringAppend(text, "\n\nINPUT: ");
         StringAppend(text, "\n    Mouse pos: ", input->mousePos);
         StringAppend(text, "\n    Spectator pos: ", haven->spectatorCamera.position);
-        DrawText(text);
+        Drawing::DrawText(text);
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "    Left Controller:\n");
@@ -129,7 +129,7 @@ void editorUpdate()
         StringAppend(text, "\n        Trigger: ", input->triggerLeft);
         StringAppend(text, "\n        Thumbstick: ", input->thumbstickLeft);
         StringAppend(text, "\n        Face Button: ", input->faceButtonLeft);
-        DrawText(text);
+        Drawing::DrawText(text);
 
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "    Right Controller:\n");
@@ -137,7 +137,7 @@ void editorUpdate()
         StringAppend(text, "\n        Trigger: ", input->triggerRight);
         StringAppend(text, "\n        Thumbstick: ", input->thumbstickRight);
         StringAppend(text, "\n        Face Button: ", input->faceButtonRight);
-        DrawText(text);
+        Drawing::DrawText(text);
 
         //haven->headsetView = DrawToggle(input, "Headset View: ", haven->headsetView);
 
@@ -148,19 +148,19 @@ void editorUpdate()
 
         Transform testTransform = transform(float3(12, 0, 0), 0.1, 0.2, 0.3, float3(1, 0.75, 0.5) * 0.75);
 
-        DrawLine(float3(4, 0, 0), float3(5, 1, 1), 0.05f, float3(0.6,0.1,0.2));
-        DrawCircle(float3(6, 0, 0), float3(0, 0, 1), 0.75, 0.05f);
-        DrawSphere(float3(8, 0, 0), 0.75, 0.05f);
-        DrawAxisSphere(float3(10, 0, 0), 0.75, 0.05f);
-        DrawTransform(testTransform, 0.05f);
-        DrawPoint(float3(14, 0, 0), 0.25f);
-        DrawAABB(float3(16, 0, 0), float3(1, 0.75, 0.5)* 0.75, 0.05f);
-        DrawBox(testTransform, 0.05f);
-        DrawBox2D(float2(200, 100), float2(100, 100), float3(0.5f, 0.0f, 0.0f), 0.5f);
-        DrawBox2D(float2(250, 150), float2(100, 100), float3(0.0f, 0.5f, 0.0f), 0.5f);
-        DrawBox2D(float2(300, 200), float2(100, 100), float3(0.0f, 0.0f, 0.5f), 0.5f);
-
-
+        Drawing::DrawLine(float3(4, 0, 0), float3(5, 1, 1), 0.05f, float3(0.6,0.1,0.2));
+        Drawing::DrawCircle(float3(6, 0, 0), float3(0, 0, 1), 0.75, 0.05f);
+        Drawing::DrawSphere(float3(8, 0, 0), 0.75, 0.05f);
+        Drawing::DrawAxisSphere(float3(10, 0, 0), 0.75, 0.05f);
+        Drawing::DrawTransform(testTransform, 0.05f);
+        Drawing::DrawPoint(float3(14, 0, 0), 0.25f);
+        Drawing::DrawAABB(float3(16, 0, 0), float3(1, 0.75, 0.5)* 0.75, 0.05f);
+        Drawing::DrawBox(testTransform, 0.05f);
+        Drawing::DrawBox2D(float2(200, 100), float2(100, 100), float3(0.5f, 0.0f, 0.0f), 0.5f);
+        Drawing::DrawBox2D(float2(250, 150), float2(100, 100), float3(0.0f, 0.5f, 0.0f), 0.5f);
+        Drawing::DrawBox2D(float2(300, 200), float2(100, 100), float3(0.0f, 0.0f, 0.5f), 0.5f);
+        
+        
         Clear((uint8*)text, tempStringSize);
         StringAppend(text, "\n\nSOUND: \n");
         for (int i = 0; i < ArrayCapacity(haven->soundChannels); i++)
@@ -174,6 +174,6 @@ void editorUpdate()
                 StringAppend(text, ((float)channel->currentSample / (float)channel->sound->sampleCount), "\n");
             }
         }
-        DrawText(text);
+        Drawing::DrawText(text);
     }
 }

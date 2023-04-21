@@ -76,53 +76,56 @@ struct ShaderStructName
     };
 };
 
-void DrawMesh(ShaderStructName* command)
+namespace Drawing
 {
-    ShaderStructName* temp;
-    //if (text)
-    //    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawTextCommands, ShaderStructName, command->mesh->filename);
-    //else
-    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawCommands, ShaderStructName, command->mesh->filename);
-    *temp = *command;
-
-    Parameters(SetStructPointer);
-    temp->parameters = &temp->shaderParameters[0];
-
-    RenderCommand* result = ArrayAddNew(haven->renderCommands);
-    result->index = ArrayCount(haven->renderCommands);
-    result->type = RenderCommand_DrawMesh;
-    result->material = &temp->mat;
-}
-
-void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, Camera camera, const char* name = 0)
-{
-    ShaderStructName* temp;
-    //if (text)
-    //    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawTextCommands, ShaderStructName, mesh->filename);
-    //else
-    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawCommands, ShaderStructName, mesh->filename);
-    *temp = *command;
-
-    Parameters(SetStructPointer)
-    temp->parameters = &temp->shaderParameters[0];
-
-    temp->mesh = mesh;
-    if (mesh->skinned)
+    void DrawMesh(ShaderStructName* command)
     {
-        temp->boneTransforms = &temp->shaderBoneTransforms[0];
-    }
-    temp->transform = transform;
-    RenderCommand* result = ArrayAddNew(haven->renderCommands);
-    result->index = ArrayCount(haven->renderCommands);
-    result->type = RenderCommand_DrawMesh;
-    result->material = &temp->mat;
-    result->name = name;
-    result->customCamera = camera;
+        ShaderStructName* temp;
+        //if (text)
+        //    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawTextCommands, ShaderStructName, command->mesh->filename);
+        //else
+        temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawCommands, ShaderStructName, command->mesh->filename);
+        *temp = *command;
 
-}
-void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, const char* name = 0)
-{
-    DrawMesh(command, mesh, transform, {}, name);
+        Parameters(SetStructPointer);
+        temp->parameters = &temp->shaderParameters[0];
+
+        RenderCommand* result = ArrayAddNew(haven->renderCommands);
+        result->index = ArrayCount(haven->renderCommands);
+        result->type = RenderCommand_DrawMesh;
+        result->material = &temp->mat;
+    }
+
+    void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, Camera camera, const char* name = 0)
+    {
+        ShaderStructName* temp;
+        //if (text)
+        //    temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawTextCommands, ShaderStructName, mesh->filename);
+        //else
+        temp = (ShaderStructName*)ArenaPushStruct(&haven->arenaDrawCommands, ShaderStructName, mesh->filename);
+        *temp = *command;
+
+        Parameters(SetStructPointer)
+        temp->parameters = &temp->shaderParameters[0];
+
+        temp->mesh = mesh;
+        if (mesh->skinned)
+        {
+            temp->boneTransforms = &temp->shaderBoneTransforms[0];
+        }
+        temp->transform = transform;
+        RenderCommand* result = ArrayAddNew(haven->renderCommands);
+        result->index = ArrayCount(haven->renderCommands);
+        result->type = RenderCommand_DrawMesh;
+        result->material = &temp->mat;
+        result->name = name;
+        result->customCamera = camera;
+
+    }
+    void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, const char* name = 0)
+    {
+        DrawMesh(command, mesh, transform, {}, name);
+    }
 }
 
 void PASTE(SetupShader_, ShaderName)(Shader* shader)

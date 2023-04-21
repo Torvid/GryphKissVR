@@ -72,7 +72,6 @@ void SetLightmap(GameState* gameState, Texture* texture, float3 lightmapMin, flo
         haven->sceneMaterials[i]->lightmapResolution = lightmapResolution;
         haven->sceneMaterials[i]->radiosityProbeScale = radiosityProbeScale;
     }
-    
 }
 
 void gryphkissStart()
@@ -232,7 +231,6 @@ void gryphkissUpdate()
     
     PlayerUpdate(gameState->player);
     
-    
     for (int i = 0; i < ArrayCount(haven->entities); i++)
     {
         Entity* entity = haven->entities[i];
@@ -269,13 +267,13 @@ void gryphkissUpdate()
         {
             t.scale = vectorOne * 0.05;
             t = LocalToWorld(t, torvidTransform);
-            DrawBox(t, 0.005);
+            Drawing::DrawBox(t, 0.005);
             Bone* parentBone = assets->torvidTest->boneHierarchy[i].parent;
             if (parentBone)
             {
                 float3 parentPos = torvidAnimation->transforms[parentBone->index + frameOffset].position;
                 parentPos = LocalToWorld(parentPos, torvidTransform);
-                DrawLine(parentPos, t.position);
+                Drawing::DrawLine(parentPos, t.position);
             }
         }
     }
@@ -293,7 +291,7 @@ void gryphkissUpdate()
     }
     
     // Draw torvid
-    DrawMesh(gameState->torvidMat, assets->torvidTest, torvidTransform);
+    Drawing::DrawMesh(gameState->torvidMat, assets->torvidTest, torvidTransform);
 
 
     // Gradient for testing color bit-depth
@@ -301,4 +299,115 @@ void gryphkissUpdate()
     //gradientMateiral->ColorTexture = assets->pixelTest1;// assets->gradient;
     //gradientMateiral->Color = float3(1, 1, 1);
     //DrawMesh(gradientMateiral, assets->ui_quad, transform(float3(2, 3, 0.1)));
+
+
+
+    input->vibrationAmplitudeRight = input->grabRight;
+
+
+    input->handRight.scale = { 0.1f, 0.1f, 0.1f };
+    input->handLeft.scale = { 0.1f, 0.1f, 0.1f };
+    input->aimRight.scale = { 0.1f, 0.1f, 0.1f };
+    input->aimLeft.scale = { 0.1f, 0.1f, 0.1f };
+
+    float3 center = float3(0, 0, 0);// (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
+    Transform monkeyRotation = { center +
+        float3(-1, 0, 0),
+        input->playspaceStageLeft.right,
+        input->playspaceStageLeft.forward,
+        input->playspaceStageLeft.up,
+        { 1, 1, 1 } };
+    monkeyRotation = rotate(monkeyRotation, 0, 0, 0.0f);
+
+
+    // Simulation plane
+    CreateMaterialLocal(waterPlane, assets->unlit, unlit);
+    waterPlane->ColorTexture = haven->waterRipplesCurrent;
+    waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
+    waterPlane->mesh = assets->ui_quad;
+    waterPlane->BackFaceCulling = true;
+    Drawing::DrawMesh(waterPlane, assets->ui_quad, transform(float3(0, 0, 0.1)));
+
+
+    //CreateMaterialLocal(fontTest, assets->unlit, unlit);
+    //fontTest->ColorTexture = assets->FontRegular;
+    //fontTest->Color = float3(1.0f, 1.0f, 1.0f);
+    //DrawMesh(fontTest, assets->ui_quad, transform(center + float3(0,0,2)));
+
+    haven->hAlign = HAlign_left;
+    haven->vAlign = VAlign_down;
+
+    //if (DrawButton("HAlign_right"))
+    //    haven->hAlign = HAlign_right;
+    //if (DrawButton("HAlign_center"))
+    //    haven->hAlign = HAlign_center;
+    //if (DrawButton("HAlign_left"))
+    //    haven->hAlign = HAlign_left;
+    //
+    //if (DrawButton("VAlign_up"))
+    //    haven->vAlign = VAlign_up;
+    //if (DrawButton("VAlign_center"))
+    //    haven->vAlign = VAlign_center;
+    //if (DrawButton("VAlign_down"))
+    //    haven->vAlign = VAlign_down;
+
+    char* lorem = "What is #88#*Lorem Ipsum*#ff#?\n\n*Lorem Ipsum* is simply #ff000088#dummy#ffffffff# text of the printing and typesetting industry. *Lorem Ipsum* #10#has #20#been #30#the #40#industry's #50#standard #60#dummy #70#text #80#ever #90#since #a0#the#b0# 1500s, #c0#when #d0#an #e0#unknown #f0#printer took a galley of type and scrambled it to make a type specimen book. **It has survived not only five centuries**, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing#ff0000# *Lorem #ffbf00#Ipsum* #80ff00#passages, #00ff40#and #00ffff#more #0040ff#recently #8000ff#with #ff00bf#desktop #ffffff#publishing software like Aldus PageMaker including versions of *Lorem Ipsum*.";
+    char* lorem2 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text \nof the printing and typesetting industry. \nLorem Ipsum has been the industry's \nstandard dummy text ever since the \n1500s, when an unknown printer took \na galley of type and scrambled it to \nmake a type specimen book. It has survived \nnot only five centuries, but also the leap \ninto electronic typesetting, remaining \nessentially unchanged. It was popularised \nin the 1960s with the release of Letraset \nsheets containing Lorem Ipsum passages, \nand more recently with desktop publishing \nsoftware like Aldus PageMaker including \nversions of Lorem Ipsum.";
+    char* lorem3 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+    char* lorem4 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, **remaining essentially unchanged.** It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
+
+    //DrawFontMain("Barn bam, The quick brown fox jumps over the lazy dog");
+    //DrawFontMain("Hello, this is a test sentence.\nhttps://byork.torvid.net/B-Yorked.htm\ngryph@torvid.net\n$33.99 ((x^2) - 3*4) / 187.0\nvoid main(char* s) { return 0; }\n$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@", float2(400, 420), 200);
+
+    char* my_str = R"(
+
+
+Hello.
+This is a demo program running natively on Quest 2, Written 
+from scratch in C/C++. Right now it's just an empty-ish scene. 
+I am slowly adding features and building it out.
+
+Check out #6c84daff#torvid.net#ffffff# to see my other projects. :>
+
+Controls: 
+ - **Walk**: Left thumbstick.
+ - **Rotate**: Right thumbstick.
+
+Key systems so far:
+ - Skeletal Animation.
+ - Baked lighting using Spherical Harmonics.
+ - Text Rendering.
+ - Custom 3D model and animation format.
+ - Scene with #ff0000ff#X-right#ffffffff#, #00ff00ff#Y-forward#ffffffff# and #0000ffff#Z-up#ffffffff# (as god intended).
+)";
+
+    //
+    //Key APIs, Librariesand tools used :
+    //-OpenXR from VR input.
+    //    - OpenGL - ES for graphics.
+    //    - OpenSL - ES for sound.
+    //    - ASTC texture compression.
+    //    - "Atkinson Hyperlegible" Font.
+
+    Drawing::DrawFont2D("@", input->mousePos, 500, 600, haven->hAlign, haven->vAlign);
+    //
+    //DrawFont2D(lorem4, float2(400, 400), 300, 700, haven->hAlign, haven->vAlign);
+    //DrawFontCameraFacing(lorem4, center + float3(0, 0, 3), 0.75, 2.0f * 0.75f, haven->hAlign, haven->vAlign);
+    Drawing::DrawFont(my_str, transform(center + float3(5 - 0.1, 4, 2.5), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
+
+    //DrawFont2D("LLL**LLL**", float2(700, 200), 800, 400, haven->hAlign, haven->vAlign);
+    //
+    //DrawText(lorem2, float2(200, 200));
+    //DrawText3D(lorem2, center + float3(1, 0, 3));
+    //
+    //DrawFontMain("aaaaaaaa\naaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", float2(400, 420), 200);
+    //DrawFontMain("^v^ uvu ovo >v> <v< ;v; :> >:3 >:D");
+    //
+    //DrawFontMain("Hello World", float2(100, 100), 50);
+    //DrawFontMain("Hello World", float2(100, 120), 100);
+    //DrawFontMain("Hello World", float2(100, 180), 500);
+    //DrawFontMain("Hello World", float2(100, 300), 1000);
+    //DrawFontMain("Hello World", float2(100, 500), 2000);
+    //DrawFont3D(lorem, center + float3(0, 8, 0), 2, wrap, haven->hAlign, haven->vAlign);
+    //DrawText3D("Hello World", center + float3(0, 0, 2), 2);
 }

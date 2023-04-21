@@ -2,6 +2,7 @@
 
 #include "haven.cpp"
 
+
 static const float fontScale = 1.0f;
 static const float2 fontSpriteSize = { 6, 13 };
 static const float2 atlasSize = { 32, 4 };
@@ -14,7 +15,6 @@ struct UIMeshData
     Vertex vertexes[quadCountMax * 3];
     uint32 indexes[quadCountMax * 6];
 };
-
 
 int GetFontIndex(char c)
 {
@@ -98,7 +98,7 @@ void AppendQuadToUI3D(float3 pivot, float3 position, float3 size, float2 UVpos, 
 
 void AppendQuadToUI3DCameraFacing(float3 pivot, float3 position, float3 size, float2 UVpos, float2 UVsize, float3 color, float opacity, int texture = 0)
 {
-   int quadCount = haven->uiMeshData->quadCount;
+    int quadCount = haven->uiMeshData->quadCount;
 
     haven->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0,  0,  0) * size + position, color, pivot, float2(0, 0) * UVsize + UVpos, float2(opacity, 1), texture };
     haven->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1,  0,  0) * size + position, color, pivot, float2(1, 0) * UVsize + UVpos, float2(opacity, 1), texture };
@@ -199,88 +199,6 @@ void AppendSquareShapetoUI(float2 pos0, float2 pos1, float2 pos2, float2 pos3, f
 
     Assert(haven->uiMeshData->quadCount < quadCountMax);
 }
-
-
-void DrawText3D(char* text, float3 position, float scale = 1.0f, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    int newlineCount = 1;
-    float2 offset = float2(0, 0);
-    float totalLength = 0;// StringLength(text);
-    for (int i = 0; i < StringLength(text); i++)
-    {
-        int dist = DistanceToNewline(&text[i]);
-        i += dist;
-        totalLength = max(totalLength, dist);
-    }
-    for (int i = 0; i < StringLength(text); i++)
-    {
-        int index = GetFontIndex(text[i]);
-        float2 pos = GetFontPos(index);
-
-        if (index == -1) // newline
-        {
-            offset.x = 0;
-            offset.y += 1;
-            continue;
-        }
-        float3 size = float3(glyphSize.x, 0, glyphSize.y) * 0.01f * scale;
-        float3 offsetSize = float3(offset.x - totalLength * 0.5f, 0, offset.y - 0.5f);
-        AppendQuadToUI3DCameraFacing(position, (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
-        //AppendQuadToUI3D(position, position + (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
-
-        offset.x++;
-    }
-}
-
-void DrawText(char* text, float2* position, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    int newlineCount = 1;
-    float2 offset = float2(0, 0);
-    for (int i = 0; i < StringLength(text); i++)
-    {
-        int index = GetFontIndex(text[i]);
-        float2 pos = GetFontPos(index);
-
-        if (index == -1) // newline
-        {
-            offset.x = 0;
-            offset.y += 1;
-            newlineCount++;
-            continue;
-        }
-        float2 fontResolutionInv = 1.0f / float2(192, 52);
-        AppendQuadToUI(offset * glyphSize + floor(*position), glyphSize - float2(0, 1), pos / (atlasSize), float2(1, 1) / (atlasSize)-float2(0, fontResolutionInv.y), color, opacity);
-
-        offset.x++;
-    }
-
-    *position += float2(0, newlineCount * 13 * fontScale);
-}
-void DrawText(char* text, float2 position, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    DrawText(text, &position, color, opacity);
-}
-void DrawText(char* text, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    DrawText(text, &haven->uiPos, color, opacity);
-}
-void DrawBox2D(float2 position, float2 size, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    AppendQuadToUI(position, size, float2(0.95, 0.01), float2(0.01, 0.1), color, opacity);
-}
-void DrawLine2D(float2 start, float2 end, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    float2 side = normalize(rotate90CW(start - end)) * width * 0.5f;
-
-    float2 pos0 = start - side;
-    float2 pos1 = start + side;
-    float2 pos2 = end + side;
-    float2 pos3 = end - side;
-
-    AppendSquareShapetoUI(pos0, pos1, pos2, pos3, color, opacity);
-}
-
-
 
 Glyph* GetGlyph(Font* font, char c)
 {
@@ -397,9 +315,15 @@ int EscapeSequenceColor(char* text)
     return 0;
 }
 
-
 float newlineHeight = 0.15;
 float spaceWidth = 0.05;
+float2 GetTextSize(char* text)
+{
+    int len = StringLength(text);
+    int height = StringCountOccurances(text, '\n');
+    return float2(len, height + 1) * fontSpriteSize * fontScale;
+}
+
 bool IncrementGlyph(char c, Font* font, float2* pos, float2 startPos, float scale)
 {
     if (c == ' ')
@@ -451,451 +375,483 @@ float GetLineWidth(char* text2, Font* font, float2 pos, float2 startPos, float s
 }
 // automatic reflowing
 // adjust left/up/down/middle/etc
-void DrawFontMain(char* text, Transform transform, float inScale, float maxLineWidth, HAlign hAlign, VAlign vAlign, bool screenspace, bool faceCamera)
+
+namespace Drawing
 {
-    float3 color = { 1, 1, 1 };
-    float opacity = 1;
-    float scale = inScale;
-    float2 startPos = float2(0, 0);
+    void DrawText3D(char* text, float3 position, float scale = 1.0f, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        int newlineCount = 1;
+        float2 offset = float2(0, 0);
+        float totalLength = 0;// StringLength(text);
+        for (int i = 0; i < StringLength(text); i++)
+        {
+            int dist = DistanceToNewline(&text[i]);
+            i += dist;
+            totalLength = max(totalLength, dist);
+        }
+        for (int i = 0; i < StringLength(text); i++)
+        {
+            int index = GetFontIndex(text[i]);
+            float2 pos = GetFontPos(index);
+
+            if (index == -1) // newline
+            {
+                offset.x = 0;
+                offset.y += 1;
+                continue;
+            }
+            float3 size = float3(glyphSize.x, 0, glyphSize.y) * 0.01f * scale;
+            float3 offsetSize = float3(offset.x - totalLength * 0.5f, 0, offset.y - 0.5f);
+            AppendQuadToUI3DCameraFacing(position, (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
+            //AppendQuadToUI3D(position, position + (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
+
+            offset.x++;
+        }
+    }
+    void DrawText(char* text, float2* position, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        int newlineCount = 1;
+        float2 offset = float2(0, 0);
+        for (int i = 0; i < StringLength(text); i++)
+        {
+            int index = GetFontIndex(text[i]);
+            float2 pos = GetFontPos(index);
+
+            if (index == -1) // newline
+            {
+                offset.x = 0;
+                offset.y += 1;
+                newlineCount++;
+                continue;
+            }
+            float2 fontResolutionInv = 1.0f / float2(192, 52);
+            AppendQuadToUI(offset * glyphSize + floor(*position), glyphSize - float2(0, 1), pos / (atlasSize), float2(1, 1) / (atlasSize)-float2(0, fontResolutionInv.y), color, opacity);
+
+            offset.x++;
+        }
+
+        *position += float2(0, newlineCount * 13 * fontScale);
+    }
+    void DrawText(char* text, float2 position, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        DrawText(text, &position, color, opacity);
+    }
+    void DrawText(char* text, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        DrawText(text, &haven->uiPos, color, opacity);
+    }
+    void DrawBox2D(float2 position, float2 size, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        AppendQuadToUI(position, size, float2(0.95, 0.01), float2(0.01, 0.1), color, opacity);
+    }
+    void DrawLine2D(float2 start, float2 end, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        float2 side = normalize(rotate90CW(start - end)) * width * 0.5f;
+
+        float2 pos0 = start - side;
+        float2 pos1 = start + side;
+        float2 pos2 = end + side;
+        float2 pos3 = end - side;
+
+        AppendSquareShapetoUI(pos0, pos1, pos2, pos3, color, opacity);
+    }
+    void DrawFontMain(char* text, Transform transform, float inScale, float maxLineWidth, HAlign hAlign, VAlign vAlign, bool screenspace, bool faceCamera)
+    {
+        float3 color = { 1, 1, 1 };
+        float opacity = 1;
+        float scale = inScale;
+        float2 startPos = float2(0, 0);
     
-    if(screenspace)
-        startPos = float2(transform.position.x, transform.position.y);
+        if(screenspace)
+            startPos = float2(transform.position.x, transform.position.y);
 
-    bool debug = false;
-    int lineCount = 0;
-    for (int i = 0; i < StringLength(text); i++)
-    {
-        if (text[i] == '\n')
-            lineCount++;
-    }
-    Font* currentFont = assets->FontDataRegular;
-
-    float2 pos = startPos;
-    float2 maxPos = pos;
-    float currentLineWidth = 0;
-    for (int i = 0; i < StringLength(text); i++)
-    {
-        bool newline = IncrementGlyph(text[i], currentFont, &pos, startPos, scale);
-        if ((((pos.x - startPos.x) > maxLineWidth) && (text[i] == ' ')))
+        bool debug = false;
+        int lineCount = 0;
+        for (int i = 0; i < StringLength(text); i++)
         {
-            pos += float2(0.0f, newlineHeight * scale);
-            pos.x = startPos.x;
-            currentLineWidth = 0;
+            if (text[i] == '\n')
+                lineCount++;
         }
-        maxPos = max(pos, maxPos);
-    }
+        Font* currentFont = assets->FontDataRegular;
 
-    float2 boxSize = maxPos - startPos;
-
-    float lineWidth = GetLineWidth(text, currentFont, pos, startPos, scale, maxLineWidth);
-    float2 alignmentOffset = float2(0,0);
-
-    if (vAlign == VAlign_up)
-        alignmentOffset.y = -boxSize.y;
-    if (vAlign == VAlign_center)
-        alignmentOffset.y = -boxSize.y * 0.5;
-
-    if (hAlign == HAlign_left)
-        alignmentOffset.x = -boxSize.x;
-    else if (hAlign == HAlign_center)
-        alignmentOffset.x = -boxSize.x * 0.5;
-
-    pos = startPos;
-    if(debug)
-        DrawBox2D(startPos + float2(alignmentOffset.x, alignmentOffset.y), boxSize, float3(0, 0, 0), 0.2);
-    if (hAlign == HAlign_left)
-        alignmentOffset.x = -lineWidth;
-    else if (hAlign == HAlign_center)
-        alignmentOffset.x = -lineWidth * 0.5;
-    if (debug)
-        DrawBox2D(pos + alignmentOffset, float2(lineWidth, 1));
-
-    currentLineWidth = 0;
-    bool bold = false;
-    bool italic = false;
-    for (int i = 0; i < StringLength(text); i++)
-    {
-        if (EscapeSequenceBold(&text[i]))
+        float2 pos = startPos;
+        float2 maxPos = pos;
+        float currentLineWidth = 0;
+        for (int i = 0; i < StringLength(text); i++)
         {
-            int escapeCount = EscapeSequenceBold(&text[i]);
-            bold = !bold;
-            if (bold)
-                currentFont = assets->FontDataBold;
-            else
-                currentFont = assets->FontDataRegular;
-
-            i += escapeCount - 1;
-            continue;
-        }
-
-        if (EscapeSequenceItalic(&text[i]))
-        {
-            int escapeCount = EscapeSequenceItalic(&text[i]);
-            italic = !italic;
-            if (italic)
-                currentFont = assets->FontDataItalic;
-            else
-                currentFont = assets->FontDataRegular;
-
-            i += escapeCount - 1;
-            continue;
-        }
-
-        if (EscapeSequenceColor(&text[i]))
-        {
-            int escapeCount = EscapeSequenceColor(&text[i]);
-
-            if (escapeCount == 10) // change all
+            bool newline = IncrementGlyph(text[i], currentFont, &pos, startPos, scale);
+            if ((((pos.x - startPos.x) > maxLineWidth) && (text[i] == ' ')))
             {
-                float red   = CharToNumber(text[i + 1]) * 16 + CharToNumber(text[i + 2]);
-                float green = CharToNumber(text[i + 3]) * 16 + CharToNumber(text[i + 4]);
-                float blue = CharToNumber(text[i + 5]) * 16 + CharToNumber(text[i + 6]);
-                float alpha = CharToNumber(text[i + 7]) * 16 + CharToNumber(text[i + 8]);
-                color = float3(red, green, blue) / 255.0f;
-                opacity = alpha / 255.0f;
+                pos += float2(0.0f, newlineHeight * scale);
+                pos.x = startPos.x;
+                currentLineWidth = 0;
             }
-            else if (escapeCount == 8) // change color only
-            {
-                float red   = CharToNumber(text[i + 1]) * 16 + CharToNumber(text[i + 2]);
-                float green = CharToNumber(text[i + 3]) * 16 + CharToNumber(text[i + 4]);
-                float blue  = CharToNumber(text[i + 5]) * 16 + CharToNumber(text[i + 6]);
-                color = float3(red, green, blue) / 255.0f;
-            }
-            else if(escapeCount == 4) // change alpha only
-            {
-                float alpha = CharToNumber(text[i + 1]) * 16 + CharToNumber(text[i + 2]);
-                opacity = alpha / 255.0f;
-            }
-            i += escapeCount - 1;
-            continue;
+            maxPos = max(pos, maxPos);
         }
 
-        bool endOfLine = text[i] == '\n';
-        bool overrunMaxWidth = ((currentLineWidth > maxLineWidth) && (text[i] == ' '));
-        if (endOfLine || overrunMaxWidth)
+        float2 boxSize = maxPos - startPos;
+
+        float lineWidth = GetLineWidth(text, currentFont, pos, startPos, scale, maxLineWidth);
+        float2 alignmentOffset = float2(0,0);
+
+        if (vAlign == VAlign_up)
+            alignmentOffset.y = -boxSize.y;
+        if (vAlign == VAlign_center)
+            alignmentOffset.y = -boxSize.y * 0.5;
+
+        if (hAlign == HAlign_left)
+            alignmentOffset.x = -boxSize.x;
+        else if (hAlign == HAlign_center)
+            alignmentOffset.x = -boxSize.x * 0.5;
+
+        pos = startPos;
+        if(debug)
+            DrawBox2D(startPos + float2(alignmentOffset.x, alignmentOffset.y), boxSize, float3(0, 0, 0), 0.2);
+        if (hAlign == HAlign_left)
+            alignmentOffset.x = -lineWidth;
+        else if (hAlign == HAlign_center)
+            alignmentOffset.x = -lineWidth * 0.5;
+        if (debug)
+            DrawBox2D(pos + alignmentOffset, float2(lineWidth, 1));
+
+        currentLineWidth = 0;
+        bool bold = false;
+        bool italic = false;
+        for (int i = 0; i < StringLength(text); i++)
         {
-            pos += float2(0.0f, newlineHeight * scale);
-            pos.x = startPos.x;
-            currentLineWidth = 0;
-            lineWidth = GetLineWidth(text + i + 1, currentFont, pos, startPos, scale, maxLineWidth);
-            if (hAlign == HAlign_left)
-                alignmentOffset.x = -lineWidth;
-            else if (hAlign == HAlign_center)
-                alignmentOffset.x = -lineWidth * 0.5;
-            if (debug)
-                DrawBox2D(pos + alignmentOffset, float2(lineWidth, 1));
-            continue;
-        }
-        if (text[i] == ' ')
-        {
-            pos += float2(spaceWidth * scale, 0.0f);
-            currentLineWidth += spaceWidth * scale;
-            continue;
-        }
+            if (EscapeSequenceBold(&text[i]))
+            {
+                int escapeCount = EscapeSequenceBold(&text[i]);
+                bold = !bold;
+                if (bold)
+                    currentFont = assets->FontDataBold;
+                else
+                    currentFont = assets->FontDataRegular;
 
-        Glyph* glyph = GetGlyph(currentFont, text[i]);
-        float2 UVposition = float2(glyph->minX, glyph->minY) / 1024.0f;
-        float2 UVsize = float2(abs(glyph->minX - glyph->maxX), abs(glyph->minY - glyph->maxY)) / 1024.0f;
+                i += escapeCount - 1;
+                continue;
+            }
 
-        float2 pivotUV = float2(glyph->pivotX, glyph->pivotY) / 1024.0f;
-        float2 advanceUV = float2(glyph->advanceX, glyph->advanceY) / 1024.0f;
-        float2 advanceDelta = advanceUV - pivotUV;
+            if (EscapeSequenceItalic(&text[i]))
+            {
+                int escapeCount = EscapeSequenceItalic(&text[i]);
+                italic = !italic;
+                if (italic)
+                    currentFont = assets->FontDataItalic;
+                else
+                    currentFont = assets->FontDataRegular;
+
+                i += escapeCount - 1;
+                continue;
+            }
+
+            if (EscapeSequenceColor(&text[i]))
+            {
+                int escapeCount = EscapeSequenceColor(&text[i]);
+
+                if (escapeCount == 10) // change all
+                {
+                    float red   = CharToNumber(text[i + 1]) * 16 + CharToNumber(text[i + 2]);
+                    float green = CharToNumber(text[i + 3]) * 16 + CharToNumber(text[i + 4]);
+                    float blue = CharToNumber(text[i + 5]) * 16 + CharToNumber(text[i + 6]);
+                    float alpha = CharToNumber(text[i + 7]) * 16 + CharToNumber(text[i + 8]);
+                    color = float3(red, green, blue) / 255.0f;
+                    opacity = alpha / 255.0f;
+                }
+                else if (escapeCount == 8) // change color only
+                {
+                    float red   = CharToNumber(text[i + 1]) * 16 + CharToNumber(text[i + 2]);
+                    float green = CharToNumber(text[i + 3]) * 16 + CharToNumber(text[i + 4]);
+                    float blue  = CharToNumber(text[i + 5]) * 16 + CharToNumber(text[i + 6]);
+                    color = float3(red, green, blue) / 255.0f;
+                }
+                else if(escapeCount == 4) // change alpha only
+                {
+                    float alpha = CharToNumber(text[i + 1]) * 16 + CharToNumber(text[i + 2]);
+                    opacity = alpha / 255.0f;
+                }
+                i += escapeCount - 1;
+                continue;
+            }
+
+            bool endOfLine = text[i] == '\n';
+            bool overrunMaxWidth = ((currentLineWidth > maxLineWidth) && (text[i] == ' '));
+            if (endOfLine || overrunMaxWidth)
+            {
+                pos += float2(0.0f, newlineHeight * scale);
+                pos.x = startPos.x;
+                currentLineWidth = 0;
+                lineWidth = GetLineWidth(text + i + 1, currentFont, pos, startPos, scale, maxLineWidth);
+                if (hAlign == HAlign_left)
+                    alignmentOffset.x = -lineWidth;
+                else if (hAlign == HAlign_center)
+                    alignmentOffset.x = -lineWidth * 0.5;
+                if (debug)
+                    DrawBox2D(pos + alignmentOffset, float2(lineWidth, 1));
+                continue;
+            }
+            if (text[i] == ' ')
+            {
+                pos += float2(spaceWidth * scale, 0.0f);
+                currentLineWidth += spaceWidth * scale;
+                continue;
+            }
+
+            Glyph* glyph = GetGlyph(currentFont, text[i]);
+            float2 UVposition = float2(glyph->minX, glyph->minY) / 1024.0f;
+            float2 UVsize = float2(abs(glyph->minX - glyph->maxX), abs(glyph->minY - glyph->maxY)) / 1024.0f;
+
+            float2 pivotUV = float2(glyph->pivotX, glyph->pivotY) / 1024.0f;
+            float2 advanceUV = float2(glyph->advanceX, glyph->advanceY) / 1024.0f;
+            float2 advanceDelta = advanceUV - pivotUV;
         
-        float2 PivotOffset = (UVposition - pivotUV) * scale;
+            float2 PivotOffset = (UVposition - pivotUV) * scale;
 
-        PivotOffset += alignmentOffset;
+            PivotOffset += alignmentOffset;
 
 
-        int textureIndex = 1;
-        if (currentFont == assets->FontDataBold)
-            textureIndex = 2;
-        if (currentFont == assets->FontDataItalic)
-            textureIndex = 3;
-        if (screenspace)
+            int textureIndex = 1;
+            if (currentFont == assets->FontDataBold)
+                textureIndex = 2;
+            if (currentFont == assets->FontDataItalic)
+                textureIndex = 3;
+            if (screenspace)
+            {
+                AppendQuadToUI(pos + PivotOffset, UVsize * scale, UVposition, UVsize, color, opacity, textureIndex);
+            }
+            else
+            {
+                if (faceCamera)
+                {
+                    AppendQuadToUI3DCameraFacing(transform.position,
+                        float3(pos.x, 0, pos.y) + float3(PivotOffset.x, 0, PivotOffset.y),
+                        float3(UVsize.x, 0, UVsize.y) * scale,
+                        UVposition,
+                        UVsize, color, opacity, textureIndex);
+                }
+                else 
+                {
+                    float2 p = pos + PivotOffset;
+                    float2 s = UVsize * scale;
+
+                    float3 pos0 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * 0   + normalize(transform.up) * 0;
+                    float3 pos1 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * s.x + normalize(transform.up) * 0;
+                    float3 pos2 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * s.x + normalize(transform.up) * -s.y;
+                    float3 pos3 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * 0   + normalize(transform.up) * -s.y;
+
+                    //float2 uv0 = UVposition + float2(0, 0) * UVsize;
+                    //float2 uv1 = UVposition + float2(1, 0) * UVsize;
+                    //float2 uv2 = UVposition + float2(1, 1) * UVsize;
+                    //float2 uv3 = UVposition + float2(0, 1) * UVsize;
+                
+                    float2 uv0 = UVposition + float2(0, 0) * UVsize;
+                    float2 uv1 = UVposition + float2(1, 0) * UVsize;
+                    float2 uv2 = UVposition + float2(1, 1) * UVsize;
+                    float2 uv3 = UVposition + float2(0, 1) * UVsize;
+                    AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, uv0, uv1, uv2, uv3, color, opacity, textureIndex);
+
+                }
+            }
+
+        
+
+            pos += advanceDelta * scale;
+            currentLineWidth += advanceDelta.x * scale;
+
+        }
+        if (debug)
         {
-            AppendQuadToUI(pos + PivotOffset, UVsize * scale, UVposition, UVsize, color, opacity, textureIndex);
+            DrawBox2D(startPos - float2(50, 3) * 0.5, float2(50, 3), float3(0.7, 0.2, 0.2));
+            DrawBox2D(startPos - float2(3, 50) * 0.5, float2(3, 50), float3(0.2, 0.7, 0.2));
+        }
+    }
+    void DrawFont2D(char* text, float2 position, float scale, float maxLineWidth, HAlign hAlign, VAlign vAlign)
+    {
+        DrawFontMain(text, transform(float3(position.x, position.y, 0)), scale, maxLineWidth, hAlign, vAlign, true, false);
+    }
+    void DrawFont(char* text, Transform transform, float scale, float maxLineWidth, HAlign hAlign, VAlign vAlign)
+    {
+        DrawFontMain(text, transform, scale, maxLineWidth, hAlign, vAlign, false, false);
+    }
+    void DrawFontCameraFacing(char* text, float3 position, float scale, float maxLineWidth, HAlign hAlign, VAlign vAlign)
+    {
+        DrawFontMain(text, transform(position), scale, maxLineWidth, hAlign, vAlign, false, true);
+    }
+    bool DrawToggle(char* text, float2* position, bool value)
+    {
+        char wat[100] = "[";
+        StringAppend(wat, text);
+        StringAppend(wat, value);
+        StringAppend(wat, "]");
+        float2 textSize = GetTextSize(wat);
+
+        if (input->mousePos.x > position->x && input->mousePos.y > position->y &&
+            input->mousePos.x < position->x + textSize.x && input->mousePos.y < position->y + textSize.y)
+        {
+            DrawText(wat, position, float3(0.75, 0.75, 0.75));
+            if (input->mouseLeftDown)
+            {
+                return !value;
+            }
         }
         else
         {
-            if (faceCamera)
+            DrawText(wat, position, float3(1, 1, 1));
+        }
+
+        return value;
+    }
+    bool DrawToggle(char* text, bool value)
+    {
+        return DrawToggle(text, &haven->uiPos, value);
+    }
+    bool DrawButton(char* text, float2* position)
+    {
+        char wat[100] = "[";
+        StringAppend(wat, text);
+        StringAppend(wat, "]");
+        float2 textSize = GetTextSize(wat);
+
+        if (input->mousePos.x > position->x && input->mousePos.y > position->y &&
+            input->mousePos.x < position->x + textSize.x && input->mousePos.y < position->y + textSize.y)
+        {
+            DrawText(wat, position, float3(0.75, 0.75, 0.75));
+            if (input->mouseLeftDown)
             {
-                AppendQuadToUI3DCameraFacing(transform.position,
-                    float3(pos.x, 0, pos.y) + float3(PivotOffset.x, 0, PivotOffset.y),
-                    float3(UVsize.x, 0, UVsize.y) * scale,
-                    UVposition,
-                    UVsize, color, opacity, textureIndex);
-            }
-            else 
-            {
-                float2 p = pos + PivotOffset;
-                float2 s = UVsize * scale;
-
-                float3 pos0 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * 0   + normalize(transform.up) * 0;
-                float3 pos1 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * s.x + normalize(transform.up) * 0;
-                float3 pos2 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * s.x + normalize(transform.up) * -s.y;
-                float3 pos3 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * 0   + normalize(transform.up) * -s.y;
-
-                //float2 uv0 = UVposition + float2(0, 0) * UVsize;
-                //float2 uv1 = UVposition + float2(1, 0) * UVsize;
-                //float2 uv2 = UVposition + float2(1, 1) * UVsize;
-                //float2 uv3 = UVposition + float2(0, 1) * UVsize;
-                
-                float2 uv0 = UVposition + float2(0, 0) * UVsize;
-                float2 uv1 = UVposition + float2(1, 0) * UVsize;
-                float2 uv2 = UVposition + float2(1, 1) * UVsize;
-                float2 uv3 = UVposition + float2(0, 1) * UVsize;
-                AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, uv0, uv1, uv2, uv3, color, opacity, textureIndex);
-
+                return true;
             }
         }
-
-        
-
-        pos += advanceDelta * scale;
-        currentLineWidth += advanceDelta.x * scale;
-
-    }
-    if (debug)
-    {
-        DrawBox2D(startPos - float2(50, 3) * 0.5, float2(50, 3), float3(0.7, 0.2, 0.2));
-        DrawBox2D(startPos - float2(3, 50) * 0.5, float2(3, 50), float3(0.2, 0.7, 0.2));
-    }
-}
-void DrawFont2D(char* text, float2 position, float scale, float maxLineWidth, HAlign hAlign, VAlign vAlign)
-{
-    DrawFontMain(text, transform(float3(position.x, position.y, 0)), scale, maxLineWidth, hAlign, vAlign, true, false);
-}
-void DrawFont(char* text, Transform transform, float scale, float maxLineWidth, HAlign hAlign, VAlign vAlign)
-{
-    DrawFontMain(text, transform, scale, maxLineWidth, hAlign, vAlign, false, false);
-}
-void DrawFontCameraFacing(char* text, float3 position, float scale, float maxLineWidth, HAlign hAlign, VAlign vAlign)
-{
-    DrawFontMain(text, transform(position), scale, maxLineWidth, hAlign, vAlign, false, true);
-}
-
-float2 GetTextSize(char* text)
-{
-    int len = StringLength(text);
-    int height = StringCountOccurances(text, '\n');
-    return float2(len, height + 1) * fontSpriteSize * fontScale;
-}
-
-
-bool DrawToggle(char* text, float2* position, bool value)
-{
-    char wat[100] = "[";
-    StringAppend(wat, text);
-    StringAppend(wat, value);
-    StringAppend(wat, "]");
-    float2 textSize = GetTextSize(wat);
-
-    if (input->mousePos.x > position->x && input->mousePos.y > position->y &&
-        input->mousePos.x < position->x + textSize.x && input->mousePos.y < position->y + textSize.y)
-    {
-        DrawText(wat, position, float3(0.75, 0.75, 0.75));
-        if (input->mouseLeftDown)
+        else
         {
-            return !value;
+            DrawText(wat, position, float3(1, 1, 1));
         }
+
+        return false;
     }
-    else
+    bool DrawButton(char* text)
     {
-        DrawText(wat, position, float3(1, 1, 1));
+        return DrawButton(text, &haven->uiPos);
     }
-
-    return value;
-}
-bool DrawToggle(char* text, bool value)
-{
-    return DrawToggle(text, &haven->uiPos, value);
-}
-
-bool DrawButton(char* text, float2* position)
-{
-    char wat[100] = "[";
-    StringAppend(wat, text);
-    StringAppend(wat, "]");
-    float2 textSize = GetTextSize(wat);
-
-    if (input->mousePos.x > position->x && input->mousePos.y > position->y &&
-        input->mousePos.x < position->x + textSize.x && input->mousePos.y < position->y + textSize.y)
+    void DrawLine(float3 start, float3 end, float width = 0.01f, float3 color = {1, 1, 1}, float opacity = 1)
     {
-        DrawText(wat, position, float3(0.75, 0.75, 0.75));
-        if (input->mouseLeftDown)
-        {
-            return true;
-        }
-    }
-    else
-    {
-        DrawText(wat, position, float3(1, 1, 1));
-    }
+        float3 direction = (end - start);
+        float3 q = cross(direction, float3(0, 0, 1));
+        float3 offangle = ((q.x + q.y + q.z) == 0) ? float3(0, 1, 0) : float3(0, 0, 1);
+        float3 right = normalize(cross(direction, offangle)) * width * 0.5;
+        float3 left = normalize(cross(right, direction)) * width * 0.5;
 
-    return false;
-}
-bool DrawButton(char* text)
-{
-    return DrawButton(text, &haven->uiPos);
-}
+        float3 pos0 = end + left;
+        float3 pos1 = start + left; 
+        float3 pos2 = start - left;
+        float3 pos3 = end - left; 
 
-void DrawLine(float3 start, float3 end, float width = 0.01f, float3 color = {1, 1, 1}, float opacity = 1)
-{
-    float3 direction = (end - start);
-    float3 q = cross(direction, float3(0, 0, 1));
-    float3 offangle = ((q.x + q.y + q.z) == 0) ? float3(0, 1, 0) : float3(0, 0, 1);
-    float3 right = normalize(cross(direction, offangle)) * width * 0.5;
-    float3 left = normalize(cross(right, direction)) * width * 0.5;
-
-    float3 pos0 = end + left;
-    float3 pos1 = start + left; 
-    float3 pos2 = start - left;
-    float3 pos3 = end - left; 
-
-    AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
-
-    pos0 = end + right;
-    pos1 = start + right;
-    pos2 = start - right;
-    pos3 = end - right;
-    AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
-
-}
-
-void DrawRay(float3 start, float3 direction, float len, float width = 0.01f, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    DrawLine(start, start + normalize(direction) * len, width, color, opacity);
-}
-
-float3 AngleToVector(float angle, float3 left, float3 right)
-{
-    return sinTurns(angle) * left + cosTurns(angle) * right;
-}
-
-void DrawCircle(float3 center, float3 normal, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, int detail = 32)
-{
-    float3 direction = normalize(normal);
-    float3 offangle = direction == float3(0, 0, 1) ? float3(0, 1, 0) : float3(0, 0, 1);
-    float3 right = normalize(cross(direction, offangle));
-    float3 left = normalize(cross(right, direction));
-    width *= 0.5;
-    //int detail = 32;
-    for (int i = 1; i < detail+1; i++)
-    {
-        float angleStart = (i-1) / (float)detail;
-        float angleEnd = i / (float)detail;
-
-        float3 offsetStart = AngleToVector(angleStart, left, right);
-        float3 offsetEnd   = AngleToVector(angleEnd, left, right);
-
-        float3 pos0 = center + offsetStart * radius - offsetEnd   * width;
-        float3 pos1 = center + offsetEnd   * radius - offsetStart * width;
-        float3 pos2 = center + offsetEnd   * radius + offsetEnd   * width;
-        float3 pos3 = center + offsetStart * radius + offsetStart * width;
         AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
 
-        pos0 = center + offsetStart * radius - direction * width;
-        pos1 = center + offsetEnd   * radius - direction * width;
-        pos2 = center + offsetEnd   * radius + direction * width;
-        pos3 = center + offsetStart * radius + direction * width;
+        pos0 = end + right;
+        pos1 = start + right;
+        pos2 = start - right;
+        pos3 = end - right;
         AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
-    }
-}
 
-void DrawSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    for (int i = 0; i < 8; i++)
+    }
+    void DrawRay(float3 start, float3 direction, float len, float width = 0.01f, float3 color = { 1, 1, 1 }, float opacity = 1)
     {
-        float3 a = AngleToVector(i / 8.0f, float3(1, 0, 0), float3(0, 1, 0));
-        DrawCircle(center, a, radius, width, color, opacity, 8);
+        DrawLine(start, start + normalize(direction) * len, width, color, opacity);
     }
-    DrawCircle(center + float3(0, 0, radius * 0.707), float3(0, 0, 1), radius* 0.707, width, color, opacity, 8);
-    DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, 8);
-    DrawCircle(center + float3(0, 0, -radius * 0.707), float3(0, 0, 1), radius * 0.707, width, color, opacity, 8);
-}
+    void DrawCircle(float3 center, float3 normal, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, int detail = 32)
+    {
+        float3 direction = normalize(normal);
+        float3 offangle = direction == float3(0, 0, 1) ? float3(0, 1, 0) : float3(0, 0, 1);
+        float3 right = normalize(cross(direction, offangle));
+        float3 left = normalize(cross(right, direction));
+        width *= 0.5;
+        //int detail = 32;
+        for (int i = 1; i < detail+1; i++)
+        {
+            float angleStart = (i-1) / (float)detail;
+            float angleEnd = i / (float)detail;
 
-void DrawAxisSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    DrawCircle(center, float3(1, 0, 0), radius, width, color, opacity, 24);
-    DrawCircle(center, float3(0, 1, 0), radius, width, color, opacity, 24);
-    DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, 24);
-}
+            float3 offsetStart = AngleToVector(angleStart, left, right);
+            float3 offsetEnd   = AngleToVector(angleEnd, left, right);
 
-void DrawTransform(Transform transform, float width = 0.01)
-{
-    DrawRay(transform.position, transform.right,   transform.scale.x, width, float3(1, 0, 0));
-    DrawRay(transform.position, transform.forward, transform.scale.y, width, float3(0, 1, 0));
-    DrawRay(transform.position, transform.up,      transform.scale.z, width, float3(0, 0, 1));
-}
+            float3 pos0 = center + offsetStart * radius - offsetEnd   * width;
+            float3 pos1 = center + offsetEnd   * radius - offsetStart * width;
+            float3 pos2 = center + offsetEnd   * radius + offsetEnd   * width;
+            float3 pos3 = center + offsetStart * radius + offsetStart * width;
+            AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
 
-void DrawPoint(float3 position, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    DrawLine(position - float3(width * 0.5, 0, 0), position + float3(width * 0.5, 0, 0), width, color, opacity);
-    DrawLine(position - float3(0, width * 0.5, 0), position + float3(0, width * 0.5, 0), width, color, opacity);
-}
+            pos0 = center + offsetStart * radius - direction * width;
+            pos1 = center + offsetEnd   * radius - direction * width;
+            pos2 = center + offsetEnd   * radius + direction * width;
+            pos3 = center + offsetStart * radius + direction * width;
+            AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
+        }
+    }
+    void DrawSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        for (int i = 0; i < 8; i++)
+        {
+            float3 a = AngleToVector(i / 8.0f, float3(1, 0, 0), float3(0, 1, 0));
+            DrawCircle(center, a, radius, width, color, opacity, 8);
+        }
+        DrawCircle(center + float3(0, 0, radius * 0.707), float3(0, 0, 1), radius* 0.707, width, color, opacity, 8);
+        DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, 8);
+        DrawCircle(center + float3(0, 0, -radius * 0.707), float3(0, 0, 1), radius * 0.707, width, color, opacity, 8);
+    }
+    void DrawAxisSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        DrawCircle(center, float3(1, 0, 0), radius, width, color, opacity, 24);
+        DrawCircle(center, float3(0, 1, 0), radius, width, color, opacity, 24);
+        DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, 24);
+    }
+    void DrawTransform(Transform transform, float width = 0.01)
+    {
+        DrawRay(transform.position, transform.right,   transform.scale.x, width, float3(1, 0, 0));
+        DrawRay(transform.position, transform.forward, transform.scale.y, width, float3(0, 1, 0));
+        DrawRay(transform.position, transform.up,      transform.scale.z, width, float3(0, 0, 1));
+    }
+    void DrawPoint(float3 position, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        DrawLine(position - float3(width * 0.5, 0, 0), position + float3(width * 0.5, 0, 0), width, color, opacity);
+        DrawLine(position - float3(0, width * 0.5, 0), position + float3(0, width * 0.5, 0), width, color, opacity);
+    }
+    void DrawAABB(float3 center, float3 size, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        DrawLine(center + size * float3( 1,  1,  1), center + size * float3( 1,  1, -1), width, color, opacity);
+        DrawLine(center + size * float3(-1,  1,  1), center + size * float3(-1,  1, -1), width, color, opacity);
+        DrawLine(center + size * float3( 1, -1,  1), center + size * float3( 1, -1, -1), width, color, opacity);
+        DrawLine(center + size * float3(-1, -1,  1), center + size * float3(-1, -1, -1), width, color, opacity);
 
-void DrawAABB(float3 center, float3 size, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    DrawLine(center + size * float3( 1,  1,  1), center + size * float3( 1,  1, -1), width, color, opacity);
-    DrawLine(center + size * float3(-1,  1,  1), center + size * float3(-1,  1, -1), width, color, opacity);
-    DrawLine(center + size * float3( 1, -1,  1), center + size * float3( 1, -1, -1), width, color, opacity);
-    DrawLine(center + size * float3(-1, -1,  1), center + size * float3(-1, -1, -1), width, color, opacity);
+        DrawLine(center + size * float3( 1,  1,  1), center + size * float3( 1, -1,  1), width, color, opacity);
+        DrawLine(center + size * float3(-1,  1,  1), center + size * float3(-1, -1,  1), width, color, opacity);
+        DrawLine(center + size * float3( 1,  1, -1), center + size * float3( 1, -1, -1), width, color, opacity);
+        DrawLine(center + size * float3(-1,  1, -1), center + size * float3(-1, -1, -1), width, color, opacity);
 
-    DrawLine(center + size * float3( 1,  1,  1), center + size * float3( 1, -1,  1), width, color, opacity);
-    DrawLine(center + size * float3(-1,  1,  1), center + size * float3(-1, -1,  1), width, color, opacity);
-    DrawLine(center + size * float3( 1,  1, -1), center + size * float3( 1, -1, -1), width, color, opacity);
-    DrawLine(center + size * float3(-1,  1, -1), center + size * float3(-1, -1, -1), width, color, opacity);
+        DrawLine(center + size * float3(1,  1,   1), center + size * float3(-1,  1,  1), width, color, opacity);
+        DrawLine(center + size * float3(1, -1,   1), center + size * float3(-1, -1,  1), width, color, opacity);
+        DrawLine(center + size * float3(1,  1,  -1), center + size * float3(-1,  1, -1), width, color, opacity);
+        DrawLine(center + size * float3(1, -1,  -1), center + size * float3(-1, -1, -1), width, color, opacity);
+    }
+    void DrawAABBMinMax(float3 minPos, float3 maxPos, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        float3 center = (minPos + maxPos) * 0.5;
+        float3 size = abs(minPos - maxPos) * 0.5;
+        DrawAABB(center, size, width, color, opacity);
+    }
+    void DrawBox(Transform transform, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    {
+        DrawLine(LocalToWorld(float3( 1,  1,  1), transform), LocalToWorld(float3( 1,  1, -1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3(-1,  1,  1), transform), LocalToWorld(float3(-1,  1, -1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3( 1, -1,  1), transform), LocalToWorld(float3( 1, -1, -1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3(-1, -1,  1), transform), LocalToWorld(float3(-1, -1, -1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3( 1,  1,  1), transform), LocalToWorld(float3( 1, -1,  1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3(-1,  1,  1), transform), LocalToWorld(float3(-1, -1,  1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3( 1,  1, -1), transform), LocalToWorld(float3( 1, -1, -1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3(-1,  1, -1), transform), LocalToWorld(float3(-1, -1, -1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3( 1,  1,  1), transform), LocalToWorld(float3(-1,  1,  1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3( 1, -1,  1), transform), LocalToWorld(float3(-1, -1,  1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3( 1,  1, -1), transform), LocalToWorld(float3(-1,  1, -1), transform), width, color, opacity);
+        DrawLine(LocalToWorld(float3( 1, -1, -1), transform), LocalToWorld(float3(-1, -1, -1), transform), width, color, opacity);
+    }
 
-    DrawLine(center + size * float3(1,  1,   1), center + size * float3(-1,  1,  1), width, color, opacity);
-    DrawLine(center + size * float3(1, -1,   1), center + size * float3(-1, -1,  1), width, color, opacity);
-    DrawLine(center + size * float3(1,  1,  -1), center + size * float3(-1,  1, -1), width, color, opacity);
-    DrawLine(center + size * float3(1, -1,  -1), center + size * float3(-1, -1, -1), width, color, opacity);
-}
-
-void DrawAABBMinMax(float3 minPos, float3 maxPos, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    float3 center = (minPos + maxPos) * 0.5;
-    float3 size = abs(minPos - maxPos) * 0.5;
-    DrawAABB(center, size, width, color, opacity);
-}
-
-float3 TransformPosition_LocalSpaceToWorldSpace(Transform transform, float3 localPosition)
-{
-    // Multiply the x/y/z components with the transforms axes.
-    // Since local-position is local, its component values represent movements along the axes of the transform.
-    // So moving along those axes bring us into world-space.
-    float3 worldPos = transform.right   * localPosition.x * transform.scale.x +
-                      transform.forward * localPosition.y * transform.scale.y +
-                      transform.up      * localPosition.z * transform.scale.z;
-
-    // Move the point from being relative to the transform to being placed in the world
-    return worldPos + transform.position;
-}
-
-float3 TransformPosition_WorldSpaceToLocalSpace(Transform transform, float3 worldPosition)
-{
-    // Move the point to be relative to the transform.
-    float3 localPos = worldPosition - transform.position;
-
-    // Project the moved position onto each of the transforms axes.
-    // This "rotates" it from world space to local space.
-    return float3(dot(localPos, transform.right), 
-                  dot(localPos, transform.forward), 
-                  dot(localPos, transform.up));
-}
-
-void DrawBox(Transform transform, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
-{
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1, -1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1, -1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1, -1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1, -1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1,  1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1,  1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1, -1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1, -1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1, -1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1, -1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1,  1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1,  1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1,  1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1,  1, -1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1,  1, -1)), width, color, opacity);
-    DrawLine(TransformPosition_LocalSpaceToWorldSpace(transform, float3( 1, -1, -1)), TransformPosition_LocalSpaceToWorldSpace(transform, float3(-1, -1, -1)), width, color, opacity);
 }

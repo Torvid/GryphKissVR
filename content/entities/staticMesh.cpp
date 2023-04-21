@@ -70,16 +70,16 @@ bool CullMesh(StaticMesh* self, Transform camera)
 void DrawStaticMesh(StaticMesh* self, Camera camera)
 {
     if(self->isSky)
-        DrawMesh(self->materialSky, self->mesh, self->transform, camera, "Scene StaticMesh");
+        Drawing::DrawMesh(self->materialSky, self->mesh, self->transform, camera, "Scene StaticMesh");
     else
-        DrawMesh(self->material, self->mesh, self->transform, camera, "Scene StaticMesh");
+        Drawing::DrawMesh(self->material, self->mesh, self->transform, camera, "Scene StaticMesh");
 }
 void DrawStaticMesh(StaticMesh* self)
 {
     if (self->isSky)
-        DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
+        Drawing::DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
     else
-        DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
+        Drawing::DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
 }
 
 void StaticMeshUpdate(StaticMesh* self, int i)

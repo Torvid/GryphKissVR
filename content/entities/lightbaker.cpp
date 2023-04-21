@@ -10,31 +10,33 @@ struct CustomRenderTexture
 CustomRenderTexture* CreateCustomRenderTexture(int sizeX, int sizeY, bool clamp = false)
 {
     CustomRenderTexture* result = ArenaPushStruct(&haven->arenaEngineState, CustomRenderTexture, "CustomRenderTexture");
-    result->current = CreateTextureTarget(sizeX, sizeY, clamp);
-    result->previous = CreateTextureTarget(sizeX, sizeY, clamp);
+    result->current = Drawing::CreateTextureTarget(sizeX, sizeY, clamp);
+    result->previous = Drawing::CreateTextureTarget(sizeX, sizeY, clamp);
     return result;
 }
-void Swap(CustomRenderTexture* texture)
+namespace Drawing
 {
-    Texture* temp = texture->current;
-    texture->current = texture->previous;
-    texture->previous = temp;
+    void Swap(CustomRenderTexture* texture)
+    {
+        Texture* temp = texture->current;
+        texture->current = texture->previous;
+        texture->previous = temp;
+    }
+    void DrawClear(CustomRenderTexture* texture)
+    {
+        Drawing::SetRenderTarget(texture->current);
+        DrawClear();
+        Drawing::SetRenderTarget(texture->previous);
+        DrawClear();
+        Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
+    void DrawClear(Texture* texture)
+    {
+        Drawing::SetRenderTarget(texture);
+        DrawClear();
+        Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
 }
-void DrawClear(CustomRenderTexture* texture)
-{
-    SetRenderTarget(texture->current);
-    DrawClear();
-    SetRenderTarget(texture->previous);
-    DrawClear();
-    SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-}
-void DrawClear(Texture* texture)
-{
-    SetRenderTarget(texture);
-    DrawClear();
-    SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-}
-
 
 struct LightBaker
 {
@@ -70,7 +72,7 @@ void ComposeTextures(CustomRenderTexture* target, Texture* source, float2 pos, C
     float2 targetSize = float2(target->current->sizeX, target->current->sizeY);
     float2 sourceSize = float2(source->sizeX, source->sizeY);
 
-    Swap(target);
+    Drawing::Swap(target);
     CreateMaterialLocal(comp, assets->compose, compose);
     comp->mesh = assets->ui_quad;
     comp->texA = target->previous; 
@@ -78,10 +80,10 @@ void ComposeTextures(CustomRenderTexture* target, Texture* source, float2 pos, C
     comp->Min = (pos) / targetSize;
     comp->Max = (pos + sourceSize) / targetSize;
     comp->composeMode = (int)composeMode;
-    SetRenderTarget(target->current);
-    DrawClear(float3(0, 0, 1));
-    DrawMesh(comp);
-    SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    Drawing::SetRenderTarget(target->current);
+    Drawing::DrawClear(float3(0, 0, 1));
+    Drawing::DrawMesh(comp);
+    Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
 }
 
 LightBaker* LightBakerInstantiate()
@@ -98,9 +100,9 @@ LightBaker* LightBakerInstantiate()
 
     for (int i = 0; i < 6; i++)
     {
-        self->cubeTexture[i] = CreateTextureTarget(64, 64, true);
+        self->cubeTexture[i] = Drawing::CreateTextureTarget(64, 64, true);
     }
-    self->SphericalHarmonic = CreateTextureTarget(1, harmonicCount, true);
+    self->SphericalHarmonic = Drawing::CreateTextureTarget(1, harmonicCount, true);
     return self;
 }
 
@@ -129,8 +131,8 @@ void CubemapToSphericalHarmonic(Texture* target, Texture* source[6])
             return;
     }
 
-    SetRenderTarget(target, "Probe Capture");
-    DrawClear(float3(0, 1, 0));
+    Drawing::SetRenderTarget(target, "Probe Capture");
+    Drawing::DrawClear(float3(0, 1, 0));
     CreateMaterialLocal(octUnwrap, assets->reflectionProbeToSphericalHarmonic, reflectionProbeToSphericalHarmonic);
     octUnwrap->cubeTexture0 = source[0];
     octUnwrap->cubeTexture1 = source[1];
@@ -139,9 +141,9 @@ void CubemapToSphericalHarmonic(Texture* target, Texture* source[6])
     octUnwrap->cubeTexture4 = source[4];
     octUnwrap->cubeTexture5 = source[5];
     octUnwrap->mesh = assets->ui_quad;
-    DrawMesh(octUnwrap);
+    Drawing::DrawMesh(octUnwrap);
 
-    SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
 }
 
 
@@ -186,11 +188,11 @@ int testFunction(LightBaker* self)
 
 void LightBakerUpdate(LightBaker* self)
 {
-    DrawAABBMinMax(self->boxMin, self->boxMax, 0.02);
+    Drawing::DrawAABBMinMax(self->boxMin, self->boxMax, 0.02);
     float3 boxCenter = (self->boxMin + self->boxMax) * 0.5;
 
-    DrawClear(self->SphericalHarmonic);
-    if (DrawButton("Radiosity"))
+    Drawing::DrawClear(self->SphericalHarmonic);
+    if (Drawing::DrawButton("Radiosity"))
     {
         self->rendering = true;
         self->x = 0;

@@ -4,36 +4,6 @@
 #ifndef havenIncluded
 #define havenIncluded
 
-
-/*
-// functions needed for LLVM/CLANG/LLD to be happy :)
-extern "C" __declspec(dllexport) bool _DllMainCRTStartup(void* hInstance, unsigned long dwReason, void* lpReserved)
-{
-	return true;
-}
-extern "C" __declspec(dllexport) void* memcpy(void *dest, const void *src, size_t n)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        ((char*)dest)[i] = ((char*)src)[i];
-    }
-	return dest;
-}
-
-extern "C" __declspec(dllexport) void* memset(void* dest, int ch, size_t n)
-{
-    for (size_t i = 0; i < n; i++)
-    {
-        ((int*)dest)[i] = ch;
-    }
-    return dest;
-}
-
-// is this important?
-extern "C" __declspec(dllexport) void __chkstk(){}
-extern "C" { int _fltused = 0; }
-*/
-
 #include "haven_platform.h"
 
 Memset* globalMemset;
@@ -228,11 +198,11 @@ static GameMemory* globalGameMemory;
 
 void LoadAssets(Assets* assets)
 {
-#define assetRegistryLoad(function, type, name, filename) assets->name = function(filename)
-#define assetRegistryLoadShader(function, type, name, filename) assets->name = function(filename); SetupShader_##name(assets->name); assets->name->GLID = haven->platformGraphicsLoadShader(assets->name)
-#include "assetRegistry.cpp"
-#undef assetRegistryLoadShader
-#undef assetRegistryLoad
+    #define assetRegistryLoad(function, type, name, filename) assets->name = function(filename)
+    #define assetRegistryLoadShader(function, type, name, filename) assets->name = function(filename); SetupShader_##name(assets->name); assets->name->GLID = haven->platformGraphicsLoadShader(assets->name)
+    #include "assetRegistry.cpp"
+    #undef assetRegistryLoadShader
+    #undef assetRegistryLoad
 }
 
 
@@ -253,80 +223,82 @@ void LoadAssets(Assets* assets)
     name->mesh = assets->ui_quad; \
     SetShaderDefaults(name);
     
-void DrawClear(float3 color = {0,0,0}, const char* name = 0)
+namespace Drawing
 {
-    RenderCommand* result = ArrayAddNew(haven->renderCommands);
-    result->type = RenderCommand_Clear;
-    result->clearColor = { color.x, color.y, color.z, 1 };
-    result->clearColorEnabled = true;
-    result->clearDepthEnabled = true;
-    result->name = name;
-}
-
-void DrawClearDepth(const char* name = 0)
-{
-    RenderCommand* result = ArrayAddNew(haven->renderCommands);
-    result->type = RenderCommand_Clear;
-    //result->clearColor = clearColor;
-    result->clearColorEnabled = false;
-    result->clearDepthEnabled = true;
-    result->name = name;
-}
-void DrawClearColor(float3 color = { 0,0,0 })
-{
-    RenderCommand* result = ArrayAddNew(haven->renderCommands);
-    result->type = RenderCommand_Clear;
-    result->clearColor = { color.x, color.y, color.z, 1 };
-    result->clearColorEnabled = true;
-    result->clearDepthEnabled = false;
-}
-
-void SetRenderTarget(Texture* target, const char* name = 0)
-{
-    RenderCommand* result = ArrayAddNew(haven->renderCommands);
-    if (target == 0)
+    void DrawClear(float3 color = {0,0,0}, const char* name = 0)
     {
-
-    }
-    else
-    {
-        // For it to be rendered to, it must be either a texture target or a framebuffer target.
-        Assert(target->isFramebufferTarget || target->isTextureTarget);
-
-        // It can't be both at the same time.
-        if (target->isFramebufferTarget)
-        {
-            Assert(!target->isTextureTarget);
-        }
-        if (target->isTextureTarget)
-        {
-            Assert(!target->isFramebufferTarget);
-        }
+        RenderCommand* result = ArrayAddNew(haven->renderCommands);
+        result->type = RenderCommand_Clear;
+        result->clearColor = { color.x, color.y, color.z, 1 };
+        result->clearColorEnabled = true;
+        result->clearDepthEnabled = true;
+        result->name = name;
     }
 
-    result->type = RenderCommand_SetRenderTarget;
-    result->framebufferTarget = target;
-    result->name = name;
-}
+    void DrawClearDepth(const char* name = 0)
+    {
+        RenderCommand* result = ArrayAddNew(haven->renderCommands);
+        result->type = RenderCommand_Clear;
+        //result->clearColor = clearColor;
+        result->clearColorEnabled = false;
+        result->clearDepthEnabled = true;
+        result->name = name;
+    }
+    void DrawClearColor(float3 color = { 0,0,0 })
+    {
+        RenderCommand* result = ArrayAddNew(haven->renderCommands);
+        result->type = RenderCommand_Clear;
+        result->clearColor = { color.x, color.y, color.z, 1 };
+        result->clearColorEnabled = true;
+        result->clearDepthEnabled = false;
+    }
+    void SetRenderTarget(Texture* target, const char* name = 0)
+    {
+        RenderCommand* result = ArrayAddNew(haven->renderCommands);
+        if (target == 0)
+        {
 
-Texture* CreateFramebufferTarget(EngineState* engineState)
-{
-    Texture* result = ArrayAddNew(haven->textures);
-    result->isFramebufferTarget = true;
-    haven->platformGraphicsCreateFramebufferTarget(result);
-    return result;
-}
+        }
+        else
+        {
+            // For it to be rendered to, it must be either a texture target or a framebuffer target.
+            Assert(target->isFramebufferTarget || target->isTextureTarget);
 
-Texture* CreateTextureTarget(int sizeX, int sizeY, bool clamp = false)
-{
-    Texture* result = ArrayAddNew(haven->textures);
-    result->isTextureTarget = true;
-    result->sizeX = sizeX;
-    result->sizeY = sizeY;
-    result->size = float2(sizeX, sizeY);
-    result->aspectRatio = (float)sizeX / (float)sizeY;
-    haven->platformGraphicsCreateTextureTarget(result, clamp);
-    return result;
+            // It can't be both at the same time.
+            if (target->isFramebufferTarget)
+            {
+                Assert(!target->isTextureTarget);
+            }
+            if (target->isTextureTarget)
+            {
+                Assert(!target->isFramebufferTarget);
+            }
+        }
+
+        result->type = RenderCommand_SetRenderTarget;
+        result->framebufferTarget = target;
+        result->name = name;
+    }
+
+    Texture* CreateFramebufferTarget(EngineState* engineState)
+    {
+        Texture* result = ArrayAddNew(haven->textures);
+        result->isFramebufferTarget = true;
+        haven->platformGraphicsCreateFramebufferTarget(result);
+        return result;
+    }
+
+    Texture* CreateTextureTarget(int sizeX, int sizeY, bool clamp = false)
+    {
+        Texture* result = ArrayAddNew(haven->textures);
+        result->isTextureTarget = true;
+        result->sizeX = sizeX;
+        result->sizeY = sizeY;
+        result->size = float2(sizeX, sizeY);
+        result->aspectRatio = (float)sizeX / (float)sizeY;
+        haven->platformGraphicsCreateTextureTarget(result, clamp);
+        return result;
+    }
 }
 
 void printTransform(Transform t2)
@@ -514,14 +486,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         haven->boneMaterial->BackFaceCulling = false;
 
 
-        haven->SwapBuffer = CreateFramebufferTarget(engineState);
-        //haven->waterRipples0 = CreateTextureTarget(256, 256);
-        //haven->waterRipples1 = CreateTextureTarget(256, 256);
+        haven->SwapBuffer = Drawing::CreateFramebufferTarget(engineState);
 
         haven->stringMesh = ArrayAddNew(haven->meshes);
 
         haven->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
-
 
         soundStart(gameMemory);
 
@@ -561,166 +530,17 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
     soundUpdate(gameMemory);
 
-
-
-    // RIPPLE SIM!!
-
-    //if (input->mouseLeftDown || input->faceButtonRight || firstFrame)
-    //{
-    //    haven->waterRipplesPrevious = haven->waterRipples0;
-    //    haven->waterRipplesCurrent = haven->waterRipples1;
-    //
-    //    // setup
-    //    SetRenderTarget(haven->waterRipplesPrevious);
-    //    DrawClear();
-    //
-    //    CreateMaterialLocal(copyTexture, assets->textureCopyShader, textureCopyShader);
-    //    copyTexture->mesh = assets->ui_quad;
-    //    copyTexture->ColorTexture = assets->coal;
-    //    DrawMesh(copyTexture);
-    //
-    //
-    //    SetRenderTarget(haven->waterRipplesCurrent);
-    //    DrawClear();
-    //
-    //    copyTexture->ColorTexture = assets->coal;
-    //    DrawMesh(copyTexture);
-    //}
-    // draw
-    //SetRenderTarget(haven->waterRipplesCurrent);
-    //DrawClear();
-    //
-    //CreateMaterialLocal(rippleSim, assets->rippleSimShader, rippleSimShader);
-    //rippleSim->mesh = assets->ui_quad;
-    //rippleSim->TexPrevious = haven->waterRipplesPrevious;
-    //rippleSim->mousePos = input->mousePos / haven->Resolution;
-    //DrawMesh(rippleSim);
-    // swap
-    //Texture* temp;
-    //temp = haven->waterRipplesPrevious;
-    //haven->waterRipplesPrevious = haven->waterRipplesCurrent;
-    //haven->waterRipplesCurrent = temp;
-
-    SetRenderTarget(haven->SwapBuffer);
+    Drawing::SetRenderTarget(haven->SwapBuffer);
     haven->clearColor = float3(0.251, 0.298, 0.373);
-    DrawClear(haven->clearColor);
+    Drawing::DrawClear(haven->clearColor);
 
 
     float2 pos = float2(0, 0);
     haven->uiPos = float2(0, 0);
     
-
-    input->vibrationAmplitudeRight = input->grabRight;
-
-
-    input->handRight.scale = { 0.1f, 0.1f, 0.1f };
-    input->handLeft.scale = { 0.1f, 0.1f, 0.1f };
-    input->aimRight.scale = { 0.1f, 0.1f, 0.1f };
-    input->aimLeft.scale = { 0.1f, 0.1f, 0.1f };
-
-    float3 center = float3(0, 0, 0);// (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
-    Transform monkeyRotation = { center +
-        float3(-1, 0, 0),
-        input->playspaceStageLeft.right,
-        input->playspaceStageLeft.forward,
-        input->playspaceStageLeft.up,
-        { 1, 1, 1 } };
-    monkeyRotation = rotate(monkeyRotation, 0, 0, 0.0f);
-
-
-    // Simulation plane
-    CreateMaterialLocal(waterPlane, assets->unlit, unlit);
-    waterPlane->ColorTexture = haven->waterRipplesCurrent;
-    waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
-    waterPlane->mesh = assets->ui_quad;
-    waterPlane->BackFaceCulling = true;
-    DrawMesh(waterPlane, assets->ui_quad, transform(float3(0, 0, 0.1)));
-
-
-    //CreateMaterialLocal(fontTest, assets->unlit, unlit);
-    //fontTest->ColorTexture = assets->FontRegular;
-    //fontTest->Color = float3(1.0f, 1.0f, 1.0f);
-    //DrawMesh(fontTest, assets->ui_quad, transform(center + float3(0,0,2)));
-
-    haven->hAlign = HAlign_left;
-    haven->vAlign = VAlign_down;
-
-    //if (DrawButton("HAlign_right"))
-    //    haven->hAlign = HAlign_right;
-    //if (DrawButton("HAlign_center"))
-    //    haven->hAlign = HAlign_center;
-    //if (DrawButton("HAlign_left"))
-    //    haven->hAlign = HAlign_left;
-    //
-    //if (DrawButton("VAlign_up"))
-    //    haven->vAlign = VAlign_up;
-    //if (DrawButton("VAlign_center"))
-    //    haven->vAlign = VAlign_center;
-    //if (DrawButton("VAlign_down"))
-    //    haven->vAlign = VAlign_down;
-
-    char* lorem = "What is #88#*Lorem Ipsum*#ff#?\n\n*Lorem Ipsum* is simply #ff000088#dummy#ffffffff# text of the printing and typesetting industry. *Lorem Ipsum* #10#has #20#been #30#the #40#industry's #50#standard #60#dummy #70#text #80#ever #90#since #a0#the#b0# 1500s, #c0#when #d0#an #e0#unknown #f0#printer took a galley of type and scrambled it to make a type specimen book. **It has survived not only five centuries**, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing#ff0000# *Lorem #ffbf00#Ipsum* #80ff00#passages, #00ff40#and #00ffff#more #0040ff#recently #8000ff#with #ff00bf#desktop #ffffff#publishing software like Aldus PageMaker including versions of *Lorem Ipsum*.";
-    char* lorem2 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text \nof the printing and typesetting industry. \nLorem Ipsum has been the industry's \nstandard dummy text ever since the \n1500s, when an unknown printer took \na galley of type and scrambled it to \nmake a type specimen book. It has survived \nnot only five centuries, but also the leap \ninto electronic typesetting, remaining \nessentially unchanged. It was popularised \nin the 1960s with the release of Letraset \nsheets containing Lorem Ipsum passages, \nand more recently with desktop publishing \nsoftware like Aldus PageMaker including \nversions of Lorem Ipsum.";
-    char* lorem3 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
-    char* lorem4 = "What is Lorem Ipsum\n\nLorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, **remaining essentially unchanged.** It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.";
-
-    //DrawFontMain("Barn bam, The quick brown fox jumps over the lazy dog");
-    //DrawFontMain("Hello, this is a test sentence.\nhttps://byork.torvid.net/B-Yorked.htm\ngryph@torvid.net\n$33.99 ((x^2) - 3*4) / 187.0\nvoid main(char* s) { return 0; }\n$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@", float2(400, 420), 200);
-
-    char* my_str = R"(
-
-
-Hello.
-This is a demo program running natively on Quest 2, Written 
-from scratch in C/C++. Right now it's just an empty-ish scene. 
-I am slowly adding features and building it out.
-
-Check out #6c84daff#torvid.net#ffffff# to see my other projects. :>
-
-Controls: 
- - **Walk**: Left thumbstick.
- - **Rotate**: Right thumbstick.
-
-Key systems so far:
- - Skeletal Animation.
- - Baked lighting using Spherical Harmonics.
- - Text Rendering.
- - Custom 3D model and animation format.
- - Scene with #ff0000ff#X-right#ffffffff#, #00ff00ff#Y-forward#ffffffff# and #0000ffff#Z-up#ffffffff# (as god intended).
-)";
-
-    //
-    //Key APIs, Librariesand tools used :
-    //-OpenXR from VR input.
-    //    - OpenGL - ES for graphics.
-    //    - OpenSL - ES for sound.
-    //    - ASTC texture compression.
-    //    - "Atkinson Hyperlegible" Font.
-
-    DrawFont2D("@", input->mousePos, 500, 600, haven->hAlign, haven->vAlign);
-    //
-    //DrawFont2D(lorem4, float2(400, 400), 300, 700, haven->hAlign, haven->vAlign);
-    //DrawFontCameraFacing(lorem4, center + float3(0, 0, 3), 0.75, 2.0f * 0.75f, haven->hAlign, haven->vAlign);
-    DrawFont(my_str, transform(center + float3(5-0.1, 4, 2.5), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
-
-    //DrawFont2D("LLL**LLL**", float2(700, 200), 800, 400, haven->hAlign, haven->vAlign);
-    //
-    //DrawText(lorem2, float2(200, 200));
-    //DrawText3D(lorem2, center + float3(1, 0, 3));
-    //
-    //DrawFontMain("aaaaaaaa\naaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", float2(400, 420), 200);
-    //DrawFontMain("^v^ uvu ovo >v> <v< ;v; :> >:3 >:D");
-    //
-    //DrawFontMain("Hello World", float2(100, 100), 50);
-    //DrawFontMain("Hello World", float2(100, 120), 100);
-    //DrawFontMain("Hello World", float2(100, 180), 500);
-    //DrawFontMain("Hello World", float2(100, 300), 1000);
-    //DrawFontMain("Hello World", float2(100, 500), 2000);
-    //DrawFont3D(lorem, center + float3(0, 8, 0), 2, wrap, haven->hAlign, haven->vAlign);
-    //DrawText3D("Hello World", center + float3(0, 0, 2), 2);
-    DrawText("G: toggle editor");
-    DrawText("P: toggle profiling");
-    DrawText("space: reset");
+    Drawing::DrawText("G: toggle editor");
+    Drawing::DrawText("P: toggle profiling");
+    Drawing::DrawText("space: reset");
     
     editorUpdate();
     gameMemory->spectatorCamera = haven->spectatorCamera;
@@ -780,7 +600,7 @@ Key systems so far:
     uiCommand->SpectatorCameraRight = haven->spectatorCamera.right;
 
     // Clear depth so UI is drawn on top.
-    DrawMesh(uiCommand);
+    Drawing::DrawMesh(uiCommand);
     haven->uiMeshData->quadCount = 0;
 
     ProfilerEndSample("GryphKissVR");
@@ -789,8 +609,8 @@ Key systems so far:
     haven->timeEnd = haven->platformTime();
     haven->internalTime = ((haven->timeEnd - haven->timeStart) * 100) / 1000;
 
-    SetRenderTarget(0);
-    DrawClear();
+    Drawing::SetRenderTarget(0);
+    Drawing::DrawClear();
 
     CreateMaterialLocal(finalOutputCommand, assets->postProcessTest, postProcessTest);
     finalOutputCommand->mesh = assets->ui_quad;
@@ -798,7 +618,7 @@ Key systems so far:
     finalOutputCommand->ColorTexture = haven->SwapBuffer;
     finalOutputCommand->TexRipples = haven->waterRipplesCurrent;
 
-    DrawMesh(finalOutputCommand);
+    Drawing::DrawMesh(finalOutputCommand);
 
     gameMemory->renderCommands_count = haven->renderCommands_count;
 

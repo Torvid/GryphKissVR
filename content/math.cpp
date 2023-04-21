@@ -1266,6 +1266,31 @@ Transform WorldToLocal(Transform A, Transform B)
     return B;
 }
 
+//float3 TransformPosition_LocalSpaceToWorldSpace(Transform transform, float3 localPosition)
+//{
+//    // Multiply the x/y/z components with the transforms axes.
+//    // Since local-position is local, its component values represent movements along the axes of the transform.
+//    // So moving along those axes bring us into world-space.
+//    float3 worldPos = transform.right * localPosition.x * transform.scale.x +
+//        transform.forward * localPosition.y * transform.scale.y +
+//        transform.up * localPosition.z * transform.scale.z;
+//
+//    // Move the point from being relative to the transform to being placed in the world
+//    return worldPos + transform.position;
+//}
+//
+//float3 TransformPosition_WorldSpaceToLocalSpace(Transform transform, float3 worldPosition)
+//{
+//    // Move the point to be relative to the transform.
+//    float3 localPos = worldPosition - transform.position;
+//
+//    // Project the moved position onto each of the transforms axes.
+//    // This "rotates" it from world space to local space.
+//    return float3(dot(localPos, transform.right),
+//        dot(localPos, transform.forward),
+//        dot(localPos, transform.up));
+//}
+
 float ClosestRayDistance(float3 l1Pos, float3 l1Dir, float3 l2Pos, float3 l2dir)
 {
     float3 rightVector = normalize(cross(l1Dir, cross(l1Dir, l2dir)));
@@ -1588,4 +1613,9 @@ bool RayBoxIntersect(float3 Start, float3 End)
     //*Normal = -sign(RayDir) * step(float3(t1.y, t1.z, t1.x), float3(t1.x, t1.y, t1.z)) * step(float3(t1.z, t1.x, t1.y), float3(t1.x, t1.y, t1.z));
 
     return true;
+}
+
+float3 AngleToVector(float angle, float3 left, float3 right)
+{
+    return sinTurns(angle) * left + cosTurns(angle) * right;
 }
