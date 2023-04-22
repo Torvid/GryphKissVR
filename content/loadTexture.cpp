@@ -1,6 +1,6 @@
 #pragma once
 #include "haven.cpp"
-#include "entities/lightbaker.h"
+#include "entities/ent_lightbaker.h"
 
 #pragma pack(push, 1)
 struct TGA_HEADER {
@@ -17,6 +17,7 @@ struct TGA_HEADER {
     uint8 bitsperpixel;
     uint8 imagedescriptor;
 };
+
 struct ASTC_HEADER
 {
     uint8 magic[4];

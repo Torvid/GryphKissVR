@@ -14,7 +14,7 @@ Memcpy* globalMemcpy;
 #include "string.cpp"
 #include "enumTrick.cpp"
 
-const char* validchars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@"; 
+const char* validchars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$!?#&_%\'\",.;:^|`~=<>+-*/\\(){}[]@";
 
 #pragma pack(push, 1)
 struct Glyph
@@ -449,6 +449,33 @@ namespace Rendering
     }
 
 
+    Camera PerspectiveCamera(Transform transform, float fov, float aspectRatio = 1.0, float maxDepth = 100.0f)
+    {
+        Camera camera;
+        camera.enabled = true;
+        camera.fov = fov;
+        camera.maxDepth = maxDepth;
+        camera.orthographic = false;
+        camera.orthoWidth = 10;
+        camera.transform = transform;
+        //camera.transform.position = startPos + float3(-0.5, 0, -0.3);
+        camera.aspectRatio = aspectRatio;
+        return camera;
+    }
+    Camera OrthoCamera(Transform transform, float orthoWidth, float aspectRatio = 1.0, float maxDepth = 100.0f)
+    {
+        Camera camera;
+        camera.enabled = true;
+        camera.fov = 90;
+        camera.maxDepth = maxDepth;
+        camera.orthographic = true;
+        camera.orthoWidth = orthoWidth;
+        camera.transform = transform;
+        //camera.transform.position = startPos + float3(-0.5, 0, -0.3);
+        camera.aspectRatio = aspectRatio;
+        return camera;
+    }
+
     // assumes the texture target is set up already
     void DrawScene(Camera camera)
     {
@@ -562,6 +589,8 @@ namespace Rendering
         Rendering::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
     }
 }
+
+#include "entities/entities.cpp"
 
 //#include "entities/staticMesh.cpp"
 //#include "entities/reflectionProbe.cpp"

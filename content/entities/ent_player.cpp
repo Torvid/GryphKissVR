@@ -1,12 +1,15 @@
-#pragma once
+
 #include "../haven.cpp"
 
+#if structs
 struct Player
 {
     EntityContents;
     float3 playspaceOffset;
     float3 playspaceOffsetLast;
 };
+
+#else
 
 void PlayerStart(Player* player)
 {
@@ -41,7 +44,7 @@ void PlayerUpdate(Player* player)
     float2 delta = input->thumbstickLeft;
     delta = MoveTowards(delta, float2(0, 0), 0.35f); // deadzone
     
-    Transform headLocal = input->head;// LocalToWorld(input->head, input->playspace);
+    Transform headLocal = input->head;
 
     player->transform.position += (headLocal.right * float3(1, 1, 0)) * delta.x * input->deltaTime * moveSpeed;
     player->transform.position += (headLocal.forward * float3(1, 1, 0)) * delta.y * input->deltaTime * moveSpeed;
@@ -63,3 +66,4 @@ void PlayerUpdate(Player* player)
     input->playspace = player->transform;
 
 }
+#endif

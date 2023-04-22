@@ -11,6 +11,9 @@ struct StaticMesh
     Mesh* mesh;
 };
 
+// forward-declare
+void DrawStaticMesh(StaticMesh* self, Camera camera);
+bool CullMesh(StaticMesh* self, Transform camera);
 #else
 
 StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_defaultlit* material, Transform transform)

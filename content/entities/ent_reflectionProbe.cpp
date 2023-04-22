@@ -1,34 +1,6 @@
-#pragma once
 #include "../haven.cpp"
-#include "reflectionProbe.h"
 
-Camera PerspectiveCamera(Transform transform, float fov, float aspectRatio = 1.0, float maxDepth = 100.0f)
-{
-    Camera camera;
-    camera.enabled = true;
-    camera.fov = fov;
-    camera.maxDepth = maxDepth;
-    camera.orthographic = false;
-    camera.orthoWidth = 10;
-    camera.transform = transform;
-    //camera.transform.position = startPos + float3(-0.5, 0, -0.3);
-    camera.aspectRatio = aspectRatio;
-    return camera;
-}
-Camera OrthoCamera(Transform transform, float orthoWidth, float aspectRatio = 1.0, float maxDepth = 100.0f)
-{
-    Camera camera;
-    camera.enabled = true;
-    camera.fov = 90;
-    camera.maxDepth = maxDepth;
-    camera.orthographic = true;
-    camera.orthoWidth = orthoWidth;
-    camera.transform = transform;
-    //camera.transform.position = startPos + float3(-0.5, 0, -0.3);
-    camera.aspectRatio = aspectRatio;
-    return camera;
-}
-
+#if structs
 struct ReflectionProbe
 {
     EntityContents;
@@ -36,6 +8,7 @@ struct ReflectionProbe
     Texture* octTexture;
 };
 
+#else
 ReflectionProbe* ReflectionProbeInstantiate(Transform transform)
 {
     ReflectionProbe* self = Instantiate(ReflectionProbe);
@@ -97,3 +70,4 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
     //DrawMesh(waterPlane2, assets->sphereMesh, planeTransform, "Probe plane in the scene");
 }
 
+#endif

@@ -1,7 +1,8 @@
-#pragma once
-#include "../haven.cpp"
-#include "lightbaker.h"
 
+#include "../haven.cpp"
+#include "ent_lightbaker.h"
+
+#if structs
 struct LightBaker
 {
     float3 boxMin;
@@ -18,6 +19,8 @@ struct LightBaker
     int x;
     int y;
 };
+
+#else
 
 LightBaker* LightBakerInstantiate()
 {
@@ -218,3 +221,5 @@ void LightBakerUpdate(LightBaker* self)
     // float3(-0.2, 7.45, 1.6);
     //DrawMesh(waterPlane2, assets->sphere, planeTransform, "Probe plane in the scene");
 }
+
+#endif

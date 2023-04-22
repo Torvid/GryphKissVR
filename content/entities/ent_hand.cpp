@@ -1,6 +1,7 @@
-#pragma once
+
 #include "../haven.cpp"
 
+#if structs
 enum HandSide
 {
     HandSide_Left,
@@ -15,6 +16,8 @@ struct Hand
     HandSide handSide;
     StaticMesh* tonk;
 };
+
+#else 
 
 void HandStart(Hand* self)
 {
@@ -53,3 +56,4 @@ void HandUpdate(Hand* self)
     self->tonk->transform = tonkTransform;
     //DrawMesh(self->handMaterial, assets->tonk, tonkTransform);
 }
+#endif

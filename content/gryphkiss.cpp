@@ -73,8 +73,8 @@ namespace Gryphkiss
         gameState->skydomeMat->Color = float3(1, 1, 1);
         gameState->skydomeMat->ColorTexture = assets->StrawPileM1;
 
-        SetCubemap(gameState, assets->black);
-        SetLightmap(gameState, assets->black, float3(0, 0, 0), float3(1, 1, 1), float3(2, 2, 2), 1.0f);
+        Rendering::SetCubemap(assets->black);
+        Rendering::SetLightmap(assets->black, float3(0, 0, 0), float3(1, 1, 1), float3(2, 2, 2), 1.0f);
 
         gameState->leftHand  = Instantiate(Hand);
         gameState->rightHand = Instantiate(Hand);

@@ -1,6 +1,2 @@
-In file included from ./entities/../haven.cpp:276:
-In file included from ./entities/entities.cpp:3:
-./entities/reflectionProbe.cpp:3:10: fatal error: 'reflectionProbe.h' file not found
-#include "reflectionProbe.h"
-         ^~~~~~~~~~~~~~~~~~~
-1 error generated.
+LINK : program database C:\Users\Stinger\Dropbox\Stinger\projects\furry\GryphKiss\desktop\OpenXR-SDK-Source-main\build\win64\src\tests\hello_xr\content\haven.pdb missing; performing full link
+   Creating library haven.lib and object haven.exp
