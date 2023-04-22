@@ -2,42 +2,6 @@
 #include "../haven.cpp"
 #include "lightbaker.h"
 
-struct CustomRenderTexture
-{
-    Texture* current;
-    Texture* previous;
-};
-CustomRenderTexture* CreateCustomRenderTexture(int sizeX, int sizeY, bool clamp = false)
-{
-    CustomRenderTexture* result = ArenaPushStruct(&haven->arenaEngineState, CustomRenderTexture, "CustomRenderTexture");
-    result->current = Drawing::CreateTextureTarget(sizeX, sizeY, clamp);
-    result->previous = Drawing::CreateTextureTarget(sizeX, sizeY, clamp);
-    return result;
-}
-namespace Drawing
-{
-    void Swap(CustomRenderTexture* texture)
-    {
-        Texture* temp = texture->current;
-        texture->current = texture->previous;
-        texture->previous = temp;
-    }
-    void DrawClear(CustomRenderTexture* texture)
-    {
-        Drawing::SetRenderTarget(texture->current);
-        DrawClear();
-        Drawing::SetRenderTarget(texture->previous);
-        DrawClear();
-        Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-    }
-    void DrawClear(Texture* texture)
-    {
-        Drawing::SetRenderTarget(texture);
-        DrawClear();
-        Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-    }
-}
-
 struct LightBaker
 {
     float3 boxMin;
@@ -55,37 +19,6 @@ struct LightBaker
     int y;
 };
 
-enum ComposeTexturesMode
-{
-    ComposeTexturesMode_Add,
-    ComposeTexturesMode_Subtract,
-    ComposeTexturesMode_Multiply,
-    ComposeTexturesMode_Divide,
-    ComposeTexturesMode_Max,
-    ComposeTexturesMode_Min,
-    ComposeTexturesMode_IfNotZero,
-    ComposeTexturesMode_Overwrite,
-};
-
-void ComposeTextures(CustomRenderTexture* target, Texture* source, float2 pos, ComposeTexturesMode composeMode)
-{
-    float2 targetSize = float2(target->current->sizeX, target->current->sizeY);
-    float2 sourceSize = float2(source->sizeX, source->sizeY);
-
-    Drawing::Swap(target);
-    CreateMaterialLocal(comp, assets->compose, compose);
-    comp->mesh = assets->ui_quad;
-    comp->texA = target->previous; 
-    comp->texB = source;
-    comp->Min = (pos) / targetSize;
-    comp->Max = (pos + sourceSize) / targetSize;
-    comp->composeMode = (int)composeMode;
-    Drawing::SetRenderTarget(target->current);
-    Drawing::DrawClear(float3(0, 0, 1));
-    Drawing::DrawMesh(comp);
-    Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-}
-
 LightBaker* LightBakerInstantiate()
 {
     LightBaker* self = Instantiate(LightBaker);
@@ -96,69 +29,37 @@ LightBaker* LightBakerInstantiate()
 
     self->totalCount = radiosityProbeCountX * radiosityProbeCountY * radiosityProbeCountZ;
 
-    self->targetTexture = CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z * harmonicCount, true);
+    self->targetTexture = Rendering::CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z * harmonicCount, true);
 
     for (int i = 0; i < 6; i++)
     {
-        self->cubeTexture[i] = Drawing::CreateTextureTarget(64, 64, true);
+        self->cubeTexture[i] = Rendering::CreateTextureTarget(64, 64, true);
     }
-    self->SphericalHarmonic = Drawing::CreateTextureTarget(1, harmonicCount, true);
+    self->SphericalHarmonic = Rendering::CreateTextureTarget(1, harmonicCount, true);
     return self;
 }
 
-float2 WorldPosToTexturePos(LightBaker* self, float3 worldPos)
+float2 WorldPosToLightmapTexturePos(LightBaker* self, float3 worldPos)
 {
     int x = (worldPos.x - self->boxMin.x) / radiosityProbeScale;
     int y = (worldPos.y - self->boxMin.y) / radiosityProbeScale;
     int z = (worldPos.z - self->boxMin.z) / radiosityProbeScale;
     return float2(x + (int)self->count.x * y, z * harmonicCount);
 }
-//float3 TexturePosToWorldPos(LightBaker* self, float2 texturePos)
-//{
-//    int x = texturePos.x;
-//    int y = texturePos.y;
-//    return float3(x, x % (int)self->count.x, y);
-//}
-
-void CubemapToSphericalHarmonic(Texture* target, Texture* source[6])
-{
-    if (!target)
-        return;
-
-    for (int i = 0; i < 6; i++)
-    {
-        if (!source[i])
-            return;
-    }
-
-    Drawing::SetRenderTarget(target, "Probe Capture");
-    Drawing::DrawClear(float3(0, 1, 0));
-    CreateMaterialLocal(octUnwrap, assets->reflectionProbeToSphericalHarmonic, reflectionProbeToSphericalHarmonic);
-    octUnwrap->cubeTexture0 = source[0];
-    octUnwrap->cubeTexture1 = source[1];
-    octUnwrap->cubeTexture2 = source[2];
-    octUnwrap->cubeTexture3 = source[3];
-    octUnwrap->cubeTexture4 = source[4];
-    octUnwrap->cubeTexture5 = source[5];
-    octUnwrap->mesh = assets->ui_quad;
-    Drawing::DrawMesh(octUnwrap);
-
-    Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-}
 
 
 void RenderWorld(LightBaker* self, float3 pos, bool apply = true)
 {
     //float3 pos = haven->spectatorCamera.position;
-    RenderCubemap(pos, self->cubeTexture);
-    CubemapToSphericalHarmonic(self->SphericalHarmonic, self->cubeTexture);
+    Rendering::RenderCubemap(pos, self->cubeTexture);
+    Rendering::CubemapToSphericalHarmonic(self->SphericalHarmonic, self->cubeTexture);
     //PackCubemap(self->blurDownsize0, self->cubeTexture);
     //Downsize4x(self->blurDownsize0, self->blurDownsize1);
     //Downsize4x(self->blurDownsize1, self->blurDownsize2);
     //Downsize4x(self->blurDownsize2, self->blurDownsize3);
     //Downsize4x(self->blurDownsize3, self->blurDownsize4);
     if(apply)
-        ComposeTextures(self->targetTexture, self->SphericalHarmonic, WorldPosToTexturePos(self, pos), ComposeTexturesMode_Overwrite);
+        Rendering::ComposeTextures(self->targetTexture, self->SphericalHarmonic, WorldPosToLightmapTexturePos(self, pos), ComposeTexturesMode_Overwrite);
 }
 
 #define crBegin static int state=0; switch(state) { case 0:
@@ -191,7 +92,7 @@ void LightBakerUpdate(LightBaker* self)
     Drawing::DrawAABBMinMax(self->boxMin, self->boxMax, 0.02);
     float3 boxCenter = (self->boxMin + self->boxMax) * 0.5;
 
-    Drawing::DrawClear(self->SphericalHarmonic);
+    Rendering::DrawClear(self->SphericalHarmonic);
     if (Drawing::DrawButton("Radiosity"))
     {
         self->rendering = true;
@@ -200,7 +101,7 @@ void LightBakerUpdate(LightBaker* self)
     }
     if (self->rendering)
     {
-        SetLightmap(haven->gameState,
+        Rendering::SetLightmap(
             assets->black,
             self->boxMin,
             self->boxMax,
@@ -241,7 +142,7 @@ void LightBakerUpdate(LightBaker* self)
             int BytesPerChannel = 4;
             haven->platformWriteFile(haven->scratchBuffer, current->sizeX * current->sizeY * NumberOfChannels * BytesPerChannel, "LightBake.rad");
         }
-        SetLightmap(haven->gameState,
+        Rendering::SetLightmap(
             self->targetTexture->current,
             self->boxMin,
             self->boxMax,
@@ -288,7 +189,7 @@ void LightBakerUpdate(LightBaker* self)
     //}
     if (!self->rendering)
     {
-        SetLightmap(haven->gameState,
+        Rendering::SetLightmap(
             assets->LightBake,
             self->boxMin,
             self->boxMax,

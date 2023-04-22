@@ -24,7 +24,6 @@ void HandStart(Hand* self)
     self->handMaterial->texM1 = assets->BarnWallM1;
     self->handMaterial->texM2 = assets->BarnWallM2;
     self->tonk = StaticMeshInstantiate(assets->tonk, self->handMaterial, transform(float3(0, 0, 0)));
-    
 }
 
 void HandUpdate(Hand* self)

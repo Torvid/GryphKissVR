@@ -168,7 +168,28 @@ static Input* input;
 
 static GameMemory* globalGameMemory;
 
-#include "entities/entities.cpp"
+#define EntityContents \
+    bool alive; \
+    Transform transform; \
+    int type; \
+    char* name[100]; \
+    bool visible; \
+    bool editorOnly;
+
+struct Entity
+{
+    EntityContents;
+};
+
+#define Instantiate(_type) (_type*)InstantiateLocal(EntityType_##_type, sizeof(_type));
+void* InstantiateLocal(int type, uint32 size)
+{
+    Entity* newEntity = (Entity*)ArenaPushBytes(&haven->arenaScene, size, "ent");// (haven->arenaScene.base + haven->arenaScene.used);
+    newEntity->transform = transform(float3(0, 0, 0));
+    newEntity->type = type;
+    ArrayAdd(haven->entities, newEntity);
+    return (void*)newEntity;
+}
 
 #include "ui.cpp"
 #include "profiling.cpp"
@@ -222,9 +243,65 @@ void LoadAssets(Assets* assets)
     name->Wireframe = false; \
     name->mesh = assets->ui_quad; \
     SetShaderDefaults(name);
-    
-namespace Drawing
+
+struct CustomRenderTexture
 {
+    Texture* current;
+    Texture* previous;
+};
+
+enum ComposeTexturesMode
+{
+    ComposeTexturesMode_Add,
+    ComposeTexturesMode_Subtract,
+    ComposeTexturesMode_Multiply,
+    ComposeTexturesMode_Divide,
+    ComposeTexturesMode_Max,
+    ComposeTexturesMode_Min,
+    ComposeTexturesMode_IfNotZero,
+    ComposeTexturesMode_Overwrite,
+};
+
+enum EntityType
+{
+    EntityType_Hand,
+    EntityType_Player,
+    EntityType_StaticMesh,
+    EntityType_LightBaker,
+    EntityType_ReflectionProbe,
+    EntityType_Max,
+};
+
+#define structs 1
+#include "entities/entities.cpp"
+#undef structs
+
+#define CreateSceneMaterial(name) \
+    CreateMaterialGlobal(name, assets->defaultlit, defaultlit); \
+    ArrayAdd(haven->sceneMaterials, name);
+
+namespace Rendering
+{
+    void SetCubemap(Texture* texture)
+    {
+        for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
+        {
+            haven->sceneMaterials[i]->texCubemap = texture;
+        }
+    }
+
+    void SetLightmap(Texture* texture, float3 lightmapMin, float3 lightmapMax, float3 lightmapResolution, float radiosityProbeScale)
+    {
+        for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
+        {
+            haven->sceneMaterials[i]->texLightmap = texture;
+            haven->sceneMaterials[i]->lightmapMin = lightmapMin;
+            haven->sceneMaterials[i]->lightmapMax = lightmapMax;
+            haven->sceneMaterials[i]->lightmapResolution = lightmapResolution;
+            haven->sceneMaterials[i]->radiosityProbeScale = radiosityProbeScale;
+        }
+    }
+
     void DrawClear(float3 color = {0,0,0}, const char* name = 0)
     {
         RenderCommand* result = ArrayAddNew(haven->renderCommands);
@@ -234,7 +311,6 @@ namespace Drawing
         result->clearDepthEnabled = true;
         result->name = name;
     }
-
     void DrawClearDepth(const char* name = 0)
     {
         RenderCommand* result = ArrayAddNew(haven->renderCommands);
@@ -299,7 +375,201 @@ namespace Drawing
         haven->platformGraphicsCreateTextureTarget(result, clamp);
         return result;
     }
+
+    CustomRenderTexture* CreateCustomRenderTexture(int sizeX, int sizeY, bool clamp = false)
+    {
+        CustomRenderTexture* result = ArenaPushStruct(&haven->arenaEngineState, CustomRenderTexture, "CustomRenderTexture");
+        result->current = Rendering::CreateTextureTarget(sizeX, sizeY, clamp);
+        result->previous = Rendering::CreateTextureTarget(sizeX, sizeY, clamp);
+        return result;
+    }
+    void Swap(CustomRenderTexture* texture)
+    {
+        Texture* temp = texture->current;
+        texture->current = texture->previous;
+        texture->previous = temp;
+    }
+    void DrawClear(CustomRenderTexture* texture)
+    {
+        SetRenderTarget(texture->current);
+        DrawClear();
+        SetRenderTarget(texture->previous);
+        DrawClear();
+        SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
+    void DrawClear(Texture* texture)
+    {
+        SetRenderTarget(texture);
+        DrawClear();
+        SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
+
+    void ComposeTextures(CustomRenderTexture* target, Texture* source, float2 pos, ComposeTexturesMode composeMode)
+    {
+        float2 targetSize = float2(target->current->sizeX, target->current->sizeY);
+        float2 sourceSize = float2(source->sizeX, source->sizeY);
+
+        Rendering::Swap(target);
+        CreateMaterialLocal(comp, assets->compose, compose);
+        comp->mesh = assets->ui_quad;
+        comp->texA = target->previous;
+        comp->texB = source;
+        comp->Min = (pos) / targetSize;
+        comp->Max = (pos + sourceSize) / targetSize;
+        comp->composeMode = (int)composeMode;
+        Rendering::SetRenderTarget(target->current);
+        Rendering::DrawClear(float3(0, 0, 1));
+        Rendering::DrawMesh(comp);
+        Rendering::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
+    void CubemapToSphericalHarmonic(Texture* target, Texture* source[6])
+    {
+        if (!target)
+            return;
+
+        for (int i = 0; i < 6; i++)
+        {
+            if (!source[i])
+                return;
+        }
+
+        Rendering::SetRenderTarget(target, "Probe Capture");
+        Rendering::DrawClear(float3(0, 1, 0));
+        CreateMaterialLocal(octUnwrap, assets->reflectionProbeToSphericalHarmonic, reflectionProbeToSphericalHarmonic);
+        octUnwrap->cubeTexture0 = source[0];
+        octUnwrap->cubeTexture1 = source[1];
+        octUnwrap->cubeTexture2 = source[2];
+        octUnwrap->cubeTexture3 = source[3];
+        octUnwrap->cubeTexture4 = source[4];
+        octUnwrap->cubeTexture5 = source[5];
+        octUnwrap->mesh = assets->ui_quad;
+        Rendering::DrawMesh(octUnwrap);
+
+        Rendering::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
+
+
+    // assumes the texture target is set up already
+    void DrawScene(Camera camera)
+    {
+        for (int j = 0; j < ArrayCount(haven->entities); j++)
+        {
+            Entity* entity = haven->entities[j];
+            if (entity->type == EntityType_StaticMesh)
+            {
+                StaticMesh* mesh = (StaticMesh*)entity;
+                if (CullMesh(mesh, camera.transform))
+                    continue;
+                DrawStaticMesh(mesh, camera);
+                //DrawMesh(mesh->material, mesh->mesh, mesh->transform, camera, "Scene StaticMesh");
+            }
+        }
+    }
+
+    void RenderOrtho(Transform transform, Texture* target, float orthoWidth, float aspectRatio, float maxDepth)
+    {
+        Rendering::SetRenderTarget(target, "Ortho Capture");
+        Rendering::DrawClear();
+        DrawScene(OrthoCamera(transform, orthoWidth, aspectRatio, maxDepth));
+        Rendering::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
+
+    void RenderCubemap(float3 startPos, Texture* cubeTexture[6])
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            if (!cubeTexture[i])
+                return;
+        }
+        //float2 crossLocation[6]
+        //{
+        //    float2(1, 1),
+        //    float2(-1, 1),
+        //    float2(2, 1),
+        //    float2(0, 1),
+        //    float2(0, 0),
+        //    float2(1, 3),
+        //};
+
+        Transform transforms[6] =
+        {
+            LookRotation(haven->spectatorCamera, float3(1,  0,  0), float3(0, 0, 1)),
+            LookRotation(haven->spectatorCamera, float3(-1,  0,  0), float3(0, 0, 1)),
+            LookRotation(haven->spectatorCamera, float3(0, -1,  0), float3(0, 0, 1)),
+            LookRotation(haven->spectatorCamera, float3(0,  1,  0), float3(0, 0, 1)),
+            LookRotation(haven->spectatorCamera, float3(0,  0, -1), float3(0, 1, 0)),
+            LookRotation(haven->spectatorCamera, float3(0,  0,  1), float3(0, 1, 0))
+        };
+
+        for (int i = 0; i < 6; i++)
+        {
+            Rendering::SetRenderTarget(cubeTexture[i], "Probe Capture");
+            if (i == 0) Rendering::DrawClear(float3(1, 0, 0)); // 1, 0, 0
+            if (i == 1) Rendering::DrawClear(float3(0, 1, 1)); // 0, 1, 0
+            if (i == 2) Rendering::DrawClear(float3(1, 0, 1)); // 0, 0, 1
+            if (i == 3) Rendering::DrawClear(float3(0, 1, 0)); // 0, 1, 1
+            if (i == 4) Rendering::DrawClear(float3(1, 1, 0)); // 1, 0, 1
+            if (i == 5) Rendering::DrawClear(float3(0, 0, 1)); // 1, 1, 0
+            Rendering::DrawClear(haven->clearColor);
+
+            Transform t = transforms[i];
+            t.position = startPos;
+            Rendering::DrawScene(PerspectiveCamera(t, 90, 1, 100));
+        }
+        Rendering::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
+
+    void PackCubemap(Texture* target, Texture* source[6])
+    {
+        if (!target)
+            return;
+
+        for (int i = 0; i < 6; i++)
+        {
+            if (!source[i])
+                return;
+        }
+        Rendering::SetRenderTarget(target, "Probe Capture");
+        Rendering::DrawClear(float3(0, 1, 0));
+        CreateMaterialLocal(octUnwrap, assets->reflectionProbeCubemapToOct, reflectionProbeCubemapToOct);
+        octUnwrap->cubeTexture0 = source[0];
+        octUnwrap->cubeTexture1 = source[1];
+        octUnwrap->cubeTexture2 = source[2];
+        octUnwrap->cubeTexture3 = source[3];
+        octUnwrap->cubeTexture4 = source[4];
+        octUnwrap->cubeTexture5 = source[5];
+        octUnwrap->mesh = assets->ui_quad;
+        Rendering::DrawMesh(octUnwrap);
+
+        Rendering::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
+
+    // 5x5 tap blur, good for dropping texture resolution by 4x.
+    void Downsize4x(Texture* source, Texture* target)
+    {
+        if (!source)
+            return;
+        if (!target)
+            return;
+
+        Rendering::SetRenderTarget(target, "Probe Capture");
+        Rendering::DrawClear(float3(0, 1, 0));
+        CreateMaterialLocal(octUnwrap, assets->downsize4x, downsize4x);
+        octUnwrap->colorTexture = source;
+        octUnwrap->resolution = target->sizeX;
+        octUnwrap->mesh = assets->ui_quad;
+        Rendering::DrawMesh(octUnwrap);
+        Rendering::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
+    }
 }
+
+//#include "entities/staticMesh.cpp"
+//#include "entities/reflectionProbe.cpp"
+//#include "entities/lightBaker.cpp"
+//
+//#include "entities/player.cpp"
+//#include "entities/hand.cpp"
+
 
 void printTransform(Transform t2)
 {
@@ -486,7 +756,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         haven->boneMaterial->BackFaceCulling = false;
 
 
-        haven->SwapBuffer = Drawing::CreateFramebufferTarget(engineState);
+        haven->SwapBuffer = Rendering::CreateFramebufferTarget(engineState);
 
         haven->stringMesh = ArrayAddNew(haven->meshes);
 
@@ -494,9 +764,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
         soundStart(gameMemory);
 
-        editorStart();
+        Editor::Start();
         
-        gryphkissStart();
+        Gryphkiss::Start();
 
         profilerStart();
 
@@ -530,9 +800,9 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
     soundUpdate(gameMemory);
 
-    Drawing::SetRenderTarget(haven->SwapBuffer);
+    Rendering::SetRenderTarget(haven->SwapBuffer);
     haven->clearColor = float3(0.251, 0.298, 0.373);
-    Drawing::DrawClear(haven->clearColor);
+    Rendering::DrawClear(haven->clearColor);
 
 
     float2 pos = float2(0, 0);
@@ -542,10 +812,10 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     Drawing::DrawText("P: toggle profiling");
     Drawing::DrawText("space: reset");
     
-    editorUpdate();
+    Editor::Update();
     gameMemory->spectatorCamera = haven->spectatorCamera;
 
-    gryphkissUpdate();
+    Gryphkiss::Update();
     profilerUpdate();
 
     if (input->faceButtonLeftDown || input->gDown)
@@ -600,7 +870,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     uiCommand->SpectatorCameraRight = haven->spectatorCamera.right;
 
     // Clear depth so UI is drawn on top.
-    Drawing::DrawMesh(uiCommand);
+    Rendering::DrawMesh(uiCommand);
     haven->uiMeshData->quadCount = 0;
 
     ProfilerEndSample("GryphKissVR");
@@ -609,8 +879,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     haven->timeEnd = haven->platformTime();
     haven->internalTime = ((haven->timeEnd - haven->timeStart) * 100) / 1000;
 
-    Drawing::SetRenderTarget(0);
-    Drawing::DrawClear();
+    Rendering::SetRenderTarget(0);
+    Rendering::DrawClear();
 
     CreateMaterialLocal(finalOutputCommand, assets->postProcessTest, postProcessTest);
     finalOutputCommand->mesh = assets->ui_quad;
@@ -618,7 +888,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     finalOutputCommand->ColorTexture = haven->SwapBuffer;
     finalOutputCommand->TexRipples = haven->waterRipplesCurrent;
 
-    Drawing::DrawMesh(finalOutputCommand);
+    Rendering::DrawMesh(finalOutputCommand);
 
     gameMemory->renderCommands_count = haven->renderCommands_count;
 

@@ -28,122 +28,7 @@ Camera OrthoCamera(Transform transform, float orthoWidth, float aspectRatio = 1.
     camera.aspectRatio = aspectRatio;
     return camera;
 }
-namespace Drawing
-{
 
-// assumes the texture target is set up already
-void DrawScene(Camera camera)
-{
-    for (int j = 0; j < ArrayCount(haven->entities); j++)
-    {
-        Entity* entity = haven->entities[j];
-        if (entity->type == EntityType_StaticMesh)
-        {
-            StaticMesh* mesh = (StaticMesh*)entity;
-            if (CullMesh(mesh, camera.transform))
-                continue;
-            DrawStaticMesh(mesh, camera);
-            //DrawMesh(mesh->material, mesh->mesh, mesh->transform, camera, "Scene StaticMesh");
-        }
-    }
-}
-
-void RenderOrtho(Transform transform, Texture* target, float orthoWidth, float aspectRatio, float maxDepth)
-{
-    Drawing::SetRenderTarget(target, "Ortho Capture");
-    Drawing::DrawClear();
-    DrawScene(OrthoCamera(transform, orthoWidth, aspectRatio, maxDepth));
-    Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-}
-}
-
-void RenderCubemap(float3 startPos, Texture* cubeTexture[6])
-{
-    for (int i = 0; i < 6; i++)
-    {
-        if (!cubeTexture[i])
-            return;
-    }
-    //float2 crossLocation[6]
-    //{
-    //    float2(1, 1),
-    //    float2(-1, 1),
-    //    float2(2, 1),
-    //    float2(0, 1),
-    //    float2(0, 0),
-    //    float2(1, 3),
-    //};
-
-    Transform transforms[6] =
-    {
-        LookRotation(haven->spectatorCamera, float3( 1,  0,  0), float3(0, 0, 1)),
-        LookRotation(haven->spectatorCamera, float3(-1,  0,  0), float3(0, 0, 1)),
-        LookRotation(haven->spectatorCamera, float3( 0, -1,  0), float3(0, 0, 1)),
-        LookRotation(haven->spectatorCamera, float3( 0,  1,  0), float3(0, 0, 1)),
-        LookRotation(haven->spectatorCamera, float3( 0,  0, -1), float3(0, 1, 0)),
-        LookRotation(haven->spectatorCamera, float3( 0,  0,  1), float3(0, 1, 0))
-    };
-
-    for (int i = 0; i < 6; i++)
-    {
-        Drawing::SetRenderTarget(cubeTexture[i], "Probe Capture");
-        if (i == 0) Drawing::DrawClear(float3(1, 0, 0)); // 1, 0, 0
-        if (i == 1) Drawing::DrawClear(float3(0, 1, 1)); // 0, 1, 0
-        if (i == 2) Drawing::DrawClear(float3(1, 0, 1)); // 0, 0, 1
-        if (i == 3) Drawing::DrawClear(float3(0, 1, 0)); // 0, 1, 1
-        if (i == 4) Drawing::DrawClear(float3(1, 1, 0)); // 1, 0, 1
-        if (i == 5) Drawing::DrawClear(float3(0, 0, 1)); // 1, 1, 0
-        Drawing::DrawClear(haven->clearColor);
-
-        Transform t = transforms[i];
-        t.position = startPos;
-        Drawing::DrawScene(PerspectiveCamera(t, 90, 1, 100));
-    }
-    Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-}
-
-void PackCubemap(Texture* target, Texture* source[6])
-{
-    if (!target)
-        return;
-
-    for (int i = 0; i < 6; i++)
-    {
-        if (!source[i])
-            return;
-    }
-    Drawing::SetRenderTarget(target, "Probe Capture");
-    Drawing::DrawClear(float3(0, 1, 0));
-    CreateMaterialLocal(octUnwrap, assets->reflectionProbeCubemapToOct, reflectionProbeCubemapToOct);
-    octUnwrap->cubeTexture0 = source[0];
-    octUnwrap->cubeTexture1 = source[1];
-    octUnwrap->cubeTexture2 = source[2];
-    octUnwrap->cubeTexture3 = source[3];
-    octUnwrap->cubeTexture4 = source[4];
-    octUnwrap->cubeTexture5 = source[5];
-    octUnwrap->mesh = assets->ui_quad;
-    Drawing::DrawMesh(octUnwrap);
-
-    Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-}
-
-// 5x5 tap blur, good for dropping texture resolution by 4x.
-void Downsize4x(Texture* source, Texture* target)
-{
-    if (!source)
-        return;
-    if (!target)
-        return;
-
-    Drawing::SetRenderTarget(target, "Probe Capture");
-    Drawing::DrawClear(float3(0, 1, 0));
-    CreateMaterialLocal(octUnwrap, assets->downsize4x, downsize4x);
-    octUnwrap->colorTexture = source;
-    octUnwrap->resolution = target->sizeX;
-    octUnwrap->mesh = assets->ui_quad;
-    Drawing::DrawMesh(octUnwrap);
-    Drawing::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
-}
 struct ReflectionProbe
 {
     EntityContents;
@@ -157,9 +42,9 @@ ReflectionProbe* ReflectionProbeInstantiate(Transform transform)
 
     for (int i = 0; i < 6; i++)
     {
-        self->cubeTexture[i] = Drawing::CreateTextureTarget(1024, 1024, true);
+        self->cubeTexture[i] = Rendering::CreateTextureTarget(1024, 1024, true);
     }
-    self->octTexture = Drawing::CreateTextureTarget(1024, 1024, true);
+    self->octTexture = Rendering::CreateTextureTarget(1024, 1024, true);
 
     self->transform = transform;
     return self;
@@ -189,14 +74,14 @@ void DrawScreenTexture(Texture* texture, float2 size, float heightOffset)
     waterPlane->ColorTexture = texture;
     waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
     waterPlane->BackFaceCulling = true;
-    Drawing::DrawMesh(waterPlane, assets->ui_quad, planeTransform, "Probe plane in the scene");
+    Rendering::DrawMesh(waterPlane, assets->ui_quad, planeTransform, "Probe plane in the scene");
 }
 void ReflectionProbeUpdate(ReflectionProbe* self, int i)
 {
     return;
     float3 startPos = haven->spectatorCamera.position + float3(-0.5, 2, -0.5);
-    RenderCubemap(startPos, self->cubeTexture);
-    PackCubemap(self->octTexture, self->cubeTexture);
+    Rendering::RenderCubemap(startPos, self->cubeTexture);
+    Rendering::PackCubemap(self->octTexture, self->cubeTexture);
 
     //DrawScreenTexture(self->octTexture);
 

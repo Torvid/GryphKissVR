@@ -76,7 +76,7 @@ struct ShaderStructName
     };
 };
 
-namespace Drawing
+namespace Rendering
 {
     void DrawMesh(ShaderStructName* command)
     {

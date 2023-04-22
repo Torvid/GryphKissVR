@@ -1,19 +1,17 @@
-#pragma once
 #include "../haven.cpp"
+
+#if structs
 
 struct StaticMesh
 {
-    bool alive; \
-    Transform transform; \
-    int type; \
-    char* name[100]; \
-    bool visible; \
-    bool editorOnly;
+    EntityContents;
     bool isSky;
     Material_defaultlit* material;
     Material_skydomeShader* materialSky;
     Mesh* mesh;
 };
+
+#else
 
 StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_defaultlit* material, Transform transform)
 {
@@ -35,7 +33,6 @@ StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_skydomeShader* material, 
     staticMesh->transform = transform;
     return staticMesh;
 }
-
 
 Transform GetLocalBoundsTransform(StaticMesh* self)
 {
@@ -70,16 +67,16 @@ bool CullMesh(StaticMesh* self, Transform camera)
 void DrawStaticMesh(StaticMesh* self, Camera camera)
 {
     if(self->isSky)
-        Drawing::DrawMesh(self->materialSky, self->mesh, self->transform, camera, "Scene StaticMesh");
+        Rendering::DrawMesh(self->materialSky, self->mesh, self->transform, camera, "Scene StaticMesh");
     else
-        Drawing::DrawMesh(self->material, self->mesh, self->transform, camera, "Scene StaticMesh");
+        Rendering::DrawMesh(self->material, self->mesh, self->transform, camera, "Scene StaticMesh");
 }
 void DrawStaticMesh(StaticMesh* self)
 {
     if (self->isSky)
-        Drawing::DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
+        Rendering::DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
     else
-        Drawing::DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
+        Rendering::DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
 }
 
 void StaticMeshUpdate(StaticMesh* self, int i)
@@ -117,3 +114,4 @@ void StaticMeshUpdate(StaticMesh* self, int i)
     //    DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
 }
 
+#endif
