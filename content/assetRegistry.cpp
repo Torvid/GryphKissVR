@@ -75,3 +75,4 @@ assetRegistryLoad(FileReadTexture, Texture, StrawPileM1, "barn/StrawPileM1.tga")
 assetRegistryLoad(FileReadTexture, Texture, StrawPileM2, "barn/StrawPileM2.tga");
 assetRegistryLoad(FileReadTexture, Texture, TilesM1, "barn/TilesM1.tga");
 assetRegistryLoad(FileReadTexture, Texture, TilesM2, "barn/TilesM2.tga");
+assetRegistryLoad(FileReadMesh, Mesh, cornellBox, "cornellBox/cornellBox.mesh");

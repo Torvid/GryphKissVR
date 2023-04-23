@@ -124,6 +124,7 @@ namespace Rendering
     }
     void DrawMesh(ShaderStructName* command, Mesh* mesh, Transform transform, const char* name = 0)
     {
+        Assert(command);
         DrawMesh(command, mesh, transform, {}, name);
     }
 }

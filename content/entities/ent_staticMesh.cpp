@@ -11,13 +11,16 @@ struct StaticMesh
     Mesh* mesh;
 };
 
+
 // forward-declare
-void DrawStaticMesh(StaticMesh* self, Camera camera);
-bool CullMesh(StaticMesh* self, Transform camera);
+void StaticMeshDraw(StaticMesh* self, Camera camera);
+bool StaticMeshCull(StaticMesh* self, Transform camera);
 #else
 
 StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_defaultlit* material, Transform transform)
 {
+    Assert(mesh, "mesh was null.");
+    Assert(material, "material was null.");
     StaticMesh* staticMesh = Instantiate(StaticMesh);
     staticMesh->isSky = false;
     staticMesh->material = material;
@@ -28,6 +31,8 @@ StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_defaultlit* material, Tra
 }
 StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_skydomeShader* material, Transform transform)
 {
+    Assert(mesh, "mesh was null.");
+    Assert(material, "material was null.");
     StaticMesh* staticMesh = Instantiate(StaticMesh);
     staticMesh->isSky = true;
     staticMesh->material = 0;
@@ -37,7 +42,7 @@ StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_skydomeShader* material, 
     return staticMesh;
 }
 
-Transform GetLocalBoundsTransform(StaticMesh* self)
+Transform StaticMeshGetLocalBoundsTransform(StaticMesh* self)
 {
     float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
     //float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
@@ -57,7 +62,7 @@ Transform GetLocalBoundsTransform(StaticMesh* self)
     return t;
 }
 
-bool CullMesh(StaticMesh* self, Transform camera)
+bool StaticMeshCull(StaticMesh* self, Transform camera)
 {
     float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
     float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
@@ -67,14 +72,14 @@ bool CullMesh(StaticMesh* self, Transform camera)
     return false;
 }
 
-void DrawStaticMesh(StaticMesh* self, Camera camera)
+void StaticMeshDraw(StaticMesh* self, Camera camera)
 {
     if(self->isSky)
         Rendering::DrawMesh(self->materialSky, self->mesh, self->transform, camera, "Scene StaticMesh");
     else
         Rendering::DrawMesh(self->material, self->mesh, self->transform, camera, "Scene StaticMesh");
 }
-void DrawStaticMesh(StaticMesh* self)
+void StaticMeshDraw(StaticMesh* self)
 {
     if (self->isSky)
         Rendering::DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
@@ -85,7 +90,7 @@ void DrawStaticMesh(StaticMesh* self)
 void StaticMeshUpdate(StaticMesh* self, int i)
 {
     Transform headLocal = input->head;// LocalToWorld(input->head, input->playspace);
-    if (CullMesh(self, headLocal))
+    if (StaticMeshCull(self, headLocal))
         return;
 
     //// frustum culling
@@ -110,7 +115,7 @@ void StaticMeshUpdate(StaticMesh* self, int i)
     //    DrawSphere(input->head.position, 0.5, 0.01, float3(1, 0, 0));
     //}
     
-    DrawStaticMesh(self);
+    StaticMeshDraw(self);
     //if(self->isSky)
     //    DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
     //else

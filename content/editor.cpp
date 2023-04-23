@@ -51,6 +51,7 @@ namespace Editor
     {
         UpdateCamera();
 
+        Drawing::DrawFont2D(".", input->mousePos, 500, 600, HAlign_left, VAlign_down);
         if (haven->editor)
         {
             if (input->ctrl && input->sDown)
@@ -94,10 +95,7 @@ namespace Editor
                 (input->aimRight.forward +
                  input->aimRight.right +
                  input->aimRight.up) * 0.05f, 0.1f);
-        }
 
-        if (haven->editor)
-        {
             float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
 
             Rendering::DrawMesh(haven->red, assets->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
@@ -110,10 +108,7 @@ namespace Editor
             //DrawMesh(gameState->axesMaterial, haven->ui_quad, monkeyRotation2);
             //monkeyRotation2 = { center + float3(-3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
             //DrawMesh(gameState->torvidMat, haven->monkey, monkeyRotation2);
-        }
 
-        if (haven->editor)
-        {
             const int tempStringSize = 2048;
             char text[tempStringSize] = {};
             Clear((uint8*)text, tempStringSize);

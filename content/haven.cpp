@@ -10,7 +10,7 @@ Memset* globalMemset;
 Memcpy* globalMemcpy;
 
 #include "math.cpp"
-#include "memory.cpp"
+#include "memory.cpp"w
 #include "string.cpp"
 #include "enumTrick.cpp"
 
@@ -37,7 +37,6 @@ struct Font
 #pragma pack(pop)
 
 
-struct GameState;
 struct ProfilingData;
 struct UIMeshData;
 struct SoundChannel;
@@ -145,7 +144,7 @@ struct EngineState
     int timeStart;
     int timeEnd;
 
-    GameState* gameState;
+    void* gameState;
 
     float2 Resolution;
 
@@ -485,9 +484,9 @@ namespace Rendering
             if (entity->type == EntityType_StaticMesh)
             {
                 StaticMesh* mesh = (StaticMesh*)entity;
-                if (CullMesh(mesh, camera.transform))
+                if (StaticMeshCull(mesh, camera.transform))
                     continue;
-                DrawStaticMesh(mesh, camera);
+                StaticMeshDraw(mesh, camera);
                 //DrawMesh(mesh->material, mesh->mesh, mesh->transform, camera, "Scene StaticMesh");
             }
         }
@@ -592,14 +591,6 @@ namespace Rendering
 
 #include "entities/entities.cpp"
 
-//#include "entities/staticMesh.cpp"
-//#include "entities/reflectionProbe.cpp"
-//#include "entities/lightBaker.cpp"
-//
-//#include "entities/player.cpp"
-//#include "entities/hand.cpp"
-
-
 void printTransform(Transform t2)
 {
     haven->printf("pos  : (%.2f, %.2f, %.2f)\n", t2.position.x, t2.position.y, t2.position.z);
@@ -609,34 +600,8 @@ void printTransform(Transform t2)
         t2.up.x, t2.up.y, t2.up.z);
 }
 
-
-//Transform ApplyTransform(Transform t, Transform monkeyRotation)
-//{
-//    Transform t2 = {};
-//    t2.scale = t.scale;
-//    float3 d0 = float3(monkeyRotation.right.x, monkeyRotation.forward.x, monkeyRotation.up.x);
-//    float3 d1 = float3(monkeyRotation.right.y, monkeyRotation.forward.y, monkeyRotation.up.y);
-//    float3 d2 = float3(monkeyRotation.right.z, monkeyRotation.forward.z, monkeyRotation.up.z);
-//    t2.position.x = dot(t.position, d0);
-//    t2.position.y = dot(t.position, d1);
-//    t2.position.z = dot(t.position, d2);
-//    t2.position += monkeyRotation.position;
-//
-//    t2.right.x = -dot(d0, t.right);
-//    t2.right.y = -dot(d1, t.right);
-//    t2.right.z = -dot(d2, t.right);
-//
-//    t2.forward.x = dot(d0, t.forward);
-//    t2.forward.y = dot(d1, t.forward);
-//    t2.forward.z = dot(d2, t.forward);
-//
-//    t2.up.x = dot(d0, t.up);
-//    t2.up.y = dot(d1, t.up);
-//    t2.up.z = dot(d2, t.up);
-//    return t2;
-//}
-
-#include "gryphkiss.cpp"
+#include "scene_gryphkiss.cpp"
+#include "scene_cornellbox.cpp"
 #include "editor.cpp"
 
 void engineProfilerBeingSample()
@@ -795,7 +760,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
         Editor::Start();
         
-        Gryphkiss::Start();
+        //Gryphkiss::Start();
+        CornellBox::Start();
 
         profilerStart();
 
@@ -844,7 +810,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     Editor::Update();
     gameMemory->spectatorCamera = haven->spectatorCamera;
 
-    Gryphkiss::Update();
+    //Gryphkiss::Update();
+    CornellBox::Update();
     profilerUpdate();
 
     if (input->faceButtonLeftDown || input->gDown)
