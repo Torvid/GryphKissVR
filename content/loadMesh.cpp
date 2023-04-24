@@ -141,6 +141,22 @@ void LoadObj(Mesh* mesh)
     int i = sizeof(Mesh);
     uint8* moreScratchBuffer = haven->platformReadFile(haven->scratchBuffer, mesh->filename);
 
+    if (!moreScratchBuffer)
+    {
+        mesh = assets->missingMesh;
+        //texture->sizeX = missing->sizeX;
+        //texture->sizeY = missing->sizeY;
+        //texture->size.x = texture->sizeX;
+        //texture->size.y = texture->sizeY;
+        //texture->mips[0] = missing->mips[0];
+        //texture->mipCount = missing->mipCount;
+        //texture->mipSizeX[0] = missing->mipSizeX[0];
+        //texture->mipSizeY[0] = missing->mipSizeY[0];
+        //texture->GLID = missing->GLID;
+        //texture->ASTC = false;
+        //texture->HDR = false;
+        return;
+    }
     // Failed to load file, wrong filename?
     Assert(moreScratchBuffer);
 

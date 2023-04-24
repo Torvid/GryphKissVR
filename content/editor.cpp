@@ -140,7 +140,8 @@ namespace Editor
             //    PlaySound(assets->HitWoodDome_22k_mono, 1.0f, false);
             //}
 
-            Transform testTransform = transform(float3(12, 0, 0), 0.1, 0.2, 0.3, float3(1, 0.75, 0.5) * 0.75);
+            //Transform testTransform = transform(float3(12, 0, 0), 0.1, 0.2, 0.3, float3(1, 0.75, 0.5) * 0.75);
+            Transform testTransform = scale(rotate(place(float3(12, 0, 0)), 0.1, 0.2, 0.3), float3(1, 0.75, 0.5) * 0.75);
 
             Drawing::DrawLine(float3(4, 0, 0), float3(5, 1, 1), 0.05f, float3(0.6,0.1,0.2));
             Drawing::DrawCircle(float3(6, 0, 0), float3(0, 0, 1), 0.75, 0.05f);

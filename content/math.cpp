@@ -1338,6 +1338,21 @@ float3 BlendColor(float3 a, float3 b, float t)
 
     return sqrt(b);
 }
+
+
+Transform transform()
+{
+    return ctor_transform(float3(0, 0, 0), float3(0, 1, 0), float3(0, 0, 1), float3(1, 1, 1));
+}
+Transform place(Transform t, float3 position)
+{
+    t.position = position;
+    return t;
+}
+Transform place(float3 position)
+{
+    return place(transform(), position);
+}
 Transform rotate(Transform t, float3 Axis, float angle)
 {
     t.forward = RotateAroundAxis(t.forward, Axis, angle);
@@ -1349,12 +1364,29 @@ Transform rotate(Transform t, float3 Axis, float angle)
     t.right = normalize(t.right);
     return t;
 }
+Transform rotate(float3 Axis, float angle)
+{
+    return rotate(transform(), Axis, angle);
+}
 Transform rotate(Transform t, float X, float Y, float Z)
 {
     t = rotate(t, t.right, X);
     t = rotate(t, t.forward, Y);
     t = rotate(t, t.up, Z);
     return t;
+}
+Transform rotate(float X, float Y, float Z)
+{
+    return rotate(transform(), X, Y, Z);
+}
+Transform scale(Transform t, float3 s)
+{
+    t.scale = s;
+    return t;
+}
+Transform scale(float3 s)
+{
+    return scale(transform(), s);
 }
 Transform transform(float3 position)
 {
@@ -1389,24 +1421,23 @@ Transform rotateAboutPoint(Transform t, float3 pivot, float3 Axis, float angle)
     t.position -= pivot;
     t.position = RotateAroundAxis(t.position, Axis, angle);
     t.position += pivot;
-    //float cosTheta = cosTurns(angle);
-    //float sinTheta = sinTurns(angle);
-    //float newX = (cosTheta * (t.position.x - pivot.x) - sinTheta * (t.position.y - pivot.y) + pivot.x);
-    //float newY = (sinTheta * (t.position.x - pivot.x) + cosTheta * (t.position.y - pivot.y) + pivot.y);
-    //t.position.x = newX;
-    //t.position.y = newY;
-
     t = rotate(t, Axis, angle);
-
     return t;
 }
-
+Transform rotateAboutPoint(float3 pivot, float3 Axis, float angle)
+{
+    return rotateAboutPoint(transform(), pivot, Axis, angle);
+}
 Transform LookRotation(Transform t, float3 forward, float3 up)
 {
     t.forward = normalize(forward);
     t.right = normalize(cross(forward, up));
     t.up = normalize(cross(t.right, forward));
     return t;
+}
+Transform LookRotation(float3 forward, float3 up)
+{
+    return LookRotation(transform(), forward, up);
 }
 
 float2 rotate90CW(float2 a)

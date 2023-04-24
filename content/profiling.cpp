@@ -299,7 +299,12 @@ void profilerStart()
 {
 
 }
-
+void DrawBar(char* name, float2 pos, float width, float percentage)
+{
+    Drawing::DrawBox2D(pos, float2(width, 10), float3(1, 1, 1), 1);
+    Drawing::DrawBox2D(pos, float2(width * percentage, 10), float3(1, 0, 0), 1);
+    Drawing::DrawText(name, pos - float2(0, 14));
+}
 void profilerUpdate()
 {
     // Update text
@@ -329,22 +334,53 @@ void profilerUpdate()
         //DrawArena(&pos, &haven->arenaGameState, textTransform);
         DrawArena(&haven->arenaAssets);
 
-
-        
+        float2 pos = float2(300, 200);
         for (int i = 0; i < ArrayCapacity(haven->arenas); i++)
         {
             MemoryArena* arena = &haven->arenas[i];
             int w = arena->size / Megabytes(1);
+            //float2 pos = float2(300, 200 + 25 * i);
+            DrawBar((char*)haven->arenas[i].name, pos, w, arena->usedPercentage);
+            pos += float2(0, 25);
 
-            float2 pos = float2(300, 200 + 25 * i);
-            Drawing::DrawBox2D(pos, float2(w, 10), float3(1, 1, 1), 1);
-            Drawing::DrawBox2D(pos, float2(w * arena->usedPercentage, 10), float3(1, 0, 0), 1);
-            //DrawText()
-            Drawing::DrawText((char*)haven->arenas[i].name, pos - float2(0, 14));
-            //DrawText(haven->arenas[i].name, pos, float3(1, 1, 1), 1);
-            //DrawText("what", pos, float3(1, 1, 1), 1);
-            //arena->usedPercentage
+            //float2 pos = float2(300, 200 + 25 * i);
+            //Drawing::DrawBox2D(pos, float2(w, 10), float3(1, 1, 1), 1);
+            //Drawing::DrawBox2D(pos, float2(w * arena->usedPercentage, 10), float3(1, 0, 0), 1);
+            //Drawing::DrawText((char*)haven->arenas[i].name, pos - float2(0, 14));
         }
+
+
+        pos += float2(0, 25);
+        DrawBar("globalTextures", pos, 100, ArrayFilledPercentage(haven->globalTextures));
+        pos += float2(0, 25);
+        DrawBar("sceneTextures", pos, 100, ArrayFilledPercentage(haven->sceneTextures));
+        pos += float2(0, 25);
+        DrawBar("meshes", pos, 100, ArrayFilledPercentage(haven->meshes));
+        pos += float2(0, 25);
+        DrawBar("shaders", pos, 100, ArrayFilledPercentage(haven->shaders));
+        pos += float2(0, 25);
+        DrawBar("sounds", pos, 100, ArrayFilledPercentage(haven->sounds));
+        pos += float2(0, 25);
+        DrawBar("animations", pos, 100, ArrayFilledPercentage(haven->animations));
+        pos += float2(0, 25);
+        DrawBar("fonts", pos, 100, ArrayFilledPercentage(haven->fonts));
+        pos += float2(0, 25);
+        DrawBar("renderCommands", pos, 100, ArrayFilledPercentage(haven->renderCommands));
+        pos += float2(0, 25);
+        DrawBar("entities", pos, 100, ArrayFilledPercentage(haven->entities));
+        pos += float2(0, 25);
+        DrawBar("sceneMaterials", pos, 100, ArrayFilledPercentage(haven->sceneMaterials));
+        pos += float2(0, 25);
+
         
+        //ArrayCreate(Texture, textures, 100);
+        //ArrayCreate(Mesh, meshes, 100);
+        //ArrayCreate(Shader, shaders, 100);
+        //ArrayCreate(Sound, sounds, 100);
+        //ArrayCreate(Animation, animations, 100);
+        //ArrayCreate(Font, fonts, 5);
+        //
+        //ArrayCreate(RenderCommand, renderCommands, 20000);
+        //ArrayCreate(Entity*, entities, 1000); // pointers to all entities in the scene
     }
 }

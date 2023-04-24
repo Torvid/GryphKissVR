@@ -5,6 +5,7 @@
 // Arrays
 //#define ArrayCreate(type, name, size) int name##_count; type name[size];
 #define ArrayCount(name) name##_count
+
 //#define ArrayCreate(name) {}; int name##_count = 0;
 #define ArrayCreate(type, name, size) type name[size] = {}; int name##_count = 0;
 bool IndexIsInArray(int index, int size)
@@ -84,6 +85,7 @@ bool IndexIsInArray(int index, int size)
 } \
 // Resize
 
+#define ArrayFilledPercentage(name) (((float)ArrayCount(name)) / ((float)ArrayCapacity(name)))
 
 //void _ArrayAdd(uint8* array, uint8* var, int itemsize, int* length, int capacity)
 //{

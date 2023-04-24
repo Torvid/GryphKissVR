@@ -81,7 +81,7 @@ namespace Gryphkiss
         PlayerStart(gameState->player);
 
         LightBaker* lightBaker;
-        gameState->lightBaker = LightBakerInstantiate();
+        gameState->lightBaker = LightBakerInstantiate(assets->bake_GryphKiss, "bake_GryphKiss.rad", float3(-1, -1, -1), float3(7, 12, 7));
         StaticMeshInstantiate(assets->tonk, gameState->barnWallMat, transform(float3(3, 5, 0), float3(0.1, 0.2, 0.1)));
 
         // left wall

@@ -86,7 +86,8 @@ struct EngineState
     PlatformGraphicsReadbackTexture* platformGraphicsReadbackTexture;
     PlatformGraphicsReadbackTextureHDR* platformGraphicsReadbackTextureHDR;
 
-    ArrayCreate(Texture, textures, 100);
+    ArrayCreate(Texture, globalTextures, 100);
+    ArrayCreate(Texture, sceneTextures, 100);
     ArrayCreate(Mesh, meshes, 100);
     ArrayCreate(Shader, shaders, 100);
     ArrayCreate(Sound, sounds, 100);
@@ -95,6 +96,8 @@ struct EngineState
 
     ArrayCreate(RenderCommand, renderCommands, 20000);
     ArrayCreate(Entity*, entities, 1000); // pointers to all entities in the scene
+
+    ArrayCreate(Material_defaultlit*, sceneMaterials, 100);
 
     Mesh* stringMesh;
 
@@ -110,8 +113,6 @@ struct EngineState
     Material_unlit* red;
     Material_unlit* green;
     Material_unlit* blue;
-
-    ArrayCreate(Material_defaultlit*, sceneMaterials, 100);
 
     Transform spectatorCamera;
 
@@ -224,7 +225,6 @@ void LoadAssets(Assets* assets)
     #undef assetRegistryLoadShader
     #undef assetRegistryLoad
 }
-
 
 #define CreateMaterialGlobal(name, _shader, type) \
     name = (PASTE(Material_, type)*)ArenaPushStruct(&haven->arenaGlobalDrawCommands, PASTE(Material_, type), ""); \
@@ -355,17 +355,33 @@ namespace Rendering
         result->name = name;
     }
 
-    Texture* CreateFramebufferTarget(EngineState* engineState)
+    Texture* CreateFramebufferTarget(EngineState* engineState, bool global = false)
     {
-        Texture* result = ArrayAddNew(haven->textures);
+        Texture* result = 0;
+        if (global)
+        {
+            result = ArrayAddNew(haven->globalTextures);
+        }
+        else
+        {
+            result = ArrayAddNew(haven->sceneTextures);
+        }
         result->isFramebufferTarget = true;
         haven->platformGraphicsCreateFramebufferTarget(result);
         return result;
     }
 
-    Texture* CreateTextureTarget(int sizeX, int sizeY, bool clamp = false)
+    Texture* CreateTextureTarget(int sizeX, int sizeY, bool clamp = false, bool global = false)
     {
-        Texture* result = ArrayAddNew(haven->textures);
+        Texture* result = 0;
+        if (global)
+        {
+            result = ArrayAddNew(haven->globalTextures);
+        }
+        else
+        {
+            result = ArrayAddNew(haven->sceneTextures);
+        }
         result->isTextureTarget = true;
         result->sizeX = sizeX;
         result->sizeY = sizeY;
@@ -375,11 +391,11 @@ namespace Rendering
         return result;
     }
 
-    CustomRenderTexture* CreateCustomRenderTexture(int sizeX, int sizeY, bool clamp = false)
+    CustomRenderTexture* CreateCustomRenderTexture(int sizeX, int sizeY, bool clamp = false, bool global = false)
     {
         CustomRenderTexture* result = ArenaPushStruct(&haven->arenaEngineState, CustomRenderTexture, "CustomRenderTexture");
-        result->current = Rendering::CreateTextureTarget(sizeX, sizeY, clamp);
-        result->previous = Rendering::CreateTextureTarget(sizeX, sizeY, clamp);
+        result->current = Rendering::CreateTextureTarget(sizeX, sizeY, clamp, global);
+        result->previous = Rendering::CreateTextureTarget(sizeX, sizeY, clamp, global);
         return result;
     }
     void Swap(CustomRenderTexture* texture)
@@ -486,7 +502,11 @@ namespace Rendering
                 StaticMesh* mesh = (StaticMesh*)entity;
                 if (StaticMeshCull(mesh, camera.transform))
                     continue;
+
+                bool last = mesh->material->BackFaceCulling;
+                mesh->material->BackFaceCulling = false;
                 StaticMeshDraw(mesh, camera);
+                mesh->material->BackFaceCulling = last;
                 //DrawMesh(mesh->material, mesh->mesh, mesh->transform, camera, "Scene StaticMesh");
             }
         }
@@ -650,13 +670,18 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     ArenaReset(&haven->arenaDrawCommands);
     input = &gameMemory->input;
 
+    bool resetGame = false;
     // hit space = smash game memory to 0 = restart game
-    if (input->spaceDown)
+    if (input->ctrl && input->spaceDown)
     {
         gameMemory->initialized = false;
         StructClear(haven);
     }
-    
+    else if (input->spaceDown)
+    {
+        resetGame = true;
+    }
+
     if (gameMemory->reloadNow)
     {
         ProfilerBeingSample();
@@ -664,7 +689,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         ArenaReset(&haven->arenaAssets);
         haven->coutner++;
 
-        ArrayClear(haven->textures);
+        ArrayClear(haven->globalTextures);
+        ArrayClear(haven->sceneTextures);
         ArrayClear(haven->meshes);
         ArrayClear(haven->shaders);
         ArrayClear(haven->sounds);
@@ -750,7 +776,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         haven->boneMaterial->BackFaceCulling = false;
 
 
-        haven->SwapBuffer = Rendering::CreateFramebufferTarget(engineState);
+        haven->SwapBuffer = Rendering::CreateFramebufferTarget(engineState, true);
 
         haven->stringMesh = ArrayAddNew(haven->meshes);
 
@@ -759,7 +785,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         soundStart(gameMemory);
 
         Editor::Start();
-        
+
         //Gryphkiss::Start();
         CornellBox::Start();
 
@@ -783,7 +809,16 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
         return;
     }
+    if (resetGame)
+    {
+        ArrayClear(haven->sceneTextures);
+        ArrayClear(haven->sceneMaterials);
+        ArrayClear(haven->entities);
+        ArenaReset(&haven->arenaScene);
+        //Gryphkiss::Start();
+        CornellBox::Start();
 
+    }
     Transform headLocal;
     headLocal = input->eyeLeft;
     headLocal.position = float3(0, 0, 0);
@@ -806,6 +841,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     Drawing::DrawText("G: toggle editor");
     Drawing::DrawText("P: toggle profiling");
     Drawing::DrawText("space: reset");
+    Drawing::DrawText("ctrl space: reload and reset");
     
     Editor::Update();
     gameMemory->spectatorCamera = haven->spectatorCamera;
@@ -837,12 +873,14 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     haven->textTransform.position += haven->textTransform.up * 0.25;
     haven->textTransform.position += haven->textTransform.right * -0.25;
 
+
     // Draw the UI
     UpdateMesh(haven->stringMesh,
         haven->uiMeshData->vertexes,
         haven->uiMeshData->quadCount * 4, 
         haven->uiMeshData->indexes, 
         haven->uiMeshData->quadCount * 6);
+
 
     CreateMaterialLocal(uiCommand, assets->UIShader, UIShader);
     uiCommand->mesh = haven->stringMesh;

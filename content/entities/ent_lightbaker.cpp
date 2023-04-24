@@ -18,36 +18,57 @@ struct LightBaker
     bool rendering;
     int x;
     int y;
+    float radiosityProbeScale;
+    int harmonicCount;
+    int radiosityTextureSizeX;
+    int radiosityTextureSizeY;
+
+    Texture* bakedLighting;
+    const char* bakedLightingFilename;
 };
 
 #else
 
-LightBaker* LightBakerInstantiate()
+LightBaker* LightBakerInstantiate(Texture* lightBake, const char* bakedLightingFilename, float3 boxMin, float3 boxSize)
 {
     LightBaker* self = Instantiate(LightBaker);
 
-    self->boxMin = float3(radiosityProbePosX, radiosityProbePosY, radiosityProbePosZ) + radiosityProbeScale * 0.5;
+    self->bakedLighting = lightBake;
+    self->bakedLightingFilename = bakedLightingFilename;
+    int radiosityProbePosX = (int)boxMin.x;
+    int radiosityProbePosY = (int)boxMin.y;
+    int radiosityProbePosZ = (int)boxMin.z;
+    int radiosityProbeMultiplier = 2;
+    int radiosityProbeCountX = (int)boxSize.x * radiosityProbeMultiplier;
+    int radiosityProbeCountY = (int)boxSize.y * radiosityProbeMultiplier;
+    int radiosityProbeCountZ = (int)boxSize.z * radiosityProbeMultiplier;
+    self->radiosityProbeScale = 1.0 / (float)radiosityProbeMultiplier;
+    self->harmonicCount = 9;
+    self->radiosityTextureSizeX = radiosityProbeCountX * radiosityProbeCountY;
+    self->radiosityTextureSizeY = radiosityProbeCountZ * self->harmonicCount;
+
+    self->boxMin = float3(radiosityProbePosX, radiosityProbePosY, radiosityProbePosZ) + self->radiosityProbeScale * 0.5;
     self->count = float3(radiosityProbeCountX, radiosityProbeCountY, radiosityProbeCountZ);
-    self->boxMax = self->boxMin + self->count * radiosityProbeScale;
+    self->boxMax = self->boxMin + self->count * self->radiosityProbeScale;
 
     self->totalCount = radiosityProbeCountX * radiosityProbeCountY * radiosityProbeCountZ;
 
-    self->targetTexture = Rendering::CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z * harmonicCount, true);
+    self->targetTexture = Rendering::CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z * self->harmonicCount, true);
 
     for (int i = 0; i < 6; i++)
     {
         self->cubeTexture[i] = Rendering::CreateTextureTarget(64, 64, true);
     }
-    self->SphericalHarmonic = Rendering::CreateTextureTarget(1, harmonicCount, true);
+    self->SphericalHarmonic = Rendering::CreateTextureTarget(1, self->harmonicCount, true);
     return self;
 }
 
 float2 WorldPosToLightmapTexturePos(LightBaker* self, float3 worldPos)
 {
-    int x = (worldPos.x - self->boxMin.x) / radiosityProbeScale;
-    int y = (worldPos.y - self->boxMin.y) / radiosityProbeScale;
-    int z = (worldPos.z - self->boxMin.z) / radiosityProbeScale;
-    return float2(x + (int)self->count.x * y, z * harmonicCount);
+    int x = (worldPos.x - self->boxMin.x) / self->radiosityProbeScale;
+    int y = (worldPos.y - self->boxMin.y) / self->radiosityProbeScale;
+    int z = (worldPos.z - self->boxMin.z) / self->radiosityProbeScale;
+    return float2(x + (int)self->count.x * y, z * self->harmonicCount);
 }
 
 
@@ -80,7 +101,7 @@ int testFunction(LightBaker* self)
             for (int z = 0; z < self->count.z; z++)
             {
                 //haven->printf("test: x: %d, y: %d, z: %d\n", self->x, self->y, z);
-                float3 pos = float3(self->x, self->y, z) * radiosityProbeScale + self->boxMin;
+                float3 pos = float3(self->x, self->y, z) * self->radiosityProbeScale + self->boxMin;
                 RenderWorld(self, pos);
             }
             crReturn(1, self->x + self->y * self->count.x);
@@ -96,7 +117,7 @@ void LightBakerUpdate(LightBaker* self)
     float3 boxCenter = (self->boxMin + self->boxMax) * 0.5;
 
     Rendering::DrawClear(self->SphericalHarmonic);
-    if (Drawing::DrawButton("Radiosity"))
+    if (Drawing::DrawButton("Bake Lighting"))
     {
         self->rendering = true;
         self->x = 0;
@@ -109,7 +130,7 @@ void LightBakerUpdate(LightBaker* self)
             self->boxMin,
             self->boxMax,
             self->count,
-            radiosityProbeScale);
+            self->radiosityProbeScale);
         int w = testFunction(self);
         //haven->printf("test: w: %d\n", w);
         if (w == -1)
@@ -119,9 +140,12 @@ void LightBakerUpdate(LightBaker* self)
             // Done baking, write the result to disk.
             Texture* current = self->targetTexture->current;
 
-            // read the texture into the scratch buffer
+            // read the texture into the scratch buffer. Insert header containing the resolution before.
             Clear(haven->scratchBuffer, sizeof(haven->scratchBuffer));
-            haven->platformGraphicsReadbackTextureHDR(current, haven->scratchBuffer);
+            int headerSize = sizeof(uint64) * 2;
+            ((uint64*)haven->scratchBuffer)[0] = self->radiosityTextureSizeX;
+            ((uint64*)haven->scratchBuffer)[1] = self->radiosityTextureSizeY;
+            haven->platformGraphicsReadbackTextureHDR(current, haven->scratchBuffer + headerSize);
             //for (int y = 0; y < current->sizeY; y++)
             //{
             //    for (int x = 0; x < current->sizeX; x++)
@@ -143,14 +167,14 @@ void LightBakerUpdate(LightBaker* self)
             //}
             int NumberOfChannels = 4;
             int BytesPerChannel = 4;
-            haven->platformWriteFile(haven->scratchBuffer, current->sizeX * current->sizeY * NumberOfChannels * BytesPerChannel, "LightBake.rad");
+            haven->platformWriteFile(haven->scratchBuffer, current->sizeX * current->sizeY * NumberOfChannels * BytesPerChannel + headerSize, self->bakedLightingFilename);
         }
         Rendering::SetLightmap(
             self->targetTexture->current,
             self->boxMin,
             self->boxMax,
             self->count,
-            radiosityProbeScale);
+            self->radiosityProbeScale);
     }
     else
     {
@@ -173,8 +197,8 @@ void LightBakerUpdate(LightBaker* self)
     bool debug = false;
     if (debug)
     {
-        DrawScreenTexture(self->targetTexture->current, self->targetTexture->current->size * 0.015 * radiosityProbeScale, 0.015);
-        DrawScreenTexture(assets->LightBake, assets->LightBake->size * 0.015 * radiosityProbeScale, -0.05);
+        DrawScreenTexture(self->targetTexture->current, self->targetTexture->current->size * 0.015 * self->radiosityProbeScale, 0.015);
+        DrawScreenTexture(self->bakedLighting, self->bakedLighting->size * 0.015 * self->radiosityProbeScale, -0.05);
     }
     
     //float scale = 1.0;
@@ -193,11 +217,11 @@ void LightBakerUpdate(LightBaker* self)
     if (!self->rendering)
     {
         Rendering::SetLightmap(
-            assets->LightBake,
+            self->bakedLighting,
             self->boxMin,
             self->boxMax,
             self->count,
-            radiosityProbeScale);
+            self->radiosityProbeScale);
     }
 
     Transform planeTransform = transform(float3(0,0,0),

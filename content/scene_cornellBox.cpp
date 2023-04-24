@@ -6,21 +6,43 @@ namespace CornellBox
 {
     struct GameState
     {
+        Material_defaultlit* cornellBoxMat;
         Material_defaultlit* boxMat;
         LightBaker* lightBaker;
+        Material_defaultlit* torvidMat;
     };
+
 
     void Start()
     {
-        haven->gameState = ArenaPushStruct(&haven->arenaEngineState, GameState, "GameState");
+        haven->gameState = ArenaPushStruct(&haven->arenaScene, GameState, "GameState");
         GameState* gameState = (GameState*)haven->gameState;
 
-        CreateSceneMaterial(gameState->boxMat);
-        gameState->boxMat->texM1 = assets->BarnWallCleanM1;
-        gameState->boxMat->texM2 = assets->BarnWallCleanM2;
+        CreateSceneMaterial(gameState->cornellBoxMat);
+        gameState->cornellBoxMat->texM1 = assets->cornellBoxM1;
+        gameState->cornellBoxMat->texM2 = assets->baseM2;
+        gameState->cornellBoxMat->texM3 = assets->cornellBoxM3;
 
-        StaticMeshInstantiate(assets->cornellBox, gameState->boxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
-        gameState->lightBaker = LightBakerInstantiate();
+        CreateSceneMaterial(gameState->boxMat);
+        gameState->boxMat->texM1 = assets->baseM1;
+        gameState->boxMat->texM2 = assets->baseM2;
+        gameState->boxMat->texM3 = assets->baseM3;
+
+        CreateSceneMaterial(gameState->torvidMat);
+        gameState->torvidMat->texM1 = assets->TorvidM1;
+        gameState->torvidMat->texM2 = assets->TorvidM2;
+        gameState->torvidMat->texM3 = assets->TorvidM3;
+
+        //gameState->boxMat->BackFaceCulling = false;
+        StaticMeshInstantiate(assets->cornellBox, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
+        gameState->lightBaker = LightBakerInstantiate(assets->bake_CornellBox, "bake_CornellBox.rad", float3(-6, -6, -1), float3(12, 12, 12));
+    
+        StaticMeshInstantiate(assets->box, gameState->boxMat, rotate(transform(float3(-2, -2, 2), float3(2.5, 2.5, 6)), 0, 0.01, 0.05));
+
+        Transform sphere = transform();
+        sphere.position = float3(2, 2, 2);
+        sphere.scale = vectorOne*1.2;
+        StaticMeshInstantiate(assets->sphere, gameState->boxMat, sphere);
     }
 
     void Update()
@@ -41,7 +63,15 @@ namespace CornellBox
                 ReflectionProbeUpdate((ReflectionProbe*)entity, i);
             }
         }
+        Animation* torvidAnimation = assets->torvidTestAnim;
+        for (int i = 0; i < torvidAnimation->boneCount; i++)
+        {
+            int frameOffset = 0;// ((int)gameState->torvidFrame)* torvidAnimation->boneCount;
+            Transform t = torvidAnimation->transforms[i + frameOffset];
+            gameState->torvidMat->shaderBoneTransforms[i] = t;
+        }
+        Rendering::DrawMesh(gameState->torvidMat, assets->torvidTest, transform(float3(0, 0, 0)));
 
-        Drawing::DrawFont("Conrell Box", transform(float3(0, 0, 0), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
+        Drawing::DrawFont("testt!", transform(float3(0, 0, 1), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
     }
 }

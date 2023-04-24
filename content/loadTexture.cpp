@@ -211,10 +211,10 @@ void LoadTga(Texture* texture)
 }
 
 // load "radiosity" texture (voxel array of baked lighting data)
-void LoadRad(Texture* texture)
+void LoadRad(Texture* texture, int fileSize)
 {
-    int sizeX = radiosityTextureSizeX;
-    int sizeY = radiosityTextureSizeY;
+    uint64 sizeX = ((uint64*)haven->scratchBuffer)[0];//radiosityTextureSizeX;
+    uint64 sizeY = ((uint64*)haven->scratchBuffer)[1];//radiosityTextureSizeY;
     int ChannelCount = 4;
     int BytesPerChannel = 4;
     texture->mipSize[0] = sizeX * sizeY * ChannelCount * BytesPerChannel;
@@ -228,7 +228,7 @@ void LoadRad(Texture* texture)
     texture->mipSizeY[0] = sizeY;
     texture->ASTC = false;
     texture->HDR = true;
-    Copy(haven->scratchBuffer, texture->mips[0], texture->mipSize[0]);
+    Copy(haven->scratchBuffer + sizeof(uint64)*2, texture->mips[0], texture->mipSize[0]);
     ProfilerEndSample("Copy");
 
     ProfilerBeingSample();
@@ -283,7 +283,7 @@ void LoadTexture(Texture* texture)
 
     if (EndsWith(texture->filename, ".rad"))
     {
-        LoadRad(texture);
+        LoadRad(texture, end - haven->scratchBuffer);
         return;
     }
 
@@ -294,7 +294,7 @@ void LoadTexture(Texture* texture)
 Texture* FileReadTexture(const char* filename)
 {
     ProfilerBeingSample();
-    Texture* texture = ArrayAddNew(haven->textures);
+    Texture* texture = ArrayAddNew(haven->globalTextures);
     StringCopy(texture->filename, filename);
     LoadTexture(texture);
     ProfilerEndSample("LoadTexture");

@@ -7,6 +7,7 @@
 	X(float3, Color) \
 	X(sampler2D, texM1) \
 	X(sampler2D, texM2) \
+	X(sampler2D, texM3) \
 	X(sampler2D, texCubemap) \
 	X(sampler2D, texLightmap) \
 	X(float3, lightmapMin) \
@@ -18,21 +19,6 @@
 
 #include "shaderMacros.cpp"
 #include "shaderMacros.shaderinc"
-
-// Inputs
-//uniform sampler2D texM1; // Color, Roughness
-//uniform sampler2D texM2; // Normal, AO, Metallic
-//uniform sampler2D texM3; // Alpha
-//
-//uniform sampler2D texM1Extra; // Color, Roughness
-//uniform sampler2D texM2Extra; // Normal, AO, Metallic
-//uniform sampler2D texM3Extra; // Alpha
-//
-//uniform float3 color;
-//#if Cpp
-//#else
-//uniform float4x4 boneTransforms[200];
-//#endif
 
 #ifdef vertexShader
 
@@ -123,49 +109,6 @@ SHData ExtractSHData(float3 voxelPos)
 	return result;
 }
 
-//float3 SampleSphericalHarmonic(float3 voxelPos, float3 lightNormal)
-//{
-//	float A0 = 3.141593;
-//	float A1 = 2.094395;
-//	float A2 = 0.785398;
-//
-//	float Y00 = 0.282095;
-//	float Y11 = 0.488603 * lightNormal.x;
-//	float Y10 = 0.488603 * lightNormal.z;
-//	float Y1_1 = 0.488603 * lightNormal.y;
-//	float Y21 = 1.092548 * lightNormal.x * lightNormal.z;
-//	float Y2_1 = 1.092548 * lightNormal.y * lightNormal.z;
-//	float Y2_2 = 1.092548 * lightNormal.y * lightNormal.x;
-//	float Y20 = 0.946176 * lightNormal.z * lightNormal.z - 0.315392;
-//	float Y22 = 0.546274 * (lightNormal.x * lightNormal.x - lightNormal.y * lightNormal.y);
-//
-//	float2 textureResolution = float2(lightmapResolution.x * lightmapResolution.y, lightmapResolution.z * 9.0);
-//
-//	float xValue = voxelPos.x + lightmapResolution.x * voxelPos.y;
-//	float yValue = voxelPos.z * 9.0;
-//	float2 LightmapUV = float2(xValue, yValue);
-//
-//
-//	float3 L00 = SampleLoad(texLightmap, LightmapUV + float2(0, 0), textureResolution).rgb;
-//	float3 L11 = SampleLoad(texLightmap, LightmapUV + float2(0, 1), textureResolution).rgb;
-//	float3 L10 = SampleLoad(texLightmap, LightmapUV + float2(0, 2), textureResolution).rgb;
-//	float3 L1_1 = SampleLoad(texLightmap, LightmapUV + float2(0, 3), textureResolution).rgb;
-//	float3 L21 = SampleLoad(texLightmap, LightmapUV + float2(0, 4), textureResolution).rgb;
-//	float3 L2_1 = SampleLoad(texLightmap, LightmapUV + float2(0, 5), textureResolution).rgb;
-//	float3 L2_2 = SampleLoad(texLightmap, LightmapUV + float2(0, 6), textureResolution).rgb;
-//	float3 L20 = SampleLoad(texLightmap, LightmapUV + float2(0, 7), textureResolution).rgb;
-//	float3 L22 = SampleLoad(texLightmap, LightmapUV + float2(0, 8), textureResolution).rgb;
-//
-//	//return max((A0 * Y00 * L00), 0.0)
-//	//	+ max((A1 * Y1_1 * L1_1), 0.0) + max((A1 * Y10 * L10), 0.0) + max((A1 * Y11 * L11), 0.0)
-//	//	+ max((A2 * Y2_2 * L2_2), 0.0) + max((A2 * Y2_1 * L2_1), 0.0) + max((A2 * Y20 * L20), 0.0) + max((A2 * Y21 * L21), 0.0) + max((A2 * Y22 * L22), 0.0);
-//
-//	return (A0 * Y00 * L00)
-//		+ (A1 * Y1_1 * L1_1) + (A1 * Y10 * L10) + (A1 * Y11 * L11)
-//		+ (A2 * Y2_2 * L2_2) + (A2 * Y2_1 * L2_1) + (A2 * Y20 * L20) + (A2 * Y21 * L21) + (A2 * Y22 * L22);
-//}
-
-
 void main()
 {
 	float3 pos = VertexPos;
@@ -210,17 +153,6 @@ void main()
 	float3 bakedAmbientSampleBlend = frac((worldPos - lightmapMin) / radiosityProbeScale);
 	bakedAmbientSampleBlend = smoothstep(0.0, 1.0, bakedAmbientSampleBlend); // tri-cubic blend
 
-	//float3 lightNormal = float3(worldNormal.x, -worldNormal.y, -worldNormal.z);
-
-	//float3 lightmapSample000 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(0, 0, 0), lightNormal);
-	//float3 lightmapSample100 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(1, 0, 0), lightNormal);
-	//float3 lightmapSample010 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(0, 1, 0), lightNormal);
-	//float3 lightmapSample110 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(1, 1, 0), lightNormal);
-	//float3 lightmapSample001 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(0, 0, 1), lightNormal);
-	//float3 lightmapSample101 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(1, 0, 1), lightNormal);
-	//float3 lightmapSample011 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(0, 1, 1), lightNormal);
-	//float3 lightmapSample111 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(1, 1, 1), lightNormal);
-
 	SHData SHData000 = ExtractSHData(bakedAmbientSampleValue + float3(0, 0, 0));
 	SHData SHData100 = ExtractSHData(bakedAmbientSampleValue + float3(1, 0, 0));
 	SHData SHData010 = ExtractSHData(bakedAmbientSampleValue + float3(0, 1, 0));
@@ -249,7 +181,7 @@ void main()
 	PSL2_2 = A2 * 1.092548 * lightmap.L2_2 ;
 	PSL20  = A2 * 0.946176 * lightmap.L20  ;
 	PSL22  = A2 * 0.546274 * lightmap.L22  ;
-	//lightmap *= 3.0;
+
 	PSLightmap = float3(0, 0, 0);
 
 	PSVertexPos = worldPos;
@@ -265,6 +197,46 @@ void main()
 
 
 #ifdef pixelShader
+
+float3 SampleSphericalHarmonic(float3 voxelPos, float3 lightNormal)
+{
+	float A0 = 3.141593;
+	float A1 = 2.094395;
+	float A2 = 0.785398;
+
+	float Y00 = 0.282095;
+	float Y11 = 0.488603 * lightNormal.x;
+	float Y10 = 0.488603 * lightNormal.z;
+	float Y1_1 = 0.488603 * lightNormal.y;
+	float Y21 = 1.092548 * lightNormal.x * lightNormal.z;
+	float Y2_1 = 1.092548 * lightNormal.y * lightNormal.z;
+	float Y2_2 = 1.092548 * lightNormal.y * lightNormal.x;
+	float Y20 = 0.946176 * lightNormal.z * lightNormal.z - 0.315392;
+	float Y22 = 0.546274 * (lightNormal.x * lightNormal.x - lightNormal.y * lightNormal.y);
+
+	float2 textureResolution = float2(lightmapResolution.x * lightmapResolution.y, lightmapResolution.z * 9.0);
+
+	float xValue = voxelPos.x + lightmapResolution.x * voxelPos.y;
+	float yValue = voxelPos.z * 9.0;
+	float2 LightmapUV = float2(xValue, yValue);
+
+	float3 L00 = SampleLoad(texLightmap, LightmapUV + float2(0, 0), textureResolution).rgb;
+	float3 L11 = SampleLoad(texLightmap, LightmapUV + float2(0, 1), textureResolution).rgb;
+	float3 L10 = SampleLoad(texLightmap, LightmapUV + float2(0, 2), textureResolution).rgb;
+	float3 L1_1 = SampleLoad(texLightmap, LightmapUV + float2(0, 3), textureResolution).rgb;
+	float3 L21 = SampleLoad(texLightmap, LightmapUV + float2(0, 4), textureResolution).rgb;
+	float3 L2_1 = SampleLoad(texLightmap, LightmapUV + float2(0, 5), textureResolution).rgb;
+	float3 L2_2 = SampleLoad(texLightmap, LightmapUV + float2(0, 6), textureResolution).rgb;
+	float3 L20 = SampleLoad(texLightmap, LightmapUV + float2(0, 7), textureResolution).rgb;
+	float3 L22 = SampleLoad(texLightmap, LightmapUV + float2(0, 8), textureResolution).rgb;
+
+	//return L00 * 0.8;
+
+	return (A0 * Y00 * L00)
+		+ (A1 * Y1_1 * L1_1) + (A1 * Y10 * L10) + (A1 * Y11 * L11)
+		+ (A2 * Y2_2 * L2_2) + (A2 * Y2_1 * L2_1) + (A2 * Y20 * L20) + (A2 * Y21 * L21) + (A2 * Y22 * L22);
+
+}
 
 float3 deriveTangentBasis(float3 VertexNormalWS, float3 AbsoluteWorldPosition, float2 UVs, float3 TextureNormal)
 {
@@ -316,30 +288,63 @@ void main()
 	
 	float4 M1 = Sample(texM1, UV);
 	float4 M2 = Sample(texM2, UV);
+	float4 M3 = Sample(texM3, UV);
+	// M1 RGB - Color
+	// M1 A   - Roughness
+	// 
+	// M2 RG  - Normal
+	// M2 B   - AO
+	// M2 A   - Metallic
+	// 
+	// M3 RGB - Emissive
+	// M3 A   - Alpha
+
 
 	// Tangent-Space Normal mapping
 	M2.rg = M2.rg * 2.0 - 1.0;
 	float3 worldNormal = PSVertexNormal * 1.0 + M2.r * PSVertexTangent + M2.g * PSVertexBitangent;
-	//worldNormal = normalize(worldNormal);
 
 	float3 lightNormal = float3(worldNormal.x, -worldNormal.y, -worldNormal.z);
 
-	// SH magic
 
-	//float Y00  = 1.0;
-	float Y11  = lightNormal.x;
-	float Y10  = lightNormal.z;
+#define pixelLightmaps 1
+#if pixelLightmaps
+
+	float3 bakedAmbientSampleValue = floor((worldPos - lightmapMin) / radiosityProbeScale);
+	float3 bakedAmbientSampleBlend = frac((worldPos - lightmapMin) / radiosityProbeScale);
+	//bakedAmbientSampleBlend = bakedAmbientSampleBlend * bakedAmbientSampleBlend * (3.0f - 2.0f * bakedAmbientSampleBlend);
+
+	float3 lightmapSample000 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(0, 0, 0), lightNormal);
+	float3 lightmapSample100 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(1, 0, 0), lightNormal);
+	float3 lightmapSample010 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(0, 1, 0), lightNormal);
+	float3 lightmapSample110 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(1, 1, 0), lightNormal);
+	float3 lightmapSample001 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(0, 0, 1), lightNormal);
+	float3 lightmapSample101 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(1, 0, 1), lightNormal);
+	float3 lightmapSample011 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(0, 1, 1), lightNormal);
+	float3 lightmapSample111 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(1, 1, 1), lightNormal);
+
+	float3 bakedLighting =
+		lerp(lerp(lerp(lightmapSample000, lightmapSample100, bakedAmbientSampleBlend.x),
+			lerp(lightmapSample001, lightmapSample101, bakedAmbientSampleBlend.x), bakedAmbientSampleBlend.z),
+			lerp(lerp(lightmapSample010, lightmapSample110, bakedAmbientSampleBlend.x),
+				lerp(lightmapSample011, lightmapSample111, bakedAmbientSampleBlend.x), bakedAmbientSampleBlend.z), bakedAmbientSampleBlend.y);
+
+#else
+	float Y11 = lightNormal.x;
+	float Y10 = lightNormal.z;
 	float Y1_1 = lightNormal.y;
-	float Y21  = lightNormal.x * lightNormal.z;
+	float Y21 = lightNormal.x * lightNormal.z;
 	float Y2_1 = lightNormal.y * lightNormal.z;
 	float Y2_2 = lightNormal.y * lightNormal.x;
-	float Y20  = lightNormal.z * lightNormal.z - 0.315392;
-	float Y22  = (lightNormal.x * lightNormal.x - lightNormal.y * lightNormal.y);
+	float Y20 = lightNormal.z * lightNormal.z - 0.315392;
+	float Y22 = (lightNormal.x * lightNormal.x - lightNormal.y * lightNormal.y);
 
 	// Skip the third layer on quest for speed reasons.
-	float3 lightmap = (PSL00)
+	float3 bakedLighting = (PSL00)
 		+(Y1_1 * PSL1_1) + (Y10 * PSL10) + (Y11 * PSL11);
-		//+ (Y2_2 * PSL2_2) + (Y2_1 * PSL2_1) + (Y20 * PSL20) + (Y21 * PSL21) + (Y22 * PSL22);
+	+(Y2_2 * PSL2_2) + (Y2_1 * PSL2_1) + (Y20 * PSL20) + (Y21 * PSL21) + (Y22 * PSL22);
+
+#endif
 	
 
 
@@ -358,11 +363,13 @@ void main()
 
 	//float3 lighting = float3(saturate(NdotL)) + float3(0.4, 0.3, 0.2) + cubemap.rgb * 2.0f;
 
-	FragColor.rgb = M1.rgb * lightmap;
+	FragColor.rgb = M1.rgb* bakedLighting;
 	//FragColor.rgb = abs(PSVertexTangent) * 10000.0;
 
+	// emmissive
+	FragColor.rgb += M3.rgb;
 
-	if (M2.a < 0.5)
+	if (M3.a < 0.5)
 		discard;
 	
 	// Ensure it never goes below 0, headset colors are abs'd?
