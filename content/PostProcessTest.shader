@@ -56,6 +56,10 @@ float3 pow3(float3 a, float b)
 	return float3(pow(a.x, b), pow(a.y, b), pow(a.z, b));
 }
 
+float3 aces(float3 x)
+{
+	return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+}
 void main()
 {
 	//float PI = 3.14152128;
@@ -74,6 +78,9 @@ void main()
 	//
 	//float4 Ripples = Sample(TexRipples, PSVertexUV);
 	float4 M1 = Sample(ColorTexture, PSVertexUV);
+
+	// ACES tonemapping
+	M1 = float4(aces(M1.rgb), M1.a);
 
 	if (IsSpectatorView < 0.5)
 	{

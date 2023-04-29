@@ -33,6 +33,7 @@ assetRegistryLoad(FileReadTexture, Texture, pixelTest2, "pixelTest2.tga");
 assetRegistryLoad(FileReadMesh, Mesh, plane, "plane.obj");
 assetRegistryLoadShader(FileReadShader, Shader, postProcessTest, "postProcessTest.shader");
 assetRegistryLoadShader(FileReadShader, Shader, reflectionProbeCubemapToOct, "reflectionProbeCubemapToOct.shader");
+assetRegistryLoadShader(FileReadShader, Shader, reflectionProbeShader, "reflectionProbeShader.shader");
 assetRegistryLoadShader(FileReadShader, Shader, reflectionProbeToSphericalHarmonic, "reflectionProbeToSphericalHarmonic.shader");
 assetRegistryLoad(FileReadTexture, Texture, Regular, "Regular.tga");
 assetRegistryLoadShader(FileReadShader, Shader, rippleSimShader, "rippleSimShader.shader");

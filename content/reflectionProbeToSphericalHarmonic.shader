@@ -47,7 +47,7 @@ float3 UniformSampleSphere(float2 u) {
 	float phi = 2.0 * 3.14159265359 * u.y;
 	return float3(r * cos(phi), r * sin(phi), z);
 }
-const uint sampleCount = 4096u;
+const uint sampleCount = 1024u;
 
 float3 RandomUnitVector(uint seed) {
 	//uint N = 2048u; // Adjust this value to control the density of the distribution
@@ -110,16 +110,6 @@ void main()
 		L22  += L * Y22;
 	}
 
-	//L00	 /= 300.0;
-	//L11	 /= 300.0;
-	//L10	 /= 300.0;
-	//L1_1 /= 300.0;
-	//L21	 /= 300.0;
-	//L2_1 /= 300.0;
-	//L2_2 /= 300.0;
-	//L20	 /= 300.0;
-	//L22	 /= 300.0;
-
 	float height = PSVertexUV.y * 9.0;
 	float3 result = float3(0.0);
 
@@ -143,6 +133,6 @@ void main()
 		result = L22;
 
 	result /= float(sampleCount);
-	FragColor = float4(result * 30.0, 1.0);
+	FragColor = float4(result, 1.0);
 }
 #endif

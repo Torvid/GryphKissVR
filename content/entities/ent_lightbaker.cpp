@@ -10,12 +10,14 @@ struct LightBaker
     float3 count;
     int totalCount;
 
-    CustomRenderTexture* targetTexture;
+    CustomRenderTexture* targetTexturePass0;
+    CustomRenderTexture* targetTexturePass1;
+    CustomRenderTexture* targetTexturePass2;
     Transform transform;
 
     Texture* cubeTexture[6];
     Texture* SphericalHarmonic;
-    bool rendering;
+    int pass;
     int x;
     int y;
     float radiosityProbeScale;
@@ -24,17 +26,17 @@ struct LightBaker
     int radiosityTextureSizeY;
 
     Texture* bakedLighting;
-    const char* bakedLightingFilename;
+    char bakedLightingFilename[100];
 };
 
 #else
 
-LightBaker* LightBakerInstantiate(Texture* lightBake, const char* bakedLightingFilename, float3 boxMin, float3 boxSize)
+LightBaker* LightBakerInstantiate(Texture* lightBake, char bakedLightingFilename[100], float3 boxMin, float3 boxSize)
 {
     LightBaker* self = Instantiate(LightBaker);
 
     self->bakedLighting = lightBake;
-    self->bakedLightingFilename = bakedLightingFilename;
+    StringCopy(self->bakedLightingFilename, bakedLightingFilename);
     int radiosityProbePosX = (int)boxMin.x;
     int radiosityProbePosY = (int)boxMin.y;
     int radiosityProbePosZ = (int)boxMin.z;
@@ -53,7 +55,9 @@ LightBaker* LightBakerInstantiate(Texture* lightBake, const char* bakedLightingF
 
     self->totalCount = radiosityProbeCountX * radiosityProbeCountY * radiosityProbeCountZ;
 
-    self->targetTexture = Rendering::CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z * self->harmonicCount, true);
+    self->targetTexturePass0 = Rendering::CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z * self->harmonicCount, true);
+    self->targetTexturePass1 = Rendering::CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z * self->harmonicCount, true);
+    self->targetTexturePass2 = Rendering::CreateCustomRenderTexture(self->count.x * self->count.y, self->count.z * self->harmonicCount, true);
 
     for (int i = 0; i < 6; i++)
     {
@@ -72,7 +76,7 @@ float2 WorldPosToLightmapTexturePos(LightBaker* self, float3 worldPos)
 }
 
 
-void RenderWorld(LightBaker* self, float3 pos, bool apply = true)
+void RenderWorld(LightBaker* self, float3 pos, CustomRenderTexture* target)
 {
     //float3 pos = haven->spectatorCamera.position;
     Rendering::RenderCubemap(pos, self->cubeTexture);
@@ -82,8 +86,8 @@ void RenderWorld(LightBaker* self, float3 pos, bool apply = true)
     //Downsize4x(self->blurDownsize1, self->blurDownsize2);
     //Downsize4x(self->blurDownsize2, self->blurDownsize3);
     //Downsize4x(self->blurDownsize3, self->blurDownsize4);
-    if(apply)
-        Rendering::ComposeTextures(self->targetTexture, self->SphericalHarmonic, WorldPosToLightmapTexturePos(self, pos), ComposeTexturesMode_Overwrite);
+
+    Rendering::ComposeTextures(target, self->SphericalHarmonic, WorldPosToLightmapTexturePos(self, pos), ComposeTexturesMode_Overwrite);
 }
 
 #define crBegin static int state=0; switch(state) { case 0:
@@ -91,7 +95,7 @@ void RenderWorld(LightBaker* self, float3 pos, bool apply = true)
 #define crFinish }
 
 
-int testFunction(LightBaker* self)
+int testFunction(LightBaker* self, CustomRenderTexture* target)
 {
     crBegin;
     for (self->x = 0; self->x < self->count.x; self->x++)
@@ -102,7 +106,7 @@ int testFunction(LightBaker* self)
             {
                 //haven->printf("test: x: %d, y: %d, z: %d\n", self->x, self->y, z);
                 float3 pos = float3(self->x, self->y, z) * self->radiosityProbeScale + self->boxMin;
-                RenderWorld(self, pos);
+                RenderWorld(self, pos, target);
             }
             crReturn(1, self->x + self->y * self->count.x);
         }
@@ -119,110 +123,82 @@ void LightBakerUpdate(LightBaker* self)
     Rendering::DrawClear(self->SphericalHarmonic);
     if (Drawing::DrawButton("Bake Lighting"))
     {
-        self->rendering = true;
+        self->pass = 1;
         self->x = 0;
         self->y = 0;
+        Rendering::DrawClear(self->targetTexturePass0);
+        Rendering::DrawClear(self->targetTexturePass1);
+        Rendering::DrawClear(self->targetTexturePass2);
     }
-    if (self->rendering)
+    if (self->pass == 1) // first pass
     {
-        Rendering::SetLightmap(
-            assets->black,
-            self->boxMin,
-            self->boxMax,
-            self->count,
-            self->radiosityProbeScale);
-        int w = testFunction(self);
-        //haven->printf("test: w: %d\n", w);
+        Rendering::SetLightmap(assets->black, self->boxMin, self->boxMax, self->count, self->radiosityProbeScale, 1);
+        int w = testFunction(self, self->targetTexturePass0);
         if (w == -1)
         {
-            self->rendering = false;
-
-            // Done baking, write the result to disk.
-            Texture* current = self->targetTexture->current;
-
-            // read the texture into the scratch buffer. Insert header containing the resolution before.
-            Clear(haven->scratchBuffer, sizeof(haven->scratchBuffer));
-            int headerSize = sizeof(uint64) * 2;
-            ((uint64*)haven->scratchBuffer)[0] = self->radiosityTextureSizeX;
-            ((uint64*)haven->scratchBuffer)[1] = self->radiosityTextureSizeY;
-            haven->platformGraphicsReadbackTextureHDR(current, haven->scratchBuffer + headerSize);
-            //for (int y = 0; y < current->sizeY; y++)
-            //{
-            //    for (int x = 0; x < current->sizeX; x++)
-            //    {
-            //        int i = (y * current->sizeX + x) * 4;
-            //        float* currentPixel = (float*)haven->scratchBuffer + i;
-            //
-            //        // RGBA TO BGRA
-            //        float R = *(currentPixel + 0);
-            //        float G = *(currentPixel + 1);
-            //        float B = *(currentPixel + 2);
-            //        float A = *(currentPixel + 3);
-            //
-            //        *(currentPixel + 0) = B;
-            //        *(currentPixel + 1) = G;
-            //        *(currentPixel + 2) = R;
-            //        *(currentPixel + 3) = A;
-            //    }
-            //}
-            int NumberOfChannels = 4;
-            int BytesPerChannel = 4;
-            haven->platformWriteFile(haven->scratchBuffer, current->sizeX * current->sizeY * NumberOfChannels * BytesPerChannel + headerSize, self->bakedLightingFilename);
+            self->pass++;
+            self->x = 0;
+            self->y = 0;
         }
-        Rendering::SetLightmap(
-            self->targetTexture->current,
-            self->boxMin,
-            self->boxMax,
-            self->count,
-            self->radiosityProbeScale);
+        Rendering::SetLightmap(self->targetTexturePass0->current, self->boxMin, self->boxMax, self->count, self->radiosityProbeScale, 1);
+    }
+    else if (self->pass == 2) // 2nd pass
+    {
+        Rendering::SetLightmap(self->targetTexturePass0->current, self->boxMin, self->boxMax, self->count, self->radiosityProbeScale, 100);
+        int w = testFunction(self, self->targetTexturePass1);
+        if (w == -1)
+        {
+            self->pass++;
+            self->x = 0;
+            self->y = 0;
+        }
+        Rendering::SetLightmap(self->targetTexturePass1->current, self->boxMin, self->boxMax, self->count, self->radiosityProbeScale, 0.1);
+    }
+    else if (self->pass == 3) // 3rd pass
+    {
+        Rendering::SetLightmap(self->targetTexturePass1->current, self->boxMin, self->boxMax, self->count, self->radiosityProbeScale, 100);
+        int w = testFunction(self, self->targetTexturePass2);
+        if (w == -1)
+        {
+            self->pass++;
+            self->x = 0;
+            self->y = 0;
+        }
+        Rendering::SetLightmap(self->targetTexturePass2->current, self->boxMin, self->boxMax, self->count, self->radiosityProbeScale, 0.005);
+    }
+    else if(self->pass == 4) // done
+    {
+        self->pass++;
+
+        // Done baking, write the result to disk.
+        Texture* current = self->targetTexturePass2->current;
+
+        // read the texture into the scratch buffer. Insert header containing the resolution before.
+        Clear(haven->scratchBuffer, sizeof(haven->scratchBuffer));
+        int headerSize = sizeof(uint64) * 2;
+        ((uint64*)haven->scratchBuffer)[0] = self->radiosityTextureSizeX;
+        ((uint64*)haven->scratchBuffer)[1] = self->radiosityTextureSizeY;
+        haven->platformGraphicsReadbackTextureHDR(current, haven->scratchBuffer + headerSize);
+
+        int NumberOfChannels = 4;
+        int BytesPerChannel = 4;
+        haven->platformWriteFile(haven->scratchBuffer, current->sizeX * current->sizeY * NumberOfChannels * BytesPerChannel + headerSize, self->bakedLightingFilename);
     }
     else
     {
-        //RenderWorld(self, haven->spectatorCamera.position, false);
+        Rendering::SetLightmap(assets->bake_CornellBox, self->boxMin, self->boxMax, self->count, self->radiosityProbeScale, 0.005);
     }
-
-    //for (int x = 0; x < self->count.x; x++)
-    //{
-    //    for (int y = 0; y < self->count.y; y++)
-    //    {
-    //        for (int z = 0; z < self->count.z; z++)
-    //        {
-    //            float3 pos = float3(x, y, z) * radiosityProbeScale + self->boxMin;
-    //            DrawPoint(pos, 0.05);
-    //        }
-    //    }
-    //}
 
     // draw SH bake texture
     bool debug = false;
     if (debug)
     {
-        DrawScreenTexture(self->targetTexture->current, self->targetTexture->current->size * 0.015 * self->radiosityProbeScale, 0.015);
-        DrawScreenTexture(self->bakedLighting, self->bakedLighting->size * 0.015 * self->radiosityProbeScale, -0.05);
+        float scale = 0.005;
+        DrawScreenTexture(self->targetTexturePass0->current, self->targetTexturePass0->current->size* scale* self->radiosityProbeScale, scale*1*5-0.05, float3(1, 1, 1));
+        DrawScreenTexture(self->targetTexturePass1->current, self->targetTexturePass1->current->size* scale* self->radiosityProbeScale, scale*2*5-0.05, float3(0.1, 0.1, 0.1));
+        DrawScreenTexture(self->targetTexturePass2->current, self->targetTexturePass2->current->size* scale* self->radiosityProbeScale, scale*3*5-0.05, float3(0.01, 0.01, 0.01));
     }
-    
-    //float scale = 1.0;
-    //DrawScreenTexture(self->SphericalHarmonic, float2(1, 1) * scale, 0 * 0.01 * scale * 4.0 - 0.05);
-    //DrawScreenTexture(self->blurDownsize1, float2(1, 1) * scale, 1 * 0.01 * scale * 4.0 - 0.05);
-    //DrawScreenTexture(self->blurDownsize2, float2(1, 1) * scale, 2 * 0.01 * scale * 4.0 - 0.05);
-    //DrawScreenTexture(self->blurDownsize3, float2(1, 1) * scale, 3 * 0.01 * scale * 4.0 - 0.05);
-    //DrawScreenTexture(self->blurDownsize4, float2(1, 1) * scale, 4 * 0.01 * scale * 4.0 - 0.05);
 
-
-    //if (DrawButton("Load Baked data"))
-    //{
-    //    //Texture* texture;
-    //    //LoadTexture(texture)
-    //}
-    if (!self->rendering)
-    {
-        Rendering::SetLightmap(
-            self->bakedLighting,
-            self->boxMin,
-            self->boxMax,
-            self->count,
-            self->radiosityProbeScale);
-    }
 
     Transform planeTransform = transform(float3(0,0,0),
         haven->spectatorCamera.right,
@@ -231,13 +207,11 @@ void LightBakerUpdate(LightBaker* self)
         float3(1, 1, 1));
 
     CreateMaterialLocal(waterPlane2, assets->defaultlit, defaultlit);
-    //waterPlane2->BackFaceCulling = false;
+
     waterPlane2->texM1 = assets->baseM1;
     waterPlane2->texM2 = assets->baseM2;
-    //waterPlane2->texM1 = assets->BarnWallM1;
-    //waterPlane2->texM2 = assets->BarnWallM2;
-    //waterPlane2->texCubemap = self->octTexture;
-    waterPlane2->texLightmap = self->targetTexture->current;
+
+    waterPlane2->texLightmap = self->targetTexturePass0->current;
     waterPlane2->Color = float3(1.0f, 1.0f, 1.0f);
     planeTransform.scale = -float3(0.15, 0.15, 0.15);
 

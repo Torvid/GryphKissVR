@@ -10,8 +10,8 @@ namespace CornellBox
         Material_defaultlit* boxMat;
         LightBaker* lightBaker;
         Material_defaultlit* torvidMat;
+        ReflectionProbe* probe0;
     };
-
 
     void Start()
     {
@@ -43,6 +43,8 @@ namespace CornellBox
         sphere.position = float3(2, 2, 2);
         sphere.scale = vectorOne*1.2;
         StaticMeshInstantiate(assets->sphere, gameState->boxMat, sphere);
+
+        gameState->probe0 = ReflectionProbeInstantiate(transform(float3(0, 0, 5)));
     }
 
     void Update()
@@ -70,8 +72,8 @@ namespace CornellBox
             Transform t = torvidAnimation->transforms[i + frameOffset];
             gameState->torvidMat->shaderBoneTransforms[i] = t;
         }
-        Rendering::DrawMesh(gameState->torvidMat, assets->torvidTest, transform(float3(0, 0, 0)));
+        Rendering::DrawMesh(gameState->torvidMat, assets->torvidTest, rotate(transform(float3(0.5f, sin(input->time) * 2.5f, 0)), 0,0,0.1));
 
-        Drawing::DrawFont("testt!", transform(float3(0, 0, 1), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
+        Drawing::DrawFont("the light ray knows where it is because it knows where it isn't", transform(float3(0, 0, 1), 0, 0, 0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
     }
 }

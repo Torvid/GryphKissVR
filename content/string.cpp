@@ -510,3 +510,24 @@ char* CoerceStringAppend(char* str, float value)
     StringAppend(str, ")");
     return str;
 }
+
+struct string
+{
+    // strings are 100 chars long.
+    // you don't need more than this :)
+    int length;
+    char data[101];
+};
+namespace String
+{
+    string make(const char* str)
+    {
+        string result = {};
+        StringCopyLength(result.data, str, 100);
+        result.data[100] = 0;
+        result.length = StringLength(result.data);
+        return result;
+    }
+}
+
+#define string(a) String::make(a);

@@ -6,6 +6,7 @@ struct ReflectionProbe
     EntityContents;
     Texture* cubeTexture[6];
     Texture* octTexture;
+    bool rendered;
 };
 
 #else
@@ -15,15 +16,16 @@ ReflectionProbe* ReflectionProbeInstantiate(Transform transform)
 
     for (int i = 0; i < 6; i++)
     {
-        self->cubeTexture[i] = Rendering::CreateTextureTarget(1024, 1024, true);
+        self->cubeTexture[i] = Rendering::CreateTextureTarget(128, 128, true);
     }
-    self->octTexture = Rendering::CreateTextureTarget(1024, 1024, true);
+    self->octTexture = Rendering::CreateTextureTarget(512, 512, true);
 
     self->transform = transform;
+    self->rendered = false;
     return self;
 }
 
-void DrawScreenTexture(Texture* texture, float2 size, float heightOffset)
+void DrawScreenTexture(Texture* texture, float2 size, float heightOffset, float3 Color = float3(1.0f, 1.0f, 1.0f))
 {
     float scale = 0.04;
     Transform planeTransform = transform(haven->spectatorCamera.position
@@ -43,18 +45,33 @@ void DrawScreenTexture(Texture* texture, float2 size, float heightOffset)
     ////transform(haven->spectatorCamera.position + float3(0, 0.1, 0));
     //planeTransform.scale = float3(size.x, size.y, 1) * 0.1;
     ////planeTransform = LookRotation(planeTransform, haven->spectatorCamera.forward, haven->spectatorCamera.up);
-    CreateMaterialLocal(waterPlane, assets->unlit, unlit);
-    waterPlane->ColorTexture = texture;
-    waterPlane->Color = float3(1.0f, 1.0f, 1.0f);
-    waterPlane->BackFaceCulling = true;
-    Rendering::DrawMesh(waterPlane, assets->ui_quad, planeTransform, "Probe plane in the scene");
+    CreateMaterialLocal(command, assets->unlit, unlit);
+    command->ColorTexture = texture;
+    command->Color = Color;
+    command->BackFaceCulling = true;
+    Rendering::DrawMesh(command, assets->ui_quad, planeTransform, "Probe plane in the scene");
 }
 void ReflectionProbeUpdate(ReflectionProbe* self, int i)
 {
+    //Drawing::DrawText("hello world");
+    Drawing::DrawFontCameraFacing("\n\n\n\n\nReflection Probe", self->transform.position, 1.0f, 999, HAlign_center, VAlign_center);
+
+    CreateMaterialLocal(command, assets->reflectionProbeShader, reflectionProbeShader);
+    command->ColorTexture = self->octTexture;
+    command->Color = float3(1.0f, 1.0f, 1.0f);
+    command->mesh = assets->sphereMesh;
+    command->transform = self->transform;
+    command->transform.scale = float3(0.25, 0.25, 0.25);
+    Rendering::DrawMesh(command);
+
+    if (!self->rendered)
+    {
+        //float3 startPos = haven->spectatorCamera.position + float3(-0.5, 2, -0.5);
+        Rendering::RenderCubemap(self->transform.position, self->cubeTexture);
+        Rendering::PackCubemap(self->octTexture, self->cubeTexture);
+        self->rendered = true;
+    }
     return;
-    float3 startPos = haven->spectatorCamera.position + float3(-0.5, 2, -0.5);
-    Rendering::RenderCubemap(startPos, self->cubeTexture);
-    Rendering::PackCubemap(self->octTexture, self->cubeTexture);
 
     //DrawScreenTexture(self->octTexture);
 

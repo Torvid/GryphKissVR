@@ -178,7 +178,11 @@ void ProfilerEnd(EngineState* haven)
 void ProfilerDrawFlameChart(ProfilingData* data)
 {
     ProfilingData* profilingData = data;
-
+    if (profilingData->index >= 1000 || profilingData->index < 0)
+    {
+        // ERROR
+        return;
+    }
     int64 lowest = 0;
     int64 highest = 0;
     for (int k = 0; k < timeSampleCount; k++)

@@ -1,7 +1,7 @@
-
+﻿
 #include "macros.shaderinc"
 
-#define ShaderName unlit
+#define ShaderName reflectionProbeShader
 
 #define Parameters(X) \
 	X(float3, Color)\
@@ -18,6 +18,7 @@ in float2 VertexUV0;
 
 out float3 PSVertexPos;
 out float3 PSVertexNormal;
+out float3 PSVertexTangent;
 out float2 PSVertexUV;
 
 void main()
@@ -39,6 +40,7 @@ void main()
 
 in float3 PSVertexPos;
 in float3 PSVertexNormal;
+in float3 PSVertexTangent;
 in float2 PSVertexUV;
 
 out float4 FragColor;
@@ -46,10 +48,13 @@ out float4 FragColor;
 void main()
 {
 	float2 UV = PSVertexUV;
-	//UV.y = floor(UV.y * 9.0) / 9.0;
-	FragColor.rgb = Sample(ColorTexture, UV).rgb * Color;
-	//FragColor.rgb = textureLod(ColorTexture, UV, 4.0).rgb * Color;
-	//FragColor.rgb = textureGrad(ColorTexture, UV, float2(0.1, 0), float2(0, 0)).rgb * Color;
+	float3 cameraVector = normalize(PSVertexPos - CameraPosition);
+	float3 reflectVector = reflect(cameraVector, PSVertexNormal);
+	reflectVector.yz = -reflectVector.yz;
+	float2 reflectUV = OctEncode(reflectVector);
+	//float4 cubemap = SampleGrad(texCubemap, reflectUV, ddxy(UV*10.0f));
+
+	FragColor.rgb =  Sample(ColorTexture, reflectUV).rgb* Color;
 	FragColor.a = 1.0;
 }
 #endif

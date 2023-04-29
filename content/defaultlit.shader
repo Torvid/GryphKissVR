@@ -14,6 +14,7 @@
 	X(float3, lightmapMax) \
 	X(float3, lightmapResolution) \
 	X(float, radiosityProbeScale) \
+	X(float, lightmapStrength) \
 
 #define addBoneTransforms 1
 
@@ -312,6 +313,7 @@ void main()
 
 	float3 bakedAmbientSampleValue = floor((worldPos - lightmapMin) / radiosityProbeScale);
 	float3 bakedAmbientSampleBlend = frac((worldPos - lightmapMin) / radiosityProbeScale);
+
 	//bakedAmbientSampleBlend = bakedAmbientSampleBlend * bakedAmbientSampleBlend * (3.0f - 2.0f * bakedAmbientSampleBlend);
 
 	float3 lightmapSample000 = SampleSphericalHarmonic(bakedAmbientSampleValue + float3(0, 0, 0), lightNormal);
@@ -363,11 +365,11 @@ void main()
 
 	//float3 lighting = float3(saturate(NdotL)) + float3(0.4, 0.3, 0.2) + cubemap.rgb * 2.0f;
 
-	FragColor.rgb = M1.rgb* bakedLighting;
+	FragColor.rgb = M1.rgb * bakedLighting * lightmapStrength;// 0.005;
 	//FragColor.rgb = abs(PSVertexTangent) * 10000.0;
 
 	// emmissive
-	FragColor.rgb += M3.rgb;
+	FragColor.rgb += M3.rgb * 100.0;
 
 	if (M3.a < 0.5)
 		discard;

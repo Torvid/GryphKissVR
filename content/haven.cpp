@@ -215,6 +215,7 @@ void* InstantiateLocal(int type, uint32 size)
 #include "downsize4x.shader"
 #include "skydomeShader.shader"
 #include "reflectionProbeToSphericalHarmonic.shader"
+#include "reflectionProbeShader.shader"
 
 
 void LoadAssets(Assets* assets)
@@ -289,7 +290,7 @@ namespace Rendering
         }
     }
 
-    void SetLightmap(Texture* texture, float3 lightmapMin, float3 lightmapMax, float3 lightmapResolution, float radiosityProbeScale)
+    void SetLightmap(Texture* texture, float3 lightmapMin, float3 lightmapMax, float3 lightmapResolution, float radiosityProbeScale, float lightmapStrength = 0.005)
     {
         for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
         {
@@ -298,6 +299,7 @@ namespace Rendering
             haven->sceneMaterials[i]->lightmapMax = lightmapMax;
             haven->sceneMaterials[i]->lightmapResolution = lightmapResolution;
             haven->sceneMaterials[i]->radiosityProbeScale = radiosityProbeScale;
+            haven->sceneMaterials[i]->lightmapStrength = lightmapStrength;
         }
     }
 
@@ -503,10 +505,10 @@ namespace Rendering
                 if (StaticMeshCull(mesh, camera.transform))
                     continue;
 
-                bool last = mesh->material->BackFaceCulling;
-                mesh->material->BackFaceCulling = false;
+                //bool last = mesh->material->BackFaceCulling;
+                //mesh->material->BackFaceCulling = false;
                 StaticMeshDraw(mesh, camera);
-                mesh->material->BackFaceCulling = last;
+                //mesh->material->BackFaceCulling = last;
                 //DrawMesh(mesh->material, mesh->mesh, mesh->transform, camera, "Scene StaticMesh");
             }
         }
