@@ -132,8 +132,11 @@ namespace Rendering
 void PASTE(SetupShader_, ShaderName)(Shader* shader)
 {
     shader->parameterCount = EnumCount2;
-    shader->parameterNames = StringsName;
-    shader->parameterTypes = TypesName;
+    for (int i = 0; i < EnumCount2; i++)
+    {
+        StringCopy(shader->parameterNames[i], StringsName[i]);
+        shader->parameterTypes[i] = TypesName[i];
+    }
 }
 
 // variable arguments macro

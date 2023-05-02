@@ -35,6 +35,18 @@ precision lowp samplerCube;
 #define ddx dFdx
 #define ddy dFdy
 
+float smooth_step(float a)
+{
+    return a * a * (3.0 - 2.0 * a);
+}
+float2 smooth_step(float2 a)
+{
+    return float2(smooth_step(a.x), smooth_step(a.y));
+}
+float3 smooth_step(float3 a)
+{
+    return float3(smooth_step(a.x), smooth_step(a.y), smooth_step(a.z));
+}
 float3 rsqrt(float3 a)
 {
 	return float3(pow(a.x, -0.5), pow(a.y, -0.5), pow(a.z, -0.5));
@@ -124,7 +136,7 @@ float2 OctEncode(float3 n)
 {
     n /= (abs(n.x) + abs(n.y) + abs(n.z));
     n.xy = n.z >= 0.0 ? n.xy : OctWrap(n.xy);
-    n.xy = n.xy * 0.5 + 0.5;
+    n.xy = n.xy * 0.5 + float2(0.5);
     return n.xy;
 }
 float3 OctDecode(float2 f)
@@ -187,4 +199,86 @@ float3 RayCubemap(float3 v)
     }
 }
 
+float RadicalInverse_VdC(uint bits) {
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float(bits) * 2.3283064365386963e-10;
+}
+
+float2 Hammersley(uint i, uint N) {
+    return float2(float(i) / float(N), RadicalInverse_VdC(i));
+}
+
+float3 UniformSampleSphere(float2 u) {
+    float z = 1.0 - 2.0 * u.x;
+    float r = sqrt(max(0.0, 1.0 - z * z));
+    float phi = 2.0 * 3.14159265359 * u.y;
+    return float3(r * cos(phi), r * sin(phi), z);
+}
+const uint sampleCount = 1024u;
+
+float3 RandomUnitVector(uint seed) {
+    //uint N = 2048u; // Adjust this value to control the density of the distribution
+    float2 u = Hammersley(uint(seed), sampleCount);
+    return UniformSampleSphere(u);
+}
+
+
+// Spiral Blur
+// https://www.youtube.com/watch?v=lOIP_Z_-0Hs
+// Thanks vihart :>
+float2 GoldenSpiral(float step)
+{
+    float PhiRadians = 2.3998277;
+    return float2(sin(step * PhiRadians) * step, cos(step * PhiRadians) * step);
+}
+
+// Call this in a loop to get UV offsets
+float2 GetSpiralBlurUVOffset(float Radius, float Samples, float i)
+{
+    return GoldenSpiral(i) / Samples * Radius;
+}
+
+float GetSpiralBlurWeight(float Samples, float i)
+{
+    Samples += 0.01f;
+    return (1.0f - (i / Samples)) / Samples * 2.0;
+}
+vec3 rotateVector(vec3 vec, float2 angle)
+{
+    mat3 rotationMatrix;
+
+    float radX = radians(angle.x);
+    float radY = radians(angle.y);
+
+    float cosX = cos(radX);
+    float sinX = sin(radX);
+    float cosY = cos(radY);
+    float sinY = sin(radY);
+
+    // Rotation matrix for X axis
+    mat3 rotationX = mat3(
+        1.0, 0.0, 0.0,
+        0.0, cosX, -sinX,
+        0.0, sinX, cosX
+    );
+
+    // Rotation matrix for Y axis
+    mat3 rotationY = mat3(
+        cosY, 0.0, sinY,
+        0.0, 1.0, 0.0,
+        -sinY, 0.0, cosY
+    );
+
+    // Combine the rotation matrices
+    rotationMatrix = rotationY * rotationX;
+
+    // Rotate the input vector
+    vec3 rotatedVector = rotationMatrix * vec;
+
+    return rotatedVector;
+}
 #endif

@@ -453,8 +453,8 @@ typedef struct
     char* vertexShaderText;
 
     int parameterCount;
-    char** parameterNames;
-    int* parameterTypes;
+    char parameterNames[100][100]; // ~8k
+    int parameterTypes[100]; // 
     int GLLocations[100];
 
 } Shader;

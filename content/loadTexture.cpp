@@ -300,4 +300,3 @@ Texture* FileReadTexture(const char* filename)
     ProfilerEndSample("LoadTexture");
     return texture;
 }
-

@@ -12,36 +12,48 @@ namespace Editor
     void UpdateCamera()
     {
         float mouseSensitivity = 0.1f;
+        float scrollSensitivity = 0.5f;
 
-        if (!input->mouseRight)
-            return;
+        float fastMoveSpeed = 4.0f;
+        float slowMoveSpeed = 16.0f;
 
-        float mouseDeltaX = input->mousePosDelta.x;
-        float mouseDeltaY = input->mousePosDelta.y;
-        if (haven->spectatorCamera.up.z < 0)
+        float mouseDeltaX = 0;
+        float mouseDeltaY = 0;
+        if (input->mouseRight)
         {
-            mouseDeltaX = -mouseDeltaX;
+            mouseDeltaX = input->mousePosDelta.x;
+            mouseDeltaY = input->mousePosDelta.y;
+            if (haven->spectatorCamera.up.z < 0)
+            {
+                mouseDeltaX = -mouseDeltaX;
+            }
         }
         haven->spectatorCamera = rotate(haven->spectatorCamera, float3(0, 0, 1), -mouseDeltaX * 0.005f * mouseSensitivity);
         haven->spectatorCamera = rotate(haven->spectatorCamera, haven->spectatorCamera.right, -mouseDeltaY * 0.005f * mouseSensitivity);
 
-        int x = input->w ? 1 : 0 + input->s ? -1 : 0;
-        int y = input->d ? 1 : 0 + input->a ? -1 : 0;
-        int z = input->e ? 1 : 0 + input->q ? -1 : 0;
-
         float3 Movement = float3(0, 0, 0);
-        Movement += haven->spectatorCamera.forward * x;
-        Movement += haven->spectatorCamera.right * y;
-        Movement += haven->spectatorCamera.up * z;
+        if (input->mouseRight)
+        {
+            int x = input->w ? 1 : 0 + input->s ? -1 : 0;
+            int y = input->d ? 1 : 0 + input->a ? -1 : 0;
+            int z = input->e ? 1 : 0 + input->q ? -1 : 0;
 
-        if (length(Movement) > 0)
-            Movement = normalize(Movement);
+            Movement += haven->spectatorCamera.forward * x;
+            Movement += haven->spectatorCamera.right * y;
+            Movement += haven->spectatorCamera.up * z;
+            if (length(Movement) > 0)
+                Movement = normalize(Movement);
 
-        float speed = 4;
-        if (input->shift)
-            speed = 16;
+            float speed = fastMoveSpeed;
+            if (input->shift)
+                speed = slowMoveSpeed;
 
-        haven->spectatorCamera.position += Movement * input->deltaTime * speed;
+            Movement *= input->deltaTime * speed;
+        }
+
+        Movement += haven->spectatorCamera.forward * input->mouseScrollDelta * scrollSensitivity;
+        
+        haven->spectatorCamera.position += Movement;
         //haven->spectatorCamera = input->head;
 
     }
@@ -54,6 +66,7 @@ namespace Editor
         Drawing::DrawFont2D(".", input->mousePos, 500, 600, HAlign_left, VAlign_down);
         if (haven->editor)
         {
+            /*
             if (input->ctrl && input->sDown)
             {
                 //memory->printf("Save\n");
@@ -108,7 +121,7 @@ namespace Editor
             //DrawMesh(gameState->axesMaterial, haven->ui_quad, monkeyRotation2);
             //monkeyRotation2 = { center + float3(-3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
             //DrawMesh(gameState->torvidMat, haven->monkey, monkeyRotation2);
-
+            */
             const int tempStringSize = 2048;
             char text[tempStringSize] = {};
             Clear((uint8*)text, tempStringSize);
@@ -141,20 +154,21 @@ namespace Editor
             //}
 
             //Transform testTransform = transform(float3(12, 0, 0), 0.1, 0.2, 0.3, float3(1, 0.75, 0.5) * 0.75);
+            /*
             Transform testTransform = scale(rotate(place(float3(12, 0, 0)), 0.1, 0.2, 0.3), float3(1, 0.75, 0.5) * 0.75);
 
             Drawing::DrawLine(float3(4, 0, 0), float3(5, 1, 1), 0.05f, float3(0.6,0.1,0.2));
             Drawing::DrawCircle(float3(6, 0, 0), float3(0, 0, 1), 0.75, 0.05f);
             Drawing::DrawSphere(float3(8, 0, 0), 0.75, 0.05f);
             Drawing::DrawAxisSphere(float3(10, 0, 0), 0.75, 0.05f);
-            Drawing::DrawTransform(testTransform, 0.05f);
             Drawing::DrawPoint(float3(14, 0, 0), 0.25f);
             Drawing::DrawAABB(float3(16, 0, 0), float3(1, 0.75, 0.5)* 0.75, 0.05f);
             Drawing::DrawBox(testTransform, 0.05f);
             Drawing::DrawBox2D(float2(200, 100), float2(100, 100), float3(0.5f, 0.0f, 0.0f), 0.5f);
             Drawing::DrawBox2D(float2(250, 150), float2(100, 100), float3(0.0f, 0.5f, 0.0f), 0.5f);
             Drawing::DrawBox2D(float2(300, 200), float2(100, 100), float3(0.0f, 0.0f, 0.5f), 0.5f);
-        
+        */
+            Drawing::DrawTransform(transform(), 0.05f);
         
             Clear((uint8*)text, tempStringSize);
             StringAppend(text, "\n\nSOUND: \n");

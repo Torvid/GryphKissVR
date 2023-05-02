@@ -1,4 +1,4 @@
-    
+
 #pragma once
 // Include guard
 #ifndef havenIncluded
@@ -162,6 +162,7 @@ struct EngineState
     HAlign hAlign;
     VAlign vAlign;
     float3 clearColor;
+    int currentScene = 0;
 };
 static EngineState* haven;
 static Input* input;
@@ -282,11 +283,28 @@ enum EntityType
 
 namespace Rendering
 {
-    void SetCubemap(Texture* texture)
+    void SetCubemap(ReflectionProbe* probe)
     {
         for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
         {
-            haven->sceneMaterials[i]->texCubemap = texture;
+            if (!probe)
+            {
+                haven->sceneMaterials[i]->texCubemap0 = assets->black;
+                haven->sceneMaterials[i]->texCubemap1 = assets->black;
+                haven->sceneMaterials[i]->texCubemap2 = assets->black;
+                haven->sceneMaterials[i]->texCubemap3 = assets->black;
+                haven->sceneMaterials[i]->texCubemap4 = assets->black;
+                continue;
+            }
+
+            haven->sceneMaterials[i]->texCubemap0 = probe->octTexture0;
+            haven->sceneMaterials[i]->texCubemap1 = probe->octTexture1;
+            haven->sceneMaterials[i]->texCubemap2 = probe->octTexture2;
+            haven->sceneMaterials[i]->texCubemap3 = probe->octTexture3;
+            haven->sceneMaterials[i]->texCubemap4 = probe->octTexture4;
+            haven->sceneMaterials[i]->cubemapPosition = probe->transform.position;
+            haven->sceneMaterials[i]->cubemapSize = probe->transform.scale;
+            
         }
     }
 
@@ -593,7 +611,7 @@ namespace Rendering
     }
 
     // 5x5 tap blur, good for dropping texture resolution by 4x.
-    void Downsize4x(Texture* source, Texture* target)
+    void Downsize4x(Texture* source, Texture* target, float blurRadius = 100.0f)
     {
         if (!source)
             return;
@@ -602,11 +620,12 @@ namespace Rendering
 
         Rendering::SetRenderTarget(target, "Probe Capture");
         Rendering::DrawClear(float3(0, 1, 0));
-        CreateMaterialLocal(octUnwrap, assets->downsize4x, downsize4x);
-        octUnwrap->colorTexture = source;
-        octUnwrap->resolution = target->sizeX;
-        octUnwrap->mesh = assets->ui_quad;
-        Rendering::DrawMesh(octUnwrap);
+        CreateMaterialLocal(blur, assets->downsize4x, downsize4x);
+        blur->colorTexture = source;
+        blur->resolution = target->sizeX;
+        blur->mesh = assets->ui_quad;
+        blur->blurRadius = blurRadius;
+        Rendering::DrawMesh(blur);
         Rendering::SetRenderTarget(haven->SwapBuffer, "Rendertarget Reset");
     }
 }
@@ -637,6 +656,28 @@ void engineProfilerEndSample(char* name)
     if (!haven)
         return;
     ProfilerEndSample(name);
+}
+
+void CurrentSceneStart()
+{
+    ArrayClear(haven->sceneTextures);
+    ArrayClear(haven->sceneMaterials);
+    ArrayClear(haven->entities);
+    ArenaReset(&haven->arenaScene);
+
+    if (haven->currentScene == 0)
+        Gryphkiss::Start();
+    else if (haven->currentScene == 1)
+        CornellBox::Start();
+
+}
+void CurrentSceneUpdate()
+{
+    if (haven->currentScene == 0)
+        Gryphkiss::Update();
+    else if (haven->currentScene == 1)
+        CornellBox::Update();
+
 }
 
 extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory)
@@ -788,8 +829,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
         Editor::Start();
 
-        //Gryphkiss::Start();
-        CornellBox::Start();
+        CurrentSceneStart();
 
         profilerStart();
 
@@ -813,13 +853,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     }
     if (resetGame)
     {
-        ArrayClear(haven->sceneTextures);
-        ArrayClear(haven->sceneMaterials);
-        ArrayClear(haven->entities);
-        ArenaReset(&haven->arenaScene);
-        //Gryphkiss::Start();
-        CornellBox::Start();
-
+        CurrentSceneStart();
     }
     Transform headLocal;
     headLocal = input->eyeLeft;
@@ -845,11 +879,18 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     Drawing::DrawText("space: reset");
     Drawing::DrawText("ctrl space: reload and reset");
     
+    if (Drawing::DrawButton("Next Scene"))
+    {
+        haven->currentScene++;
+        haven->currentScene %= 2;
+        CurrentSceneStart();
+    }
+    
     Editor::Update();
     gameMemory->spectatorCamera = haven->spectatorCamera;
 
-    //Gryphkiss::Update();
-    CornellBox::Update();
+    CurrentSceneUpdate();
+
     profilerUpdate();
 
     if (input->faceButtonLeftDown || input->gDown)

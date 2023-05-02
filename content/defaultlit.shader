@@ -4,17 +4,25 @@
 #define ShaderName defaultlit
 
 #define Parameters(X) \
-	X(float3, Color) \
-	X(sampler2D, texM1) \
-	X(sampler2D, texM2) \
-	X(sampler2D, texM3) \
-	X(sampler2D, texCubemap) \
+	X(float3, Color, float3(1, 1, 1)) \
+	X(sampler2D, texM1, assets->baseM1) \
+	X(sampler2D, texM2, assets->baseM2) \
+	X(sampler2D, texM3, assets->baseM3) \
+	X(sampler2D, texCubemap0) \
+	X(sampler2D, texCubemap1) \
+	X(sampler2D, texCubemap2) \
+	X(sampler2D, texCubemap3) \
+	X(sampler2D, texCubemap4) \
+	X(float3, cubemapPosition) \
+	X(float3, cubemapSize) \
 	X(sampler2D, texLightmap) \
 	X(float3, lightmapMin) \
 	X(float3, lightmapMax) \
 	X(float3, lightmapResolution) \
 	X(float, radiosityProbeScale) \
 	X(float, lightmapStrength) \
+	X(float, metallicOffset) \
+	X(float, roughnessOffset) \
 
 #define addBoneTransforms 1
 
@@ -152,7 +160,7 @@ void main()
 
 	float3 bakedAmbientSampleValue = floor((worldPos - lightmapMin) / radiosityProbeScale);
 	float3 bakedAmbientSampleBlend = frac((worldPos - lightmapMin) / radiosityProbeScale);
-	bakedAmbientSampleBlend = smoothstep(0.0, 1.0, bakedAmbientSampleBlend); // tri-cubic blend
+	bakedAmbientSampleBlend = smooth_step(bakedAmbientSampleBlend); // tri-cubic blend
 
 	SHData SHData000 = ExtractSHData(bakedAmbientSampleValue + float3(0, 0, 0));
 	SHData SHData100 = ExtractSHData(bakedAmbientSampleValue + float3(1, 0, 0));
@@ -198,7 +206,50 @@ void main()
 
 
 #ifdef pixelShader
+float3 raybox(float3 start, float3 direction, float3 center, float3 size)
+{
+	float3 tMin, tMax, t1, t2;
+	float tNear, tFar;
 
+	// Calculate the half-size of the box
+	float3 halfSize = size * 0.5;
+
+	// Calculate the min and max points of the box
+	float3 boxMin = center - halfSize;
+	float3 boxMax = center + halfSize;
+
+	// Calculate intersection times for each axis
+	t1 = (boxMin - start) / direction;
+	t2 = (boxMax - start) / direction;
+
+	// Find the entry and exit points of the ray for each axis
+	tMin = min(t1, t2);
+	tMax = max(t1, t2);
+
+	// Find the overall entry and exit points of the ray
+	tNear = max(max(tMin.x, tMin.y), tMin.z);
+	tFar = min(min(tMax.x, tMax.y), tMax.z);
+
+	// If the ray intersects the box
+	if (tNear < tFar && tFar > 0.0)
+	{
+		// Calculate the intersection point on the inside of the box
+		float3 hit = start + direction * (tFar + float3(0.0001));
+
+		// Calculate the vector pointing from the center to the ray hit
+		float3 centerToHit = hit - center;
+
+		//float3 normal = (hit - center) / halfSize;
+		//normal = float3((abs(normal.x) > 0.5) ? sign(normal.x) : 0.0,
+		//				(abs(normal.y) > 0.5) ? sign(normal.y) : 0.0,
+		//				(abs(normal.z) > 0.5) ? sign(normal.z) : 0.0);
+
+		return centerToHit;
+	}
+
+	// If there is no intersection, return 0
+	return float3(0, 0, 0);
+}
 float3 SampleSphericalHarmonic(float3 voxelPos, float3 lightNormal)
 {
 	float A0 = 3.141593;
@@ -303,7 +354,7 @@ void main()
 
 	// Tangent-Space Normal mapping
 	M2.rg = M2.rg * 2.0 - 1.0;
-	float3 worldNormal = PSVertexNormal * 1.0 + M2.r * PSVertexTangent + M2.g * PSVertexBitangent;
+	float3 worldNormal = normalize(PSVertexNormal * 1.0 + M2.r * PSVertexTangent + M2.g * PSVertexBitangent);
 
 	float3 lightNormal = float3(worldNormal.x, -worldNormal.y, -worldNormal.z);
 
@@ -357,19 +408,57 @@ void main()
 	//float NdotL = dot(worldNormal, float3(0, 1, 1));
 	//float halflambert = NdotL * 0.5 + 0.5;
 
-	//float3 cameraVector = (PSVertexPos - CameraPosition);
-	//float3 reflectVector = reflect(cameraVector, PSVertexNormal);
-	//reflectVector.yz = -reflectVector.yz;
-	//float2 reflectUV = OctEncode((reflectVector));
-	//float4 cubemap = SampleGrad(texCubemap, reflectUV, ddxy(UV*10.0f));
+	float3 cameraVector = normalize(PSVertexPos - CameraPosition);
+	float3 reflectVector = reflect(cameraVector, worldNormal);
+	reflectVector = raybox(worldPos, reflectVector, cubemapPosition, cubemapSize);
+	reflectVector.yz = -reflectVector.yz;
+	float2 reflectUV = OctEncode(reflectVector);
+	float4 cubemap0 = Sample(texCubemap0, reflectUV);
+	float4 cubemap1 = Sample(texCubemap1, reflectUV);
+	float4 cubemap2 = Sample(texCubemap2, reflectUV);
+	float4 cubemap3 = Sample(texCubemap3, reflectUV);
+	float4 cubemap4 = Sample(texCubemap4, reflectUV);
+
+	float roughness = saturate(M1.a + roughnessOffset);// saturate(UV.x + roughnessOffset);
+
+	//roughness = 1.0f - roughness;
+	//roughness = roughness * roughness * roughness;
+	//roughness = 1.0f - roughness;
+	float rBlend = roughness * 4.0;
+	float4 cubemap = 
+		lerp(cubemap0, 
+			lerp(cubemap1, 
+				lerp(cubemap2, 
+					lerp(cubemap3,
+							cubemap4, 
+					smooth_step(saturate(rBlend - 3.0))),
+				smooth_step(saturate(rBlend - 2.0))),
+			smooth_step(saturate(rBlend - 1.0))),
+		smooth_step(saturate(rBlend)));
+
 
 	//float3 lighting = float3(saturate(NdotL)) + float3(0.4, 0.3, 0.2) + cubemap.rgb * 2.0f;
 
-	FragColor.rgb = M1.rgb * bakedLighting * lightmapStrength;// 0.005;
-	//FragColor.rgb = abs(PSVertexTangent) * 10000.0;
+	float metallic = saturate(M2.a + metallicOffset);
+	// I added these pbr vibes:
+	// 1. Metallics tint reflections, normals do not
+	// 2. Non-Metals reflect more at steep angles
+	// 3. The more roughness a surface has, the more we blur the reflection cubemap
+
+	float3 baseColor = M1.rgb * Color;
+
+	float fresnel = 1.0f - dot(-cameraVector, worldNormal);
+
+	float3 metallicResult = cubemap.rgb * baseColor;
+	float3 dielectricResult = baseColor * bakedLighting * lightmapStrength * 0.5 + cubemap.rgb * fresnel * M2.b;
+
+	//float3 d = 1.0f - abs(PSVertexPos - CameraPosition);
+	FragColor.rgb = lerp(dielectricResult, metallicResult, metallic);
+
+	//FragColor.rgb = cubemap.rgb;
 
 	// emmissive
-	FragColor.rgb += M3.rgb * 100.0;
+	FragColor.rgb += M3.rgb * 10.0;
 
 	if (M3.a < 0.5)
 		discard;

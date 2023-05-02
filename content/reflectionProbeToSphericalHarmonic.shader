@@ -28,32 +28,6 @@ void main()
 
 #ifdef pixelShader
 
-float RadicalInverse_VdC(uint bits) {
-	bits = (bits << 16u) | (bits >> 16u);
-	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-	return float(bits) * 2.3283064365386963e-10;
-}
-
-float2 Hammersley(uint i, uint N) {
-	return float2(float(i) / float(N), RadicalInverse_VdC(i));
-}
-
-float3 UniformSampleSphere(float2 u) {
-	float z = 1.0 - 2.0 * u.x;
-	float r = sqrt(max(0.0, 1.0 - z * z));
-	float phi = 2.0 * 3.14159265359 * u.y;
-	return float3(r * cos(phi), r * sin(phi), z);
-}
-const uint sampleCount = 1024u;
-
-float3 RandomUnitVector(uint seed) {
-	//uint N = 2048u; // Adjust this value to control the density of the distribution
-	float2 u = Hammersley(uint(seed), sampleCount);
-	return UniformSampleSphere(u);
-}
 
 in float2 PSVertexUV;
 out float4 FragColor;

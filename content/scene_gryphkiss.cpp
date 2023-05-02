@@ -34,40 +34,46 @@ namespace Gryphkiss
         haven->gameState = ArenaPushStruct(&haven->arenaEngineState, GameState, "GameState");
         GameState* gameState = (GameState*)haven->gameState;
 
-        ReflectionProbe* reflectionProbe = ReflectionProbeInstantiate(transform(float3(0, 0, 0)));
-
         // Load Torvid
         CreateSceneMaterial(gameState->torvidMat);
         gameState->torvidMat->texM1 = assets->TorvidM1;
         gameState->torvidMat->texM2 = assets->TorvidM2;
+        gameState->torvidMat->texM3 = assets->TorvidM3;
         gameState->torvidMat->BackFaceCulling = true;
-
+        gameState->torvidMat->metallicOffset = -1.0;
+        
         // Create materials and load textures
         CreateSceneMaterial(gameState->barnWallMat);
         gameState->barnWallMat->texM1 = assets->BarnWallM1;
         gameState->barnWallMat->texM2 = assets->BarnWallM2;
+        gameState->barnWallMat->texM3 = assets->baseM3;
 
         CreateSceneMaterial(gameState->barnWallCleanMat);
         gameState->barnWallCleanMat->texM1 = assets->BarnWallCleanM1;
         gameState->barnWallCleanMat->texM2 = assets->BarnWallCleanM2;
+        gameState->barnWallCleanMat->texM3 = assets->baseM3;
 
         CreateSceneMaterial(gameState->barnCeilingMat);
         gameState->barnCeilingMat->texM1 = assets->BarnCeilingM1;
         gameState->barnCeilingMat->texM2 = assets->BarnCeilingM2;
+        gameState->barnCeilingMat->texM3 = assets->baseM3;
 
         CreateSceneMaterial(gameState->barnTilesMat);
         gameState->barnTilesMat->texM1 = assets->TilesM1;
         gameState->barnTilesMat->texM2 = assets->TilesM2;
+        gameState->barnTilesMat->texM3 = assets->baseM3;
+        //gameState->barnTilesMat->roughnessOffset = 0.25;
 
         CreateSceneMaterial(gameState->StrawPileMat);
         gameState->StrawPileMat->texM1 = assets->StrawPileM1;
         gameState->StrawPileMat->texM2 = assets->StrawPileM2;
+        gameState->StrawPileMat->texM3 = assets->baseM3;
 
         CreateMaterialGlobal(gameState->skydomeMat, assets->skydomeShader, skydomeShader);
         gameState->skydomeMat->Color = float3(1, 1, 1);
         gameState->skydomeMat->ColorTexture = assets->StrawPileM1;
 
-        Rendering::SetCubemap(assets->black);
+        Rendering::SetCubemap(0);
         Rendering::SetLightmap(assets->black, float3(0, 0, 0), float3(1, 1, 1), float3(2, 2, 2), 1.0f);
 
         gameState->leftHand  = Instantiate(Hand);
@@ -80,9 +86,13 @@ namespace Gryphkiss
         gameState->player = Instantiate(Player);
         PlayerStart(gameState->player);
 
-        LightBaker* lightBaker;
-        gameState->lightBaker = LightBakerInstantiate(assets->bake_GryphKiss, "bake_GryphKiss.rad", float3(-1, -1, -1), float3(7, 12, 7));
+        // add lighting stuffs
+        ReflectionProbe* reflectionProbe = ReflectionProbeInstantiate(transform(float3(2.5, 5, 3), float3(5.2, 10, 6)));
+
+        gameState->lightBaker = LightBakerInstantiate(assets->bake_GryphKiss, "bake/bake_GryphKiss.rad", float3(-1, -1, -1), float3(7, 12, 7), 25);
+        
         StaticMeshInstantiate(assets->tonk, gameState->barnWallMat, transform(float3(3, 5, 0), float3(0.1, 0.2, 0.1)));
+
 
         // left wall
         for (int x = 0; x < 5; x++)
@@ -168,6 +178,7 @@ namespace Gryphkiss
 
         //StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(float3(4,4,4), float3(3, 3, 3)));
     
+
         StaticMeshInstantiate(assets->skydome, gameState->skydomeMat, transform(float3(0, 0, 0), float3(80, 80, 80)));
 
     }

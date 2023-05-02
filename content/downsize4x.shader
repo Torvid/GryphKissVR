@@ -5,7 +5,8 @@
 
 #define Parameters(X) \
 	X(sampler2D, colorTexture) \
-	X(float, resolution)
+	X(float, resolution)\
+	X(float, blurRadius)
 
 #include "shaderMacros.cpp"
 #include "shaderMacros.shaderinc"
@@ -26,23 +27,38 @@ in float2 PSVertexUV;
 out float4 FragColor;
 void main()
 {
-	int stepCount = 2;
-	int width = stepCount * 2 + 1;
-	float pixelSize = 1.0 / resolution;
-	pixelSize *= 1.0; // fudge
-
-	float4 result = float4(0,0,0,0);
-	float count = 0.0;
-	for (int x = -stepCount; x < (stepCount+1); x++)
+	float3 direction = OctDecode(PSVertexUV);
+	int sampleCount = 1024;
+	float4 result = float4(0, 0, 0, 0);
+	for (int i = 0; i < sampleCount; i++)
 	{
-		for (int y = -stepCount; y < (stepCount + 1); y++)
-		{
-			float2 uv = PSVertexUV + float2(x, y) * pixelSize;
-			result += Sample(colorTexture, uv);
-			count += 1.0;
-		}
+		float2 offset = GetSpiralBlurUVOffset(blurRadius, float(sampleCount), float(i));
+		float weight = GetSpiralBlurWeight(float(sampleCount), float(i));
+		float3 rotatedVector = rotateVector(direction, offset);
+		
+		float2 uv = OctEncode(rotatedVector);
+		result += Sample(colorTexture, uv) * weight;
 	}
-	FragColor = result / count;
+	FragColor = result;
+
+	//int stepCount = 32;
+	//int width = stepCount * 2 + 1;
+	//float offsetSize = blurRadius / float(stepCount);
+	//
+	//float4 result = float4(0, 0, 0, 0);
+	//float count = 0.0;
+	//
+	//for (int x = -stepCount; x < (stepCount+1); x++)
+	//{
+	//	for (int y = -stepCount; y < (stepCount + 1); y++)
+	//	{
+	//
+	//		float2 uv = PSVertexUV + float2(x, y) * offsetSize;
+	//		result += Sample(colorTexture, uv);
+	//		count += 1.0;
+	//	}
+	//}
+	//FragColor = result / count;
 
 }
 #endif
