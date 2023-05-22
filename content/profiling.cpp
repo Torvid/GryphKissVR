@@ -105,6 +105,8 @@ void DrawArena(MemoryArena* arena)
 void ProfilerBeingSample()
 {
     ProfilingData* data = haven->profilingData;
+    if (!data)
+        return;
     if (data->currentDepth > 100)
         return;
 
@@ -116,6 +118,8 @@ void ProfilerBeingSample()
 void ProfilerEndSample(const char* name)
 {
     ProfilingData* data = haven->profilingData;
+    if (!data)
+        return;
     if (data->index > 100)
         return;
     if (data->currentDepth > 100)
@@ -138,6 +142,8 @@ void ProfilerStart()
     ProfilerEndSample(" h a v e n - Platform Layer");
     //ProfilerEndSample("Frame");
     ProfilingData* data = haven->profilingData;
+    if (!data)
+        return;
     //data->memory = memory;
     //data->Global_End = data->Global_Start;
     int64 lastStart = data->Global_Start;
@@ -154,6 +160,8 @@ void ProfilerStart()
 void ProfilerEnd(EngineState* haven)
 {
     ProfilingData* data = haven->profilingData;
+    if (!data)
+        return;
 
     //ProfilerEndSample("Frame");
 
@@ -177,6 +185,8 @@ void ProfilerEnd(EngineState* haven)
 
 void ProfilerDrawFlameChart(ProfilingData* data)
 {
+    if (!data)
+        return;
     ProfilingData* profilingData = data;
     if (profilingData->index >= 1000 || profilingData->index < 0)
     {
@@ -268,6 +278,8 @@ void ProfilerDrawFlameChart(ProfilingData* data)
 void ProfilerDrawTimeChart(ProfilingData* data)
 {
     ProfilingData* profilingData = data;
+    if (!data)
+        return;
 
     Drawing::DrawBox2D(float2(0, haven->Resolution.y - 200), float2(200, 200), float3(0.0, 0.0, 0.0), 0.5);
 

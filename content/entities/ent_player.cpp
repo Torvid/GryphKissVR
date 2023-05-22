@@ -13,6 +13,8 @@ struct Player
 
 void PlayerStart(Player* player)
 {
+    if (!player)
+        return;
     player->transform = transform(float3(0, 0, 0));
     player->playspaceOffset = float3(0, 0, 0);
     player->playspaceOffsetLast = float3(0, 0, 0);
@@ -20,6 +22,8 @@ void PlayerStart(Player* player)
 
 void PlayerUpdate(Player* player)
 {
+    if (!player)
+        return;
     // Add offsets to line it up with data from the API
     float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
     center += float3(-3, -5, 0);

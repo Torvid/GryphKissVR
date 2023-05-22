@@ -25,6 +25,8 @@ struct GameState
 
     Texture* cubemap;
     Texture* lightmap;
+
+    StaticMesh* tonk;
 };
 
 namespace Gryphkiss
@@ -70,10 +72,10 @@ namespace Gryphkiss
         gameState->StrawPileMat->texM3 = assets->baseM3;
 
         CreateMaterialGlobal(gameState->skydomeMat, assets->skydomeShader, skydomeShader);
-        gameState->skydomeMat->Color = float3(1, 1, 1);
-        gameState->skydomeMat->ColorTexture = assets->StrawPileM1;
+        gameState->skydomeMat->Color = float3(1, 1, 1) * 3.0;
+        gameState->skydomeMat->ColorTexture = assets->sky_venetian_crossroads;
 
-        Rendering::SetCubemap(0);
+        //Rendering::SetCubemap(0);
         Rendering::SetLightmap(assets->black, float3(0, 0, 0), float3(1, 1, 1), float3(2, 2, 2), 1.0f);
 
         gameState->leftHand  = Instantiate(Hand);
@@ -91,7 +93,7 @@ namespace Gryphkiss
 
         gameState->lightBaker = LightBakerInstantiate(assets->bake_GryphKiss, "bake/bake_GryphKiss.rad", float3(-1, -1, -1), float3(7, 12, 7), 25);
         
-        StaticMeshInstantiate(assets->tonk, gameState->barnWallMat, transform(float3(3, 5, 0), float3(0.1, 0.2, 0.1)));
+        gameState->tonk = StaticMeshInstantiate(assets->tonk, gameState->barnWallMat, transform(float3(4, 3, 0), float3(0.1, 0.2, 0.1)));
 
 
         // left wall
@@ -216,13 +218,17 @@ namespace Gryphkiss
             { 1, 1, 1 } };
         torvidTransform = rotate(torvidTransform, torvidTransform.up, -0.4);
     
-        Animation* torvidAnimation = assets->torvidTestAnim;
+        Animation* torvidAnimation = assets->cubeAnim;
+        Mesh* torvidMesh = assets->torvid2;
         // Set up bones
         for (int i = 0; i < torvidAnimation->boneCount; i++)
         {
-            int frameOffset = ((int)gameState->torvidFrame) * torvidAnimation->boneCount;
-            Transform t = torvidAnimation->transforms[i + frameOffset];
-            gameState->torvidMat->shaderBoneTransforms[i] = t;
+            int frameOffset0 = ((int)gameState->torvidFrame);
+            int frameOffset1 = ((int)gameState->torvidFrame + 1) % torvidAnimation->frameCount;
+            Transform t0 = torvidAnimation->transforms[i + frameOffset0 * torvidAnimation->boneCount];
+            Transform t1 = torvidAnimation->transforms[i + frameOffset1 * torvidAnimation->boneCount];
+            Transform t = lerp(t0, t1, frac(gameState->torvidFrame));
+            gameState->torvidMat->shaderBoneTransforms[i] = t;// torvidMesh->bindPose[i];
     
             // Draw bone
             if (haven->editor)
@@ -230,16 +236,16 @@ namespace Gryphkiss
                 t.scale = vectorOne * 0.05;
                 t = LocalToWorld(t, torvidTransform);
                 Drawing::DrawBox(t, 0.005);
-                Bone* parentBone = assets->torvidTest->boneHierarchy[i].parent;
+                Bone* parentBone = torvidMesh->boneHierarchy[i].parent;
                 if (parentBone)
                 {
-                    float3 parentPos = torvidAnimation->transforms[parentBone->index + frameOffset].position;
+                    float3 parentPos = torvidAnimation->transforms[parentBone->index + frameOffset0 * torvidAnimation->boneCount].position;
                     parentPos = LocalToWorld(parentPos, torvidTransform);
                     Drawing::DrawLine(parentPos, t.position);
                 }
             }
         }
-    
+        
         // Play animation
         float animationFPS = 25.0f;
         if (gameState->torvidFrame == 0.0f)
@@ -247,13 +253,13 @@ namespace Gryphkiss
             PlaySound(assets->Torvid_Gryphon, 0.25f);
         }
         gameState->torvidFrame += animationFPS * input->deltaTime;
-        if (gameState->torvidFrame > 180.0f)
+        if (gameState->torvidFrame > torvidAnimation->frameCount)
         {
             gameState->torvidFrame = 0.0f;
         }
-    
+        
         // Draw torvid
-        Rendering::DrawMesh(gameState->torvidMat, assets->torvidTest, torvidTransform);
+        Rendering::DrawMesh(gameState->torvidMat, torvidMesh, torvidTransform);
 
 
         input->vibrationAmplitudeRight = input->grabRight;
@@ -319,6 +325,9 @@ namespace Gryphkiss
         //    - "Atkinson Hyperlegible" Font.
 
         Drawing::DrawFont(my_str, transform(center + float3(5 - 0.1, 4, 2.5), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
-
+        //Drawing::DrawBox(transform(gameState->tonk->transform.position + float3(0, -2, 2.8) * 0.5, float3(6.2, 2.6, 2.8) * 0.5));
+        //gameState->tonk->transform.scale = float3(1,1,1) * 0.01;
+        //gameState->tonk->transform = LookRotation(gameState->tonk->transform, float3(-1, 0, 0), float3(0, 0, 1));
+        //Drawing::DrawBox(transform(gameState->tonk->transform.position, float3(1, 1, 1) * 0.5));
     }
 }

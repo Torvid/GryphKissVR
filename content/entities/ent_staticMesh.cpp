@@ -1,6 +1,7 @@
 #include "../haven.cpp"
 
 #if structs
+struct ReflectionProbe;
 
 struct StaticMesh
 {
@@ -9,6 +10,7 @@ struct StaticMesh
     Material_defaultlit* material;
     Material_skydomeShader* materialSky;
     Mesh* mesh;
+    ReflectionProbe* reflectionProbe;
 };
 
 
@@ -44,13 +46,13 @@ StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_skydomeShader* material, 
 
 Transform StaticMeshGetLocalBoundsTransform(StaticMesh* self)
 {
-    float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
+    float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsTransform.position, self->transform);
     //float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
     //DrawAxisSphere(boundsCenterWorldSpace, radius, 0.01);
 
     Transform t = self->transform;
     t.position = boundsCenterWorldSpace;
-    t.scale *= self->mesh->boundsSize * 0.5;
+    t.scale *= self->mesh->boundsTransform.scale;
 
     if (t.scale.y == 0.0)
         t.scale.y = 0.01;
@@ -61,12 +63,84 @@ Transform StaticMeshGetLocalBoundsTransform(StaticMesh* self)
 
     return t;
 }
+bool RayWorldIntersect(float3 pos0, float3 pos1)
+{
+    for (int k = 0; k < ArrayCount(haven->entities); k++)
+    {
+        if (haven->entities[k]->type == EntityType_StaticMesh)
+        {
+            StaticMesh* mesh = (StaticMesh*)haven->entities[k];
+            Transform t = StaticMeshGetLocalBoundsTransform(mesh);
+            float3 startLocal = WorldToLocal(pos0, t);
+            float3 endLocal = WorldToLocal(pos1, t);
+            if (RayBoxIntersect(startLocal, endLocal))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+//bool BoundsOverlap(StaticMesh* mesh, ReflectionProbe* probe)
+//{
+//
+//}
+
+
+Transform StaticMeshGetAABB(StaticMesh* self)
+{
+    Transform bounds = StaticMeshGetLocalBoundsTransform(self);
+    float3 pos0 = bounds.position +
+        bounds.right     * bounds.scale.x +
+        bounds.forward   * bounds.scale.y +
+        bounds.up        * bounds.scale.z;
+    float3 pos1 = bounds.position +
+        -bounds.right    * bounds.scale.x +
+        bounds.forward   * bounds.scale.y +
+        bounds.up        * bounds.scale.z;
+    float3 pos2 = bounds.position +
+        bounds.right     * bounds.scale.x +
+        -bounds.forward  * bounds.scale.y +
+        bounds.up        * bounds.scale.z;
+    float3 pos3 = bounds.position +
+        -bounds.right    * bounds.scale.x +
+        -bounds.forward  * bounds.scale.y +
+        bounds.up        * bounds.scale.z;
+    float3 pos4 = bounds.position +
+        bounds.right     * bounds.scale.x +
+        bounds.forward   * bounds.scale.y +
+        -bounds.up       * bounds.scale.z;
+    float3 pos5 = bounds.position +
+        -bounds.right    * bounds.scale.x +
+        bounds.forward   * bounds.scale.y +
+        -bounds.up       * bounds.scale.z;
+    float3 pos6 = bounds.position +
+        bounds.right     * bounds.scale.x +
+        -bounds.forward  * bounds.scale.y +
+        -bounds.up       * bounds.scale.z;
+    float3 pos7 = bounds.position +
+        -bounds.right    * bounds.scale.x +
+        -bounds.forward  * bounds.scale.y +
+        -bounds.up       * bounds.scale.z;
+
+    float3 boundsMin = min(min(min(min(min(min(min(pos0, pos1), pos2), pos3), pos4), pos5), pos6), pos7);
+    float3 boundsMax = max(max(max(max(max(max(max(pos0, pos1), pos2), pos3), pos4), pos5), pos6), pos7);
+    float3 boundsCenter = (boundsMin + boundsMax) * 0.5f;
+    float3 boundsSize = abs(boundsMin - boundsMax) * 0.5f;
+
+    Transform aabb = transform();
+    aabb.position = boundsCenter;
+    aabb.scale = boundsSize;
+
+    return aabb;
+}
 
 bool StaticMeshCull(StaticMesh* self, Transform camera)
 {
-    float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
-    float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
-    if (dot(camera.position - boundsCenterWorldSpace, camera.forward) > radius)
+    float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsTransform.position, self->transform);
+    //float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
+    if (dot(camera.position - boundsCenterWorldSpace, camera.forward) > self->mesh->radius)
         return true;
 
     return false;
@@ -74,52 +148,41 @@ bool StaticMeshCull(StaticMesh* self, Transform camera)
 
 void StaticMeshDraw(StaticMesh* self, Camera camera)
 {
-    if(self->isSky)
+    if (self->isSky)
+    {
         Rendering::DrawMesh(self->materialSky, self->mesh, self->transform, camera, "Scene StaticMesh");
+    }
     else
+    {
+        //self->material->texCubemap0 = self->cubemap;
         Rendering::DrawMesh(self->material, self->mesh, self->transform, camera, "Scene StaticMesh");
+    }
 }
 void StaticMeshDraw(StaticMesh* self)
 {
     if (self->isSky)
+    {
         Rendering::DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
+    }
     else
+    {
         Rendering::DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
+    }
 }
 
 void StaticMeshUpdate(StaticMesh* self, int i)
 {
-    Transform headLocal = input->head;// LocalToWorld(input->head, input->playspace);
+    Transform headLocal = input->head;
     if (StaticMeshCull(self, headLocal))
         return;
-
-    //// frustum culling
-    //float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
-    //float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
-    //if (dot(input->head.position - boundsCenterWorldSpace, input->head.forward) > 0)
-    //    return;
-    //
-    //if (i == 8)
-    //{
-    //    float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsCenter, self->transform);
-    //    float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
-    //    DrawAxisSphere(boundsCenterWorldSpace, radius, 0.01);
-    //
-    //    Transform t = GetLocalBoundsTransform(self);// self->transform;
-    //    //t.position = boundsCenterWorldSpace;
-    //    //t.scale *= self->mesh->boundsSize * 0.5;
-    //    DrawBox(t);
-    //    DrawTransform(t);
-    //    DrawTransform(self->transform);
-    //
-    //    DrawSphere(input->head.position, 0.5, 0.01, float3(1, 0, 0));
-    //}
     
+    //Transform aabb = StaticMeshGetAABB(self);
+
+    Transform aabb = StaticMeshGetAABB(self);
+    Transform bounds = StaticMeshGetLocalBoundsTransform(self);
+    Drawing::DrawBox(aabb, 0.01);
+
     StaticMeshDraw(self);
-    //if(self->isSky)
-    //    DrawMesh(self->materialSky, self->mesh, self->transform, "Scene StaticMesh");
-    //else
-    //    DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
 }
 
 #endif

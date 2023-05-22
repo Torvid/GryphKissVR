@@ -53,13 +53,13 @@ void main()
 	sun = pow(sun, 250.0) * 10000.0;
 	sun = 0.0;
 
-	float3 result = skyColor;
-	result += sun * sunColor;
-	//if (cameraVector.z < 0.0)
-	//	result = float3(0.0, 0.0, 0.0);
+	float3 result = Sample(ColorTexture, PSVertexUV).rgb;
+	//result += sun * sunColor;
+	if (PSVertexUV.y < 0.5)
+		result = float3(0.0, 0.0, 0.0);
 
 	FragColor.rgb = result * Color;
-	//FragColor.rgb = Sample(ColorTexture, PSVertexUV).rgb * Color;
+	//FragColor.rgb = Sample(ColorTexture, PSVertexUV).rgb;// *Color;
 	//FragColor.rgb = textureLod(ColorTexture, UV, 4.0).rgb * Color;
 	//FragColor.rgb = textureGrad(ColorTexture, UV, float2(0.1, 0), float2(0, 0)).rgb * Color;
 	FragColor.a = 1.0;

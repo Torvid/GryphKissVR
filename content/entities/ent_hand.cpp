@@ -21,6 +21,8 @@ struct Hand
 
 void HandStart(Hand* self)
 {
+    if (!self)
+        return;
     self->clickCount = 0;
     CreateMaterialGlobal(self->handMaterial, assets->defaultlit, defaultlit);
     ArrayAdd(haven->sceneMaterials, self->handMaterial);
@@ -31,6 +33,8 @@ void HandStart(Hand* self)
 
 void HandUpdate(Hand* self)
 {
+    if (!self)
+        return;
     if (self->handSide == HandSide_Left)
     {
         self->transform = LocalToWorld(input->aimLeft, input->playspace);

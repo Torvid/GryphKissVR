@@ -649,15 +649,11 @@ namespace Drawing
                     float2 uv2 = UVposition + float2(1, 1) * UVsize;
                     float2 uv3 = UVposition + float2(0, 1) * UVsize;
                     AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, uv0, uv1, uv2, uv3, color, opacity, textureIndex);
-
                 }
             }
 
-        
-
             pos += advanceDelta * scale;
             currentLineWidth += advanceDelta.x * scale;
-
         }
         if (debug)
         {

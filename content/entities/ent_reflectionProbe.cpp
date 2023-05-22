@@ -82,14 +82,14 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
     if (!self->rendered)
     {
         //float3 startPos = haven->spectatorCamera.position + float3(-0.5, 2, -0.5);
-        Rendering::SetCubemap(0);
+        //Rendering::SetCubemap(0);
         Rendering::RenderCubemap(self->transform.position, self->cubeTexture);
         Rendering::PackCubemap(self->octTexture0, self->cubeTexture);
         Rendering::Downsize4x(self->octTexture0, self->octTexture1, 20);
         Rendering::Downsize4x(self->octTexture1, self->octTexture2, 50);
         Rendering::Downsize4x(self->octTexture2, self->octTexture3, 400);
         Rendering::Downsize4x(self->octTexture3, self->octTexture4, 0);
-        Rendering::SetCubemap(self);
+        //Rendering::SetCubemap(self);
         self->rendered = true;
     }
     return;

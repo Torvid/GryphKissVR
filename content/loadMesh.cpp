@@ -246,27 +246,30 @@ struct BONE_DATA_HEADER
 void GenerateBounds(Mesh* mesh)
 {
     // find bounds
-    mesh->boundsMin = float3(0, 0, 0);
-    mesh->boundsMax = float3(0, 0, 0);
+    float3 boundsMin = float3(99999, 99999, 99999);
+    float3 boundsMax = float3(-99999, -99999, -99999);
 
     // find furthest vertex
     for (int i = 0; i < mesh->vertexCount; i++)
     {
-        mesh->boundsMin = min(mesh->boundsMin, mesh->vertexes[i].position);
-        mesh->boundsMax = max(mesh->boundsMax, mesh->vertexes[i].position);
+        boundsMin = min(boundsMin, mesh->vertexes[i].position);
+        boundsMax = max(boundsMax, mesh->vertexes[i].position);
     }
-    mesh->boundsCenter = (mesh->boundsMin + mesh->boundsMax) * 0.5f;
-    mesh->boundsSize = abs(mesh->boundsMin - mesh->boundsMax);
+    float3 boundsCenter = (boundsMin + boundsMax) * 0.5f;
+    float3 boundsSize = abs(boundsMin - boundsMax) * 0.5f;
+    
+    mesh->boundsTransform = transform();
+    mesh->boundsTransform.position = boundsCenter;
+    mesh->boundsTransform.scale = boundsSize;
 
     float biggestDist = 0;
     for (int i = 0; i < mesh->vertexCount; i++)
     {
-        biggestDist = max(distanceSquared(mesh->boundsCenter, mesh->vertexes[i].position), biggestDist);
+        biggestDist = max(distanceSquared(boundsCenter, mesh->vertexes[i].position), biggestDist);
     }
     mesh->radius = 0;
     if (biggestDist > 0)
         mesh->radius = sqrt(biggestDist);
-
 }
 
 void LoadMesh(Mesh* mesh)

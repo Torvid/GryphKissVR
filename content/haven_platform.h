@@ -374,10 +374,11 @@ typedef struct
     Bone boneHierarchy[200];
     Transform* bindPose;
 
-    float3 boundsCenter;
-    float3 boundsSize;
-    float3 boundsMin;
-    float3 boundsMax;
+    Transform boundsTransform;
+    //float3 boundsCenter;
+    //float3 boundsSize;
+    //float3 boundsMin;
+    //float3 boundsMax;
     float radius;
 } Mesh;
 
@@ -603,7 +604,7 @@ typedef struct
     // Resolution of the monitor
     float2 Resolution;
 
-    // Rendering/
+    // Rendering
     int renderCommands_count;
     RenderCommand* renderCommands;// [5000] ;
 

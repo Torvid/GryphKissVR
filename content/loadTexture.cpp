@@ -122,8 +122,8 @@ void LoadTga(Texture* texture)
     texture->size = float2(tga->sizeX, tga->sizeY);
     texture->mipSizeX[0] = tga->sizeX;
     texture->mipSizeY[0] = tga->sizeY;
-    texture->ASTC           = false;
-    texture->HDR            = false;
+    texture->ASTC = false;
+    texture->HDR = false;
 
 
     ProfilerBeingSample();
@@ -228,7 +228,7 @@ void LoadRad(Texture* texture, int fileSize)
     texture->mipSizeY[0] = sizeY;
     texture->ASTC = false;
     texture->HDR = true;
-    Copy(haven->scratchBuffer + sizeof(uint64)*2, texture->mips[0], texture->mipSize[0]);
+    Copy(haven->scratchBuffer + sizeof(uint64) * 2, texture->mips[0], texture->mipSize[0]);
     ProfilerEndSample("Copy");
 
     ProfilerBeingSample();
@@ -245,18 +245,18 @@ void LoadTexture(Texture* texture)
     // failed to read texture, return the 'missing' texture.
     if (!end)
     {
-        Texture* missing        = assets->missingTexture;
-        texture->sizeX          = missing->sizeX;
-        texture->sizeY          = missing->sizeY;
+        Texture* missing = assets->missingTexture;
+        texture->sizeX = missing->sizeX;
+        texture->sizeY = missing->sizeY;
         texture->size.x = texture->sizeX;
         texture->size.y = texture->sizeY;
-        texture->mips[0]        = missing->mips[0];
-        texture->mipCount       = missing->mipCount;
-        texture->mipSizeX[0]    = missing->mipSizeX[0];
-        texture->mipSizeY[0]    = missing->mipSizeY[0];
-        texture->GLID           = missing->GLID;
-        texture->ASTC           = false;
-        texture->HDR            = false;
+        texture->mips[0] = missing->mips[0];
+        texture->mipCount = missing->mipCount;
+        texture->mipSizeX[0] = missing->mipSizeX[0];
+        texture->mipSizeY[0] = missing->mipSizeY[0];
+        texture->GLID = missing->GLID;
+        texture->ASTC = false;
+        texture->HDR = false;
         return;
     }
     // Clear the mip data

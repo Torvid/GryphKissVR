@@ -10,7 +10,7 @@ Memset* globalMemset;
 Memcpy* globalMemcpy;
 
 #include "math.cpp"
-#include "memory.cpp"w
+#include "memory.cpp"
 #include "string.cpp"
 #include "enumTrick.cpp"
 
@@ -57,6 +57,7 @@ struct Assets
 
 static Assets* assets;
 
+
 enum HAlign
 {
     HAlign_right,
@@ -88,7 +89,7 @@ struct EngineState
 
     ArrayCreate(Texture, globalTextures, 100);
     ArrayCreate(Texture, sceneTextures, 100);
-    ArrayCreate(Mesh, meshes, 100);
+    ArrayCreate(Mesh, meshes, 500);
     ArrayCreate(Shader, shaders, 100);
     ArrayCreate(Sound, sounds, 100);
     ArrayCreate(Animation, animations, 100);
@@ -281,31 +282,73 @@ enum EntityType
     CreateMaterialGlobal(name, assets->defaultlit, defaultlit); \
     ArrayAdd(haven->sceneMaterials, name);
 
+//struct SmallString
+//{
+//    int length;
+//    char data[100];
+//};
+//void main()
+//{
+//    SmallString thing = {};
+//    Copy("Hello world", thing.data, 11);
+//}
+
+Entity* GetClosestEntityByType(float3 location, EntityType type)
+{
+    float currentDist = 999999999;
+    Entity* result = 0;
+    for (int i = 0; i < ArrayCount(haven->entities); i++)
+    {
+        Entity* current = haven->entities[i];
+        if (current->type != type)
+            continue;
+
+        float dist = distance(current->transform.position, location);
+        if (dist < currentDist)
+        {
+            currentDist = dist;
+            result = current;
+        }
+    }
+    return result;
+}
+
 namespace Rendering
 {
-    void SetCubemap(ReflectionProbe* probe)
+    void SetCubemaps()
     {
-        for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
+        ArrayCreate(ReflectionProbe*, overlappingProbes, 100);
+        for (int i = 0; i < ArrayCount(haven->entities); i++)
         {
-            if (!probe)
-            {
-                haven->sceneMaterials[i]->texCubemap0 = assets->black;
-                haven->sceneMaterials[i]->texCubemap1 = assets->black;
-                haven->sceneMaterials[i]->texCubemap2 = assets->black;
-                haven->sceneMaterials[i]->texCubemap3 = assets->black;
-                haven->sceneMaterials[i]->texCubemap4 = assets->black;
+            if (haven->entities[i]->type != EntityType_StaticMesh)
                 continue;
-            }
 
-            haven->sceneMaterials[i]->texCubemap0 = probe->octTexture0;
-            haven->sceneMaterials[i]->texCubemap1 = probe->octTexture1;
-            haven->sceneMaterials[i]->texCubemap2 = probe->octTexture2;
-            haven->sceneMaterials[i]->texCubemap3 = probe->octTexture3;
-            haven->sceneMaterials[i]->texCubemap4 = probe->octTexture4;
-            haven->sceneMaterials[i]->cubemapPosition = probe->transform.position;
-            haven->sceneMaterials[i]->cubemapSize = probe->transform.scale;
+            StaticMesh* mesh = (StaticMesh*)haven->entities[i];
+            ReflectionProbe* probe = (ReflectionProbe*)GetClosestEntityByType(mesh->transform.position, EntityType_ReflectionProbe);
             
         }
+
+        //for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
+        //{
+        //    if (!probe)
+        //    {
+        //        haven->sceneMaterials[i]->texCubemap0 = assets->black;
+        //        haven->sceneMaterials[i]->texCubemap1 = assets->black;
+        //        haven->sceneMaterials[i]->texCubemap2 = assets->black;
+        //        haven->sceneMaterials[i]->texCubemap3 = assets->black;
+        //        haven->sceneMaterials[i]->texCubemap4 = assets->black;
+        //        continue;
+        //    }
+        //
+        //    haven->sceneMaterials[i]->texCubemap0 = probe->octTexture0;
+        //    haven->sceneMaterials[i]->texCubemap1 = probe->octTexture1;
+        //    haven->sceneMaterials[i]->texCubemap2 = probe->octTexture2;
+        //    haven->sceneMaterials[i]->texCubemap3 = probe->octTexture3;
+        //    haven->sceneMaterials[i]->texCubemap4 = probe->octTexture4;
+        //    haven->sceneMaterials[i]->cubemapPosition = probe->transform.position;
+        //    haven->sceneMaterials[i]->cubemapSize = probe->transform.scale;
+        //    
+        //}
     }
 
     void SetLightmap(Texture* texture, float3 lightmapMin, float3 lightmapMax, float3 lightmapResolution, float radiosityProbeScale, float lightmapStrength = 0.005)
@@ -643,6 +686,7 @@ void printTransform(Transform t2)
 
 #include "scene_gryphkiss.cpp"
 #include "scene_cornellbox.cpp"
+#include "scene_doorcrush.cpp"
 #include "editor.cpp"
 
 void engineProfilerBeingSample()
@@ -658,27 +702,6 @@ void engineProfilerEndSample(char* name)
     ProfilerEndSample(name);
 }
 
-void CurrentSceneStart()
-{
-    ArrayClear(haven->sceneTextures);
-    ArrayClear(haven->sceneMaterials);
-    ArrayClear(haven->entities);
-    ArenaReset(&haven->arenaScene);
-
-    if (haven->currentScene == 0)
-        Gryphkiss::Start();
-    else if (haven->currentScene == 1)
-        CornellBox::Start();
-
-}
-void CurrentSceneUpdate()
-{
-    if (haven->currentScene == 0)
-        Gryphkiss::Update();
-    else if (haven->currentScene == 1)
-        CornellBox::Update();
-
-}
 
 extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory)
 {
@@ -774,12 +797,10 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     //Assert(haven->platformGraphicsCreateFramebufferTarget, "Critical function missing");
     //Assert(haven->platformGraphicsCreateTextureTarget, "Critical function missing");
 
-    bool firstFrame = false;
     if (!gameMemory->initialized)
     {
-        firstFrame = true;
+
         haven->coutner = 0;
-        gameMemory->initialized = true;
 
         ArenaInitialize(&haven->arenasArena, sizeof(haven->arenasArenaData), haven->arenasArenaData);
 
@@ -829,8 +850,6 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
         Editor::Start();
 
-        CurrentSceneStart();
-
         profilerStart();
 
 
@@ -849,11 +868,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         haven->blue->Color = float3(0, 0, 1);
         haven->blue->BackFaceCulling = true;
 
-        return;
-    }
-    if (resetGame)
-    {
-        CurrentSceneStart();
+        //return;
     }
     Transform headLocal;
     headLocal = input->eyeLeft;
@@ -878,18 +893,41 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     Drawing::DrawText("P: toggle profiling");
     Drawing::DrawText("space: reset");
     Drawing::DrawText("ctrl space: reload and reset");
+    Drawing::DrawText("number keys: change scene");
     
-    if (Drawing::DrawButton("Next Scene"))
+    if (!gameMemory->initialized || input->d1Down || input->d2Down || input->d3Down || resetGame)
     {
-        haven->currentScene++;
-        haven->currentScene %= 2;
-        CurrentSceneStart();
+        ArrayClear(haven->sceneTextures);
+        ArrayClear(haven->sceneMaterials);
+        ArrayClear(haven->entities);
+        ArenaReset(&haven->arenaScene);
+        resetGame = true;
     }
-    
+
+    if (input->d1Down)
+        haven->currentScene = 0;
+    if (input->d2Down)
+        haven->currentScene = 1;
+    if (input->d3Down)
+        haven->currentScene = 2;
+
+    if (resetGame && haven->currentScene == 0)
+        Gryphkiss::Start();
+    if (resetGame && haven->currentScene == 1)
+        CornellBox::Start();
+    if (resetGame && haven->currentScene == 2)
+        DoorCrush::Start();
+
+    if (haven->currentScene == 0)
+        Gryphkiss::Update();
+    if (haven->currentScene == 1)
+        CornellBox::Update();
+    if (haven->currentScene == 2)
+        DoorCrush::Update();
+
     Editor::Update();
     gameMemory->spectatorCamera = haven->spectatorCamera;
 
-    CurrentSceneUpdate();
 
     profilerUpdate();
 
@@ -969,6 +1007,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
     gameMemory->renderCommands_count = haven->renderCommands_count;
 
+    gameMemory->initialized = true;
 }
 
 #endif

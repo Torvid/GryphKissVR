@@ -1416,6 +1416,17 @@ Transform transform(float3 position, float3 right, float3 forward, float3 up, fl
 }
 #define Transform(position, forward, up, scale) ctor_transform((position), (forward), (up), (scale))
 
+Transform lerp(Transform a, Transform b, float t)
+{
+    Transform result = a;
+    result.position = lerp(a.position , b.position , t);
+    result.right    = lerp(a.right    , b.right    , t);
+    result.forward  = lerp(a.forward  , b.forward  , t);
+    result.up       = lerp(a.up       , b.up       , t);
+    result.scale    = lerp(a.scale    , b.scale    , t);
+    return result;
+}
+
 Transform rotateAboutPoint(Transform t, float3 pivot, float3 Axis, float angle)
 {
     t.position -= pivot;
@@ -1609,6 +1620,14 @@ float GetSpiralBlurWeight(float Samples, float i)
 {
     Samples += 0.01f;
     return (1.0f - (i / Samples)) / Samples * 2.0;
+}
+
+bool BoundsBoundsIntersect(float3 bounds0Min, float3 bounds0Max, float3 bounds1Min, float3 bounds1Max)
+{
+    return
+        (bounds0Max.x >= bounds1Min.x && bounds1Max.x >= bounds0Min.x) &&
+        (bounds0Max.y >= bounds1Min.y && bounds1Max.y >= bounds0Min.y) &&
+        (bounds0Max.z >= bounds1Min.z && bounds1Max.z >= bounds0Min.z);
 }
 
 bool RayBoxIntersect(float3 Start, float3 End)
