@@ -5,6 +5,7 @@
 
 #define Parameters(X) \
 	X(float3, Color, float3(1, 1, 1)) \
+	X(float3, OverlayColor, float3(0, 0, 0)) \
 	X(sampler2D, texM1, assets->baseM1) \
 	X(sampler2D, texM2, assets->baseM2) \
 	X(sampler2D, texM3, assets->baseM3) \
@@ -459,6 +460,9 @@ void main()
 
 	// emmissive
 	FragColor.rgb += M3.rgb * 10.0;
+	
+	// editor
+	FragColor.rgb += OverlayColor;
 
 	if (M3.a < 0.5)
 		discard;

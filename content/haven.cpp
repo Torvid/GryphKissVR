@@ -149,6 +149,7 @@ struct EngineState
     void* gameState;
 
     float2 Resolution;
+    float FOV;
 
     ProfilingData* profilingData;
 
@@ -164,6 +165,8 @@ struct EngineState
     VAlign vAlign;
     float3 clearColor;
     int currentScene = 0;
+    Entity* pickedEntity;
+    Entity* selectedEntity;
 };
 static EngineState* haven;
 static Input* input;
@@ -176,7 +179,8 @@ static GameMemory* globalGameMemory;
     int type; \
     char* name[100]; \
     bool visible; \
-    bool editorOnly;
+    bool editorOnly; \
+    float3 OverlayColor;
 
 struct Entity
 {
@@ -293,8 +297,10 @@ enum EntityType
 //    Copy("Hello world", thing.data, 11);
 //}
 
-Entity* GetClosestEntityByType(float3 location, EntityType type)
+Entity* GetClosestEntityByType(float3 location, EntityType type, int* index = 0)
 {
+    if (index)
+        *index = 0;
     float currentDist = 999999999;
     Entity* result = 0;
     for (int i = 0; i < ArrayCount(haven->entities); i++)
@@ -302,7 +308,8 @@ Entity* GetClosestEntityByType(float3 location, EntityType type)
         Entity* current = haven->entities[i];
         if (current->type != type)
             continue;
-
+        if (index)
+            *index++;
         float dist = distance(current->transform.position, location);
         if (dist < currentDist)
         {
@@ -315,44 +322,21 @@ Entity* GetClosestEntityByType(float3 location, EntityType type)
 
 namespace Rendering
 {
-    void SetCubemaps()
+
+    void SetLightmap(Texture* texture, float3 lightmapMin, float3 lightmapMax, float3 lightmapResolution, float radiosityProbeScale, float lightmapStrength = 0.005)
     {
-        ArrayCreate(ReflectionProbe*, overlappingProbes, 100);
         for (int i = 0; i < ArrayCount(haven->entities); i++)
         {
             if (haven->entities[i]->type != EntityType_StaticMesh)
                 continue;
-
             StaticMesh* mesh = (StaticMesh*)haven->entities[i];
-            ReflectionProbe* probe = (ReflectionProbe*)GetClosestEntityByType(mesh->transform.position, EntityType_ReflectionProbe);
-            
+            mesh->material.texLightmap = texture;
+            mesh->material.lightmapMin = lightmapMin;
+            mesh->material.lightmapMax = lightmapMax;
+            mesh->material.lightmapResolution = lightmapResolution;
+            mesh->material.radiosityProbeScale = radiosityProbeScale;
+            mesh->material.lightmapStrength = lightmapStrength;
         }
-
-        //for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
-        //{
-        //    if (!probe)
-        //    {
-        //        haven->sceneMaterials[i]->texCubemap0 = assets->black;
-        //        haven->sceneMaterials[i]->texCubemap1 = assets->black;
-        //        haven->sceneMaterials[i]->texCubemap2 = assets->black;
-        //        haven->sceneMaterials[i]->texCubemap3 = assets->black;
-        //        haven->sceneMaterials[i]->texCubemap4 = assets->black;
-        //        continue;
-        //    }
-        //
-        //    haven->sceneMaterials[i]->texCubemap0 = probe->octTexture0;
-        //    haven->sceneMaterials[i]->texCubemap1 = probe->octTexture1;
-        //    haven->sceneMaterials[i]->texCubemap2 = probe->octTexture2;
-        //    haven->sceneMaterials[i]->texCubemap3 = probe->octTexture3;
-        //    haven->sceneMaterials[i]->texCubemap4 = probe->octTexture4;
-        //    haven->sceneMaterials[i]->cubemapPosition = probe->transform.position;
-        //    haven->sceneMaterials[i]->cubemapSize = probe->transform.scale;
-        //    
-        //}
-    }
-
-    void SetLightmap(Texture* texture, float3 lightmapMin, float3 lightmapMax, float3 lightmapResolution, float radiosityProbeScale, float lightmapStrength = 0.005)
-    {
         for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
         {
             haven->sceneMaterials[i]->texLightmap = texture;
@@ -731,6 +715,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     }
 
     haven->Resolution = gameMemory->Resolution;
+    haven->FOV = gameMemory->FOV;
 
     ArrayClear(haven->renderCommands);
     ArenaReset(&haven->arenaDrawCommands);
@@ -796,10 +781,12 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     //Assert(haven->platformGraphicsLoadShader, "Critical function missing");
     //Assert(haven->platformGraphicsCreateFramebufferTarget, "Critical function missing");
     //Assert(haven->platformGraphicsCreateTextureTarget, "Critical function missing");
+    
+    if (input->time > (60 * 60 * 12)) // reset at 12 hrs
+        input->time = -(60 * 60 * 12);
 
     if (!gameMemory->initialized)
     {
-
         haven->coutner = 0;
 
         ArenaInitialize(&haven->arenasArena, sizeof(haven->arenasArenaData), haven->arenasArenaData);
@@ -901,6 +888,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         ArrayClear(haven->sceneMaterials);
         ArrayClear(haven->entities);
         ArenaReset(&haven->arenaScene);
+        haven->selectedEntity = 0;
         resetGame = true;
     }
 

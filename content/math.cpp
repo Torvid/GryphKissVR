@@ -1630,7 +1630,17 @@ bool BoundsBoundsIntersect(float3 bounds0Min, float3 bounds0Max, float3 bounds1M
         (bounds0Max.z >= bounds1Min.z && bounds1Max.z >= bounds0Min.z);
 }
 
-bool RayBoxIntersect(float3 Start, float3 End)
+struct RayHit
+{
+    void* entity; // the entity that was hit
+    bool hit;
+    float3 position;
+    float3 normal;
+    float distance;
+    float3 start;
+    float3 end;
+};
+bool RayBoxIntersectInternal(float3 Start, float3 End)
 {
     // fudge
     Start += float3(0.0001f, 0.0002f, 0.0003f);
@@ -1657,12 +1667,73 @@ bool RayBoxIntersect(float3 Start, float3 End)
     if (tN > tF || tF < 0.0)
         return false;
 
-    if(tN > dist)
+    if (tN > dist)
         return false;
 
     //*Normal = -sign(RayDir) * step(float3(t1.y, t1.z, t1.x), float3(t1.x, t1.y, t1.z)) * step(float3(t1.z, t1.x, t1.y), float3(t1.x, t1.y, t1.z));
 
     return true;
+}
+
+float RaySphereIntersect(float3 RayPos, float3 RayDir, float r)
+{
+    if (dot(RayPos, RayPos) < (r * r))
+        return -1;
+
+    float3 q = cross(RayDir, RayPos);
+    if (dot(q, q) > (r * r))
+        return -1;
+    float dist = dot(-RayPos, RayDir) - sqrtFast((r * r) - dot(q, q));
+
+    return dist;
+}
+
+RayHit RayBoxIntersect(float3 rayPos, float3 rayDir)
+{
+    RayHit result = {};
+    // fudge
+    rayDir += float3(0.0001f, 0.0002f, 0.0003f);
+    rayDir = normalize(rayDir);
+
+    float dist = 99999;
+    if (rayDir.x == 0 || rayDir.y == 0 || rayDir.z == 0)
+    {
+        result.hit = false;
+        return result;
+    }
+
+    float3 m = 1.0f / rayDir;
+    float3 n = -m * rayPos;
+    float3 k = abs(m);// *0.5f;
+
+    float3 t1 = n - k;
+    float3 t2 = n + k;
+
+    float tN = max(t1.x, t1.y, t1.z);
+    float tF = min(t2.x, t2.y, t2.z);
+    result.distance = tN;
+    result.position = rayPos + rayDir * tN;
+
+    if (tN < 0)
+    {
+        result.hit = false;
+        return result;
+    }
+    if (tN > tF || tF < 0.0)
+    {
+        result.hit = false;
+        return result;
+    }
+    if (tN > dist)
+    {
+        result.hit = false;
+        return result;
+    }
+
+    result.normal = -sign(rayDir) * step(float3(t1.y, t1.z, t1.x), float3(t1.x, t1.y, t1.z)) * step(float3(t1.z, t1.x, t1.y), float3(t1.x, t1.y, t1.z));
+
+    result.hit = true;
+    return result;
 }
 
 float3 AngleToVector(float angle, float3 left, float3 right)

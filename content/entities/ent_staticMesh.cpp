@@ -7,7 +7,7 @@ struct StaticMesh
 {
     EntityContents;
     bool isSky;
-    Material_defaultlit* material;
+    Material_defaultlit material;
     Material_skydomeShader* materialSky;
     Mesh* mesh;
     ReflectionProbe* reflectionProbe;
@@ -18,14 +18,13 @@ struct StaticMesh
 void StaticMeshDraw(StaticMesh* self, Camera camera);
 bool StaticMeshCull(StaticMesh* self, Transform camera);
 #else
-
 StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_defaultlit* material, Transform transform)
 {
     Assert(mesh, "mesh was null.");
     Assert(material, "material was null.");
     StaticMesh* staticMesh = Instantiate(StaticMesh);
     staticMesh->isSky = false;
-    staticMesh->material = material;
+    staticMesh->material = *material;
     staticMesh->materialSky = 0;
     staticMesh->mesh = mesh;
     staticMesh->transform = transform;
@@ -37,7 +36,7 @@ StaticMesh* StaticMeshInstantiate(Mesh* mesh, Material_skydomeShader* material, 
     Assert(material, "material was null.");
     StaticMesh* staticMesh = Instantiate(StaticMesh);
     staticMesh->isSky = true;
-    staticMesh->material = 0;
+    staticMesh->material = {};
     staticMesh->materialSky = material;
     staticMesh->mesh = mesh;
     staticMesh->transform = transform;
@@ -54,39 +53,72 @@ Transform StaticMeshGetLocalBoundsTransform(StaticMesh* self)
     t.position = boundsCenterWorldSpace;
     t.scale *= self->mesh->boundsTransform.scale;
 
-    if (t.scale.y == 0.0)
+    if (t.scale.y < 0.01)
         t.scale.y = 0.01;
-    if (t.scale.x == 0.0)
+    if (t.scale.x < 0.01)
         t.scale.x = 0.01;
-    if (t.scale.z == 0.0)
+    if (t.scale.z < 0.01)
         t.scale.z = 0.01;
 
     return t;
 }
-bool RayWorldIntersect(float3 pos0, float3 pos1)
+
+RayHit StaticMeshLineTrace(StaticMesh* self, float3 start, float3 direction)
 {
+    Transform t = StaticMeshGetLocalBoundsTransform(self);
+    float3 startLocal = WorldToLocal(start, t);
+    float3 directionLocal = WorldToLocalVector(direction, t);
+    RayHit hit = RayBoxIntersect(startLocal, directionLocal);
+    hit.position = LocalToWorld(hit.position, t);
+    if (hit.hit)
+    {
+        hit.distance = distance(hit.position, start);
+        hit.entity = self;
+    }
+    return hit;
+}
+RayHit ReflectionProbeLineTrace(ReflectionProbe* self, float3 start, float3 direction)
+{
+    RayHit result = {};
+    float dist = RaySphereIntersect(start - self->transform.position, direction, 0.4f);
+    if (dist <= 0)
+    {
+        result.hit = false;
+        return result;
+    }
+
+    result.hit = true;
+    result.entity = self;
+    result.distance = dist;
+    result.position = start + direction * dist;
+    return result;
+}
+
+RayHit StaticMeshLineTraceClosest(float3 start, float3 direction)
+{
+    RayHit closestHit = {};
+    closestHit.distance = 99999999;
     for (int k = 0; k < ArrayCount(haven->entities); k++)
     {
+        RayHit hit = {};
         if (haven->entities[k]->type == EntityType_StaticMesh)
         {
-            StaticMesh* mesh = (StaticMesh*)haven->entities[k];
-            Transform t = StaticMeshGetLocalBoundsTransform(mesh);
-            float3 startLocal = WorldToLocal(pos0, t);
-            float3 endLocal = WorldToLocal(pos1, t);
-            if (RayBoxIntersect(startLocal, endLocal))
+            hit = StaticMeshLineTrace((StaticMesh*)haven->entities[k], start, direction);
+        }
+        if (haven->entities[k]->type == EntityType_ReflectionProbe)
+        {
+            hit = ReflectionProbeLineTrace((ReflectionProbe*)haven->entities[k], start, direction);
+        }
+        if (hit.hit)
+        {
+            if (hit.distance < closestHit.distance)
             {
-                return true;
+                closestHit = hit;
             }
         }
     }
-    return false;
+    return closestHit;
 }
-
-//bool BoundsOverlap(StaticMesh* mesh, ReflectionProbe* probe)
-//{
-//
-//}
-
 
 Transform StaticMeshGetAABB(StaticMesh* self)
 {
@@ -139,7 +171,6 @@ Transform StaticMeshGetAABB(StaticMesh* self)
 bool StaticMeshCull(StaticMesh* self, Transform camera)
 {
     float3 boundsCenterWorldSpace = LocalToWorld(self->mesh->boundsTransform.position, self->transform);
-    //float radius = length(self->transform.scale * self->mesh->boundsSize) * 0.5;
     if (dot(camera.position - boundsCenterWorldSpace, camera.forward) > self->mesh->radius)
         return true;
 
@@ -154,8 +185,7 @@ void StaticMeshDraw(StaticMesh* self, Camera camera)
     }
     else
     {
-        //self->material->texCubemap0 = self->cubemap;
-        Rendering::DrawMesh(self->material, self->mesh, self->transform, camera, "Scene StaticMesh");
+        Rendering::DrawMesh(&self->material, self->mesh, self->transform, camera, "Scene StaticMesh");
     }
 }
 void StaticMeshDraw(StaticMesh* self)
@@ -166,7 +196,7 @@ void StaticMeshDraw(StaticMesh* self)
     }
     else
     {
-        Rendering::DrawMesh(self->material, self->mesh, self->transform, "Scene StaticMesh");
+        Rendering::DrawMesh(&self->material, self->mesh, self->transform, "Scene StaticMesh");
     }
 }
 
@@ -176,12 +206,10 @@ void StaticMeshUpdate(StaticMesh* self, int i)
     if (StaticMeshCull(self, headLocal))
         return;
     
-    //Transform aabb = StaticMeshGetAABB(self);
-
     Transform aabb = StaticMeshGetAABB(self);
     Transform bounds = StaticMeshGetLocalBoundsTransform(self);
-    Drawing::DrawBox(aabb, 0.01);
 
+    self->material.OverlayColor = self->OverlayColor;
     StaticMeshDraw(self);
 }
 

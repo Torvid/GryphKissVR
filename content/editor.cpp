@@ -13,6 +13,7 @@ namespace Editor
     {
         float mouseSensitivity = 0.1f;
         float scrollSensitivity = 0.5f;
+        float panSensitivity = 0.01f;
 
         float fastMoveSpeed = 4.0f;
         float slowMoveSpeed = 16.0f;
@@ -41,6 +42,7 @@ namespace Editor
             Movement += haven->spectatorCamera.forward * x;
             Movement += haven->spectatorCamera.right * y;
             Movement += haven->spectatorCamera.up * z;
+
             if (length(Movement) > 0)
                 Movement = normalize(Movement);
 
@@ -51,10 +53,15 @@ namespace Editor
             Movement *= input->deltaTime * speed;
         }
 
+        if (input->mouseMiddle)
+        {
+            Movement -= haven->spectatorCamera.right * input->mousePosDelta.x * panSensitivity;
+            Movement += haven->spectatorCamera.up * input->mousePosDelta.y * panSensitivity;
+        }
+
         Movement += haven->spectatorCamera.forward * input->mouseScrollDelta * scrollSensitivity;
         
         haven->spectatorCamera.position += Movement;
-        //haven->spectatorCamera = input->head;
 
     }
 
@@ -64,66 +71,61 @@ namespace Editor
         UpdateCamera();
 
         Drawing::DrawFont2D(".", input->mousePos, 500, 600, HAlign_left, VAlign_down);
+
+        for (int i = 0; i < ArrayCount(haven->entities); i++)
+        {
+            haven->entities[i]->OverlayColor = float3(0, 0, 0);
+        }
+
         if (haven->editor)
         {
-            /*
-            if (input->ctrl && input->sDown)
-            {
-                //memory->printf("Save\n");
-                haven->platformWriteFile((uint8*)haven, 2048, "scene.cpp");
-            }
-            if (Drawing::DrawButton("Load"))
-            {
-
-            }
-
-            Rendering::DrawMesh(haven->axesMaterial, assets->axes, input->handRight);
-            Rendering::DrawMesh(haven->axesMaterial, assets->axes, input->handLeft);
-            Rendering::DrawMesh(haven->axesMaterial, assets->axes, input->aimRight);
-            Rendering::DrawMesh(haven->axesMaterial, assets->axes, input->aimLeft);
-            Rendering::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStage);
-            Rendering::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageLeft);
-            Rendering::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageRight);
-            Rendering::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageLeftRotated);
-            Rendering::DrawMesh(haven->axesMaterial, assets->axes, input->playspaceStageRightRotated);
-
-            Drawing::DrawText3D("World Origin", vectorOne * 0.1f);
-            Drawing::DrawText3D("Stage", input->playspaceStage.position + vectorOne * 0.1f);
-            Drawing::DrawText3D("Stage Left", input->playspaceStageLeft.position + vectorOne * 0.1f);
-            Drawing::DrawText3D("Stage Right", input->playspaceStageRight.position + vectorOne * 0.1f);
-            Drawing::
-            DrawText3D("Left Hand", input->handLeft.position + 
-                (input->handLeft.forward + 
-                 input->handLeft.right + 
-                 input->handLeft.up) * 0.05f, 0.1f);
-            Drawing::DrawText3D("Right Hand", input->handRight.position +
-                (input->handRight.forward +
-                 input->handRight.right +
-                 input->handRight.up) * 0.05f, 0.1f);
-            Drawing::DrawText3D("Left Aim", input->aimLeft.position +
-                (input->aimLeft.forward +
-                 input->aimLeft.right +
-                 input->aimLeft.up) * 0.05f, 0.1f);
-            Drawing::DrawText3D("Right Aim", input->aimRight.position +
-                (input->aimRight.forward +
-                 input->aimRight.right +
-                 input->aimRight.up) * 0.05f, 0.1f);
-
-            float3 center = (input->playspaceStageLeft.position + input->playspaceStageRight.position) / 2.0f;
-
-            Rendering::DrawMesh(haven->red, assets->box, { float3(0,0,0) + float3(0.25,   0,    0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.5,  0.025, 0.025 } });
-            Rendering::DrawMesh(haven->green, assets->box, { float3(0,0,0) + float3(0,    0.25, 0),    { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.5,  0.025 } });
-            Rendering::DrawMesh(haven->blue, assets->box, { float3(0,0,0) + float3(0,     0,    0.25), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0.025, 0.025, 0.5  } });
-
-            //Transform monkeyRotation2 = { center + float3(0, -6, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-            //DrawMesh(gameState->axesMaterial, haven->monkey, monkeyRotation2);
-            //monkeyRotation2 = { center + float3(3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-            //DrawMesh(gameState->axesMaterial, haven->ui_quad, monkeyRotation2);
-            //monkeyRotation2 = { center + float3(-3, -3, 0), { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 1, 1, 1 } };
-            //DrawMesh(gameState->torvidMat, haven->monkey, monkeyRotation2);
-            */
             const int tempStringSize = 2048;
             char text[tempStringSize] = {};
+
+            // Get the entity under the mouse cursor.
+            haven->pickedEntity = 0;
+            float2 mousePos = (input->mousePos / haven->Resolution);
+            if (mousePos.x > 0 && mousePos.x < 1.0 && mousePos.y > 0 && mousePos.y < 1.0)
+            {
+                float2 a = mousePos * 2.0 - 1.0;
+
+                Clear((uint8*)text, tempStringSize);
+                StringAppend(text, "picker: ", a);
+                Drawing::DrawText(text);
+
+                float3 pickerVector = haven->spectatorCamera.forward + 0.85 * a.x * haven->spectatorCamera.right + 0.55 * a.y * -haven->spectatorCamera.up;
+
+                float3 PickerPosition = haven->spectatorCamera.position;
+
+                RayHit hit = StaticMeshLineTraceClosest(PickerPosition, pickerVector);
+                haven->pickedEntity = (Entity*)hit.entity;
+                Drawing::DrawPoint(hit.position, 0.1f);
+            }
+
+            float3 pickColor = float3(0.05f, 0.05f, 0.15f);
+            float3 selectedColor = float3(0.25f, 0.25f, 0.5f) ;
+            if (haven->pickedEntity)
+            {
+                haven->pickedEntity->OverlayColor = pickColor;
+                if (input->mouseLeftDown)
+                {
+                    haven->selectedEntity = haven->pickedEntity;
+                }
+            }
+            
+            if (haven->selectedEntity)
+            {
+                haven->selectedEntity->OverlayColor = selectedColor;
+                if (haven->selectedEntity->type == EntityType_StaticMesh)
+                {
+                    Drawing::DrawBox(StaticMeshGetLocalBoundsTransform((StaticMesh*)haven->selectedEntity));
+                }
+                if (haven->selectedEntity->type == EntityType_ReflectionProbe)
+                {
+                    Drawing::DrawBox(scale(haven->selectedEntity->transform, float3(0.25, 0.25, 0.25)));
+                }
+            }
+
             Clear((uint8*)text, tempStringSize);
             StringAppend(text, "\n\nINPUT: ");
             StringAppend(text, "\n    Mouse pos: ", input->mousePos);

@@ -11,14 +11,70 @@ struct ReflectionProbe
     Texture* octTexture3;
     Texture* octTexture4;
     bool rendered;
+    float3 Color;
 };
 
 #else
+void ClearCubemaps(bool clear = false)
+{
+    for (int i = 0; i < ArrayCount(haven->entities); i++)
+    {
+        if (haven->entities[i]->type != EntityType_StaticMesh)
+            continue;
+        StaticMesh* mesh = (StaticMesh*)haven->entities[i];
+
+        mesh->material.texCubemap0 = assets->black;
+        mesh->material.texCubemap1 = assets->black;
+        mesh->material.texCubemap2 = assets->black;
+        mesh->material.texCubemap3 = assets->black;
+        mesh->material.texCubemap4 = assets->black;
+    }
+}
+
+void SetCubemaps()
+{
+    for (int i = 0; i < ArrayCount(haven->entities); i++)
+    {
+        if (haven->entities[i]->type != EntityType_StaticMesh)
+            continue;
+
+        StaticMesh* mesh = (StaticMesh*)haven->entities[i];
+        int probeIndex = 0;
+
+        float3 center = StaticMeshGetLocalBoundsTransform(mesh).position;
+
+        ReflectionProbe* probe = (ReflectionProbe*)GetClosestEntityByType(center, EntityType_ReflectionProbe, &probeIndex);
+
+        if (!probe)
+            continue;
+
+        mesh->material.texCubemap0 = probe->octTexture0;
+        mesh->material.texCubemap1 = probe->octTexture1;
+        mesh->material.texCubemap2 = probe->octTexture2;
+        mesh->material.texCubemap3 = probe->octTexture3;
+        mesh->material.texCubemap4 = probe->octTexture4;
+        mesh->material.cubemapPosition = probe->transform.position;
+        mesh->material.cubemapSize = probe->transform.scale;
+    }
+
+    for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
+    {
+        ReflectionProbe* probe = (ReflectionProbe*)GetClosestEntityByType(float3(0, 0, 0), EntityType_ReflectionProbe);
+
+        haven->sceneMaterials[i]->texCubemap0 = probe->octTexture0;
+        haven->sceneMaterials[i]->texCubemap1 = probe->octTexture1;
+        haven->sceneMaterials[i]->texCubemap2 = probe->octTexture2;
+        haven->sceneMaterials[i]->texCubemap3 = probe->octTexture3;
+        haven->sceneMaterials[i]->texCubemap4 = probe->octTexture4;
+        haven->sceneMaterials[i]->cubemapPosition = probe->transform.position;
+        haven->sceneMaterials[i]->cubemapSize = probe->transform.scale;
+    }
+}
 
 ReflectionProbe* ReflectionProbeInstantiate(Transform transform)
 {
     ReflectionProbe* self = Instantiate(ReflectionProbe);
-
+    self->Color = float3(1.0f, 1.0f, 1.0f);
     for (int i = 0; i < 6; i++)
     {
         self->cubeTexture[i] = Rendering::CreateTextureTarget(512, 512, true);
@@ -46,66 +102,49 @@ void DrawScreenTexture(Texture* texture, float2 size, float heightOffset, float3
         haven->spectatorCamera.forward,
         float3(size.x, size.y, 1) * scale);
 
-    //float3(1, 0, 0),
-    //float3(0, 0, 1),
-    //float3(0, 1, 0),
-
-    //planeTransform.position += haven->spectatorCamera.forward * 0.1;
-    ////transform(haven->spectatorCamera.position + float3(0, 0.1, 0));
-    //planeTransform.scale = float3(size.x, size.y, 1) * 0.1;
-    ////planeTransform = LookRotation(planeTransform, haven->spectatorCamera.forward, haven->spectatorCamera.up);
     CreateMaterialLocal(command, assets->unlit, unlit);
     command->ColorTexture = texture;
     command->Color = Color;
     command->BackFaceCulling = true;
     Rendering::DrawMesh(command, assets->ui_quad, planeTransform, "Probe plane in the scene");
 }
+
 void ReflectionProbeUpdate(ReflectionProbe* self, int i)
 {
     if (haven->editor)
     {
-        //Drawing::DrawText("hello world");
         Drawing::DrawFontCameraFacing("\n\n\n\n\nReflection Probe", self->transform.position, 1.0f, 999, HAlign_center, VAlign_center);
 
         CreateMaterialLocal(command, assets->reflectionProbeShader, reflectionProbeShader);
         command->ColorTexture = self->octTexture0;
-        command->Color = float3(1.0f, 1.0f, 1.0f);
+        command->Color = self->Color;
+        command->OverlayColor = self->OverlayColor;
         command->mesh = assets->sphereMesh;
         command->transform = self->transform;
         command->transform.scale = float3(0.25, 0.25, 0.25);
         Rendering::DrawMesh(command);
-        Transform box = self->transform;
-        box.scale *= 0.5;
-        Drawing::DrawBox(box);
+
+        if (haven->selectedEntity == (Entity*)self)
+        {
+            Transform box = self->transform;
+            box.scale *= 0.5;
+            Drawing::DrawBox(box);
+        }
     }
 
     if (!self->rendered)
     {
-        //float3 startPos = haven->spectatorCamera.position + float3(-0.5, 2, -0.5);
-        //Rendering::SetCubemap(0);
+        ClearCubemaps();
         Rendering::RenderCubemap(self->transform.position, self->cubeTexture);
         Rendering::PackCubemap(self->octTexture0, self->cubeTexture);
         Rendering::Downsize4x(self->octTexture0, self->octTexture1, 20);
         Rendering::Downsize4x(self->octTexture1, self->octTexture2, 50);
         Rendering::Downsize4x(self->octTexture2, self->octTexture3, 400);
         Rendering::Downsize4x(self->octTexture3, self->octTexture4, 0);
-        //Rendering::SetCubemap(self);
         self->rendered = true;
+        SetCubemaps(); // update global cubemap assignments
     }
-    return;
 
-    //DrawScreenTexture(self->octTexture);
-
-    //DrawFont("Octahedral packing: ", transform(planeTransform.position), 1, 2.0f, HAlign_left, VAlign_up);
-
-    //CreateMaterialLocal(waterPlane2, defaultlit);
-    //waterPlane2->texM1 = assets->baseM1;
-    //waterPlane2->texM2 = assets->baseM2;
-    //waterPlane2->texCubemap = self->octTexture;
-    //waterPlane2->Color = float3(1.0f, 1.0f, 1.0f);
-    //planeTransform.scale = float3(0.25, 0.25, 0.25);
-    //planeTransform.position = startPos + float3(-0.5, 0, -0.3);
-    //DrawMesh(waterPlane2, assets->sphereMesh, planeTransform, "Probe plane in the scene");
 }
 
 #endif

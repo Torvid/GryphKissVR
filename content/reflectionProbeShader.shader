@@ -1,10 +1,11 @@
-﻿
+
 #include "macros.shaderinc"
 
 #define ShaderName reflectionProbeShader
 
 #define Parameters(X) \
-	X(float3, Color)\
+	X(float3, Color, float3(1, 1, 1))\
+	X(float3, OverlayColor, float3(0, 0, 0)) \
 	X(sampler2D, ColorTexture)
 
 #include "shaderMacros.cpp"
@@ -54,7 +55,8 @@ void main()
 	float2 reflectUV = OctEncode(reflectVector);
 	//float4 cubemap = SampleGrad(texCubemap, reflectUV, ddxy(UV*10.0f));
 
-	FragColor.rgb =  Sample(ColorTexture, reflectUV).rgb* Color;
+	FragColor.rgb = Sample(ColorTexture, reflectUV).rgb* Color;
+	FragColor.rgb += OverlayColor;
 	FragColor.a = 1.0;
 }
 #endif

@@ -603,6 +603,7 @@ typedef struct
     
     // Resolution of the monitor
     float2 Resolution;
+    float FOV;
 
     // Rendering
     int renderCommands_count;

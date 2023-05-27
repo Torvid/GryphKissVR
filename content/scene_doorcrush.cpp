@@ -43,6 +43,7 @@ namespace DoorCrush
         gameState->cornellBoxMat->texM2 = assets->baseM2;
         gameState->cornellBoxMat->texM3 = assets->baseM3;
         gameState->cornellBoxMat->metallicOffset = -1.0;
+        gameState->cornellBoxMat->roughnessOffset = -1.0f;
 
         CreateSceneMaterial(gameState->boxMat);
         gameState->boxMat->metallicOffset = -1.0;
@@ -142,7 +143,7 @@ namespace DoorCrush
             StaticMeshInstantiate(assets->bl_building1034, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
             StaticMeshInstantiate(assets->bl_building1035, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
             StaticMeshInstantiate(assets->bl_building1036, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
-            gameState->testMesh = StaticMeshInstantiate(assets->bl_building1037, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
+            StaticMeshInstantiate(assets->bl_building1037, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
             StaticMeshInstantiate(assets->bl_building1038, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
             StaticMeshInstantiate(assets->bl_building1039, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
             StaticMeshInstantiate(assets->bl_building1040, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
@@ -188,7 +189,7 @@ namespace DoorCrush
             StaticMeshInstantiate(assets->bl_misc013, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
             StaticMeshInstantiate(assets->bl_misc014, gameState->cornellBoxMat, transform(float3(0, 0, 0), float3(1, 1, 1)));
         }
-
+        
         gameState->lightBaker = LightBakerInstantiate(assets->bake_DoorCrush, "bake/bake_DoorCrush.rad", float3(-8, -12, -1), float3(24, 24, 14), 5);
 
         Transform sphere = transform();
@@ -229,7 +230,6 @@ namespace DoorCrush
             }
         }
 
-
         Animation* torvidAnimation = assets->torvidTestAnim;
         for (int i = 0; i < torvidAnimation->boneCount; i++)
         {
@@ -237,7 +237,11 @@ namespace DoorCrush
             Transform t = torvidAnimation->transforms[i + frameOffset];
             gameState->torvidMat->shaderBoneTransforms[i] = t;
         }
-        Rendering::DrawMesh(gameState->torvidMat, assets->torvidTest, rotate(transform(float3(0.5f, sin(input->time) * 2.5f, 0)), 0,0,0.1));
+
+        haven->printf("%f\n", input->time);
+        Transform tr = rotate(transform(float3(0.5f, sin(input->time) * 2.5f, 0)), 0, 0, 0.1);
+
+        Rendering::DrawMesh(gameState->torvidMat, assets->torvidTest, tr);
 
         //Drawing::DrawFont("the light ray knows where it is because it knows where it isn't", transform(float3(0, 0, 1), 0, 0, 0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
     }
