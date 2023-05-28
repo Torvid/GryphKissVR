@@ -163,9 +163,9 @@ namespace Editor
         float3 lastClickPoint = GetGizmoClickPoint(input->mousePos - input->mousePosDelta, haven->gizmoAxis, axes);
         float3 clickPoint = GetGizmoClickPoint(input->mousePos, haven->gizmoAxis, axes);
 
-        Drawing::DrawArrow(axes.position, axes.position + axes.right     , 0.02, arrow0Color, 1, false, false);
-        Drawing::DrawArrow(axes.position, axes.position + axes.forward   , 0.02, arrow1Color, 1, false, false);
-        Drawing::DrawArrow(axes.position, axes.position + axes.up        , 0.02, arrow2Color, 1, false, false);
+        Debug::DrawArrow(axes.position, axes.position + axes.right     , 0.02, arrow0Color, 1, false, false);
+        Debug::DrawArrow(axes.position, axes.position + axes.forward   , 0.02, arrow1Color, 1, false, false);
+        Debug::DrawArrow(axes.position, axes.position + axes.up        , 0.02, arrow2Color, 1, false, false);
 
         if (input->mouseLeft)
         {
@@ -208,13 +208,13 @@ namespace Editor
         float3 lastClickPoint = GetRotateGizmoClickPoint(input->mousePos - input->mousePosDelta, haven->gizmoAxis, axes);
         float3 clickPoint = GetRotateGizmoClickPoint(input->mousePos, haven->gizmoAxis, axes);
 
-        Drawing::DrawCircle(axes.position, axes.right   , 0.5, 0.02, arrow0Color, 1, false);
-        Drawing::DrawCircle(axes.position, axes.forward , 0.5, 0.02, arrow1Color, 1, false);
-        Drawing::DrawCircle(axes.position, axes.up      , 0.5, 0.02, arrow2Color, 1, false);
+        Debug::DrawCircle(axes.position, axes.right   , 0.5, 0.02, arrow0Color, 1, false);
+        Debug::DrawCircle(axes.position, axes.forward , 0.5, 0.02, arrow1Color, 1, false);
+        Debug::DrawCircle(axes.position, axes.up      , 0.5, 0.02, arrow2Color, 1, false);
         
         if (input->mouseLeft)
         {
-            Drawing::DrawLine(axes.position, axes.position+ normalize(clickPoint - axes.position) * 0.5, 0.05, float3(1, 1, 1), 1, false);
+            Debug::DrawLine(axes.position, axes.position+ normalize(clickPoint - axes.position) * 0.5, 0.05, float3(1, 1, 1), 1, false);
             entity->transform = rotateAboutPoint(entity->transform, axes.position, lastClickPoint - axes.position, clickPoint - axes.position);
         }
     }
@@ -254,9 +254,9 @@ namespace Editor
         float3 lastClickPoint = GetGizmoClickPoint(input->mousePos - input->mousePosDelta, haven->gizmoAxis, axes);
         float3 clickPoint = GetGizmoClickPoint(input->mousePos, haven->gizmoAxis, axes);
 
-        Drawing::DrawArrow(axes.position, axes.position + axes.right     , 0.02, arrow0Color, 1, false, true);
-        Drawing::DrawArrow(axes.position, axes.position + axes.forward   , 0.02, arrow1Color, 1, false, true);
-        Drawing::DrawArrow(axes.position, axes.position + axes.up        , 0.02, arrow2Color, 1, false, true);
+        Debug::DrawArrow(axes.position, axes.position + axes.right     , 0.02, arrow0Color, 1, false, true);
+        Debug::DrawArrow(axes.position, axes.position + axes.forward   , 0.02, arrow1Color, 1, false, true);
+        Debug::DrawArrow(axes.position, axes.position + axes.up        , 0.02, arrow2Color, 1, false, true);
 
         if (input->mouseLeft)
         {
@@ -268,7 +268,7 @@ namespace Editor
         UpdateCamera();
 
         // mouse cursor
-        Drawing::DrawFont2D(".", input->mousePos, 500, 600, HAlign_left, VAlign_down);
+        Debug::DrawFont2D(".", input->mousePos, 500, 600, HAlign_left, VAlign_down);
 
         for (int i = 0; i < ArrayCount(haven->entities); i++)
         {
@@ -294,7 +294,7 @@ namespace Editor
 
                     RayHit hit = StaticMeshLineTraceClosest(PickerPosition, pickerVector);
                     haven->pickedEntity = (Entity*)hit.entity;
-                    Drawing::DrawPoint(hit.position, 0.1f);
+                    Debug::DrawPoint(hit.position, 0.1f);
                 }
 
                 if (haven->pickedEntity)
@@ -325,11 +325,11 @@ namespace Editor
                 haven->selectedEntity->OverlayColor = selectedColor;
                 if (type == EntityType_StaticMesh)
                 {
-                    Drawing::DrawBox(StaticMeshGetLocalBoundsTransform((StaticMesh*)haven->selectedEntity));
+                    Debug::DrawBox(StaticMeshGetLocalBoundsTransform((StaticMesh*)haven->selectedEntity));
                 }
                 if (type == EntityType_ReflectionProbe)
                 {
-                    Drawing::DrawBox(scale(haven->selectedEntity->transform, float3(0.25, 0.25, 0.25)));
+                    Debug::DrawBox(scale(haven->selectedEntity->transform, float3(0.25, 0.25, 0.25)));
                 }
                 Clear((uint8*)text, tempStringSize);
                 StringAppend(text, "Selected Entity: \n");
@@ -338,7 +338,7 @@ namespace Editor
                 StringAppend(text, "\nType: ");
                 StringAppend(text, EntityTypeToString((EntityType)haven->selectedEntity->type));
                 StringAppend(text, "\nPosition: ", haven->selectedEntity->transform.position);
-                Drawing::DrawText(text);
+                Debug::DrawText(text);
                 
                 if (haven->gizmoState == 0)
                 {
@@ -374,7 +374,7 @@ namespace Editor
             StringAppend(text, "\n\nINPUT: ");
             StringAppend(text, "\n    Mouse pos: ", input->mousePos);
             StringAppend(text, "\n    Spectator pos: ", haven->spectatorCamera.position);
-            Drawing::DrawText(text);
+            Debug::DrawText(text);
 
             Clear((uint8*)text, tempStringSize);
             StringAppend(text, "    Left Controller:\n");
@@ -382,7 +382,7 @@ namespace Editor
             StringAppend(text, "\n        Trigger: ", input->triggerLeft);
             StringAppend(text, "\n        Thumbstick: ", input->thumbstickLeft);
             StringAppend(text, "\n        Face Button: ", input->faceButtonLeft);
-            Drawing::DrawText(text);
+            Debug::DrawText(text);
 
             Clear((uint8*)text, tempStringSize);
             StringAppend(text, "    Right Controller:\n");
@@ -390,7 +390,7 @@ namespace Editor
             StringAppend(text, "\n        Trigger: ", input->triggerRight);
             StringAppend(text, "\n        Thumbstick: ", input->thumbstickRight);
             StringAppend(text, "\n        Face Button: ", input->faceButtonRight);
-            Drawing::DrawText(text);
+            Debug::DrawText(text);
 
             //haven->headsetView = DrawToggle(input, "Headset View: ", haven->headsetView);
 
@@ -403,18 +403,18 @@ namespace Editor
             /*
             Transform testTransform = scale(rotate(place(float3(12, 0, 0)), 0.1, 0.2, 0.3), float3(1, 0.75, 0.5) * 0.75);
 
-            Drawing::DrawLine(float3(4, 0, 0), float3(5, 1, 1), 0.05f, float3(0.6,0.1,0.2));
-            Drawing::DrawCircle(float3(6, 0, 0), float3(0, 0, 1), 0.75, 0.05f);
-            Drawing::DrawSphere(float3(8, 0, 0), 0.75, 0.05f);
-            Drawing::DrawAxisSphere(float3(10, 0, 0), 0.75, 0.05f);
-            Drawing::DrawPoint(float3(14, 0, 0), 0.25f);
-            Drawing::DrawAABB(float3(16, 0, 0), float3(1, 0.75, 0.5)* 0.75, 0.05f);
-            Drawing::DrawBox(testTransform, 0.05f);
-            Drawing::DrawBox2D(float2(200, 100), float2(100, 100), float3(0.5f, 0.0f, 0.0f), 0.5f);
-            Drawing::DrawBox2D(float2(250, 150), float2(100, 100), float3(0.0f, 0.5f, 0.0f), 0.5f);
-            Drawing::DrawBox2D(float2(300, 200), float2(100, 100), float3(0.0f, 0.0f, 0.5f), 0.5f);
+            Debug::DrawLine(float3(4, 0, 0), float3(5, 1, 1), 0.05f, float3(0.6,0.1,0.2));
+            Debug::DrawCircle(float3(6, 0, 0), float3(0, 0, 1), 0.75, 0.05f);
+            Debug::DrawSphere(float3(8, 0, 0), 0.75, 0.05f);
+            Debug::DrawAxisSphere(float3(10, 0, 0), 0.75, 0.05f);
+            Debug::DrawPoint(float3(14, 0, 0), 0.25f);
+            Debug::DrawAABB(float3(16, 0, 0), float3(1, 0.75, 0.5)* 0.75, 0.05f);
+            Debug::DrawBox(testTransform, 0.05f);
+            Debug::DrawBox2D(float2(200, 100), float2(100, 100), float3(0.5f, 0.0f, 0.0f), 0.5f);
+            Debug::DrawBox2D(float2(250, 150), float2(100, 100), float3(0.0f, 0.5f, 0.0f), 0.5f);
+            Debug::DrawBox2D(float2(300, 200), float2(100, 100), float3(0.0f, 0.0f, 0.5f), 0.5f);
         */
-            Drawing::DrawTransform(transform(float3(-1,-1,-1)), 0.05f);
+            Debug::DrawTransform(transform(float3(-1,-1,-1)), 0.05f);
         
             Clear((uint8*)text, tempStringSize);
             StringAppend(text, "\n\nSOUND: \n");
@@ -429,7 +429,7 @@ namespace Editor
                     StringAppend(text, ((float)channel->currentSample / (float)channel->sound->sampleCount), "\n");
                 }
             }
-            Drawing::DrawText(text);
+            Debug::DrawText(text);
         }
     }
  }

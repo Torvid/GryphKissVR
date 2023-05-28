@@ -890,11 +890,11 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     float2 pos = float2(0, 0);
     haven->uiPos = float2(0, 0);
     
-    Drawing::DrawText("G: toggle editor");
-    Drawing::DrawText("P: toggle profiling");
-    Drawing::DrawText("space: reset");
-    Drawing::DrawText("ctrl space: reload and reset");
-    Drawing::DrawText("number keys: change scene");
+    Debug::DrawText("G: toggle editor");
+    Debug::DrawText("P: toggle profiling");
+    Debug::DrawText("space: reset");
+    Debug::DrawText("ctrl space: reload and reset");
+    Debug::DrawText("number keys: change scene");
     
     if (!gameMemory->initialized || input->d1Down || input->d2Down || input->d3Down || resetGame)
     {

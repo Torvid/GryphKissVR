@@ -106,6 +106,6 @@ namespace CornellBox
         }
         Rendering::DrawMesh(gameState->torvidMat, assets->torvidTest, rotate(transform(float3(0.5f, sin(input->time) * 2.5f, 0)), 0,0,0.1));
 
-        //Drawing::DrawFont("the light ray knows where it is because it knows where it isn't", transform(float3(0, 0, 1), 0, 0, 0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
+        //Debug::DrawFont("the light ray knows where it is because it knows where it isn't", transform(float3(0, 0, 1), 0, 0, 0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
     }
 }

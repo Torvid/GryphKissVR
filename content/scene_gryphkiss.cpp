@@ -232,13 +232,13 @@ namespace Gryphkiss
             {
                 t.scale = vectorOne * 0.05;
                 t = LocalToWorld(t, torvidTransform);
-                Drawing::DrawBox(t, 0.005);
+                Debug::DrawBox(t, 0.005);
                 Bone* parentBone = torvidMesh->boneHierarchy[i].parent;
                 if (parentBone)
                 {
                     float3 parentPos = torvidAnimation->transforms[parentBone->index + frameOffset0 * torvidAnimation->boneCount].position;
                     parentPos = LocalToWorld(parentPos, torvidTransform);
-                    Drawing::DrawLine(parentPos, t.position);
+                    Debug::DrawLine(parentPos, t.position);
                 }
             }
         }
@@ -321,10 +321,10 @@ namespace Gryphkiss
         //    - ASTC texture compression.
         //    - "Atkinson Hyperlegible" Font.
 
-        Drawing::DrawFont(my_str, transform(center + float3(5 - 0.1, 4, 2.5), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
-        //Drawing::DrawBox(transform(gameState->tonk->transform.position + float3(0, -2, 2.8) * 0.5, float3(6.2, 2.6, 2.8) * 0.5));
+        Debug::DrawFont(my_str, transform(center + float3(5 - 0.1, 4, 2.5), 0, 0, -0.25), 0.8, 8.0f, HAlign_right, VAlign_down);
+        //Debug::DrawBox(transform(gameState->tonk->transform.position + float3(0, -2, 2.8) * 0.5, float3(6.2, 2.6, 2.8) * 0.5));
         //gameState->tonk->transform.scale = float3(1,1,1) * 0.01;
         //gameState->tonk->transform = LookRotation(gameState->tonk->transform, float3(-1, 0, 0), float3(0, 0, 1));
-        //Drawing::DrawBox(transform(gameState->tonk->transform.position, float3(1, 1, 1) * 0.5));
+        //Debug::DrawBox(transform(gameState->tonk->transform.position, float3(1, 1, 1) * 0.5));
     }
 }

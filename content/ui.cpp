@@ -384,7 +384,7 @@ float GetLineWidth(char* text2, Font* font, float2 pos, float2 startPos, float s
 // automatic reflowing
 // adjust left/up/down/middle/etc
 
-namespace Drawing
+namespace Debug
 {
     void DrawText3D(char* text, float3 position, float scale = 1.0f, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
@@ -774,18 +774,18 @@ namespace Drawing
         float3 xAxis = normalize(cross(zAxis, float3(0, 0.01, 1.01)));
         float3 yAxis = normalize(cross(zAxis, xAxis));
 
-        Drawing::DrawLine(start, end, width, color, opacity, depthTest);
+        Debug::DrawLine(start, end, width, color, opacity, depthTest);
         if (box)
         {
             Transform t = transform(end, xAxis, yAxis, normalize(zAxis), float3(0.1, 0.1, 0.1) * 0.25);
-            Drawing::DrawBox(t, width, color, opacity, depthTest);
+            Debug::DrawBox(t, width, color, opacity, depthTest);
         }
         else
         {
-            Drawing::DrawLine(start + zAxis * 0.8f + xAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
-            Drawing::DrawLine(start + zAxis * 0.8f - xAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
-            Drawing::DrawLine(start + zAxis * 0.8f - yAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
-            Drawing::DrawLine(start + zAxis * 0.8f + yAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
+            Debug::DrawLine(start + zAxis * 0.8f + xAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
+            Debug::DrawLine(start + zAxis * 0.8f - xAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
+            Debug::DrawLine(start + zAxis * 0.8f - yAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
+            Debug::DrawLine(start + zAxis * 0.8f + yAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
         }
     }
     void DrawRay(float3 start, float3 direction, float len, float width = 0.01f, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)

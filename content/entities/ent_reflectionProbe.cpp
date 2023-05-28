@@ -132,7 +132,7 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
 {
     if (haven->editor)
     {
-        Drawing::DrawFontCameraFacing("\n\n\n\n\nReflection Probe", self->transform.position, 1.0f, 999, HAlign_center, VAlign_center);
+        Debug::DrawFontCameraFacing("\n\n\n\n\nReflection Probe", self->transform.position, 1.0f, 999, HAlign_center, VAlign_center);
 
         CreateMaterialLocal(command, assets->reflectionProbeShader, reflectionProbeShader);
         command->ColorTexture = self->octTexture0;
@@ -145,7 +145,7 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
 
         if (haven->selectedEntity == (Entity*)self)
         {
-            Drawing::DrawBox(self->transform);
+            Debug::DrawBox(self->transform);
         }
     }
 

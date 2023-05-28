@@ -48,12 +48,12 @@ void HandUpdate(Hand* self)
             self->clickCount++;
     }
 
-    Drawing::DrawRay(self->transform.position, self->transform.forward, 999, 0.01f);
+    Debug::DrawRay(self->transform.position, self->transform.forward, 999, 0.01f);
     char text[2];
     text[0] = '0' + self->clickCount % 10;
     text[1] = 0;
     //DrawText3D(&count, self->transform.position, 0.2f);
-    Drawing::DrawFontCameraFacing(text, self->transform.position + float3(0,0,0.1), 0.8, 8.0f, HAlign_center, VAlign_center);
+    Debug::DrawFontCameraFacing(text, self->transform.position + float3(0,0,0.1), 0.8, 8.0f, HAlign_center, VAlign_center);
 
     Transform tonkTransform = self->transform;
     tonkTransform.scale = float3(0.01, 0.01, 0.01);

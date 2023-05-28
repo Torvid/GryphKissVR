@@ -120,12 +120,12 @@ void LightBakerUpdate(LightBaker* self)
 {
     if (haven->editor)
     {
-        Drawing::DrawAABBMinMax(self->boxMin, self->boxMax, 0.05);
+        Debug::DrawAABBMinMax(self->boxMin, self->boxMax, 0.05);
     }
     float3 boxCenter = (self->boxMin + self->boxMax) * 0.5;
 
     Rendering::DrawClear(self->SphericalHarmonic);
-    if (Drawing::DrawButton("Bake Lighting"))
+    if (Debug::DrawButton("Bake Lighting"))
     {
         self->pass = 1;
         self->x = 0;
