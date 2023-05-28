@@ -213,7 +213,7 @@ float3 raybox(float3 start, float3 direction, float3 center, float3 size)
 	float tNear, tFar;
 
 	// Calculate the half-size of the box
-	float3 halfSize = size * 0.5;
+	float3 halfSize = size;// *0.5;
 
 	// Calculate the min and max points of the box
 	float3 boxMin = center - halfSize;

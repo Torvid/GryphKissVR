@@ -31,6 +31,22 @@ void ClearCubemaps(bool clear = false)
     }
 }
 
+Transform CombineAABBs(Transform A, Transform B)
+{
+    float3 aMin = A.position - A.scale;
+    float3 bMin = B.position - B.scale;
+    float3 aMax = A.position + A.scale;
+    float3 bMax = B.position + B.scale;
+
+    float3 rMin = min(aMin, bMin);
+    float3 rMax = max(aMax, bMax);
+
+    Transform result = transform();
+    result.position = (rMin + rMax) * 0.5;
+    result.scale = abs(rMin - rMax) * 0.5;
+    return result;
+}
+
 void SetCubemaps()
 {
     for (int i = 0; i < ArrayCount(haven->entities); i++)
@@ -44,6 +60,9 @@ void SetCubemaps()
         float3 center = StaticMeshGetLocalBoundsTransform(mesh).position;
 
         ReflectionProbe* probe = (ReflectionProbe*)GetClosestEntityByType(center, EntityType_ReflectionProbe, &probeIndex);
+        
+        Transform meshAABB = StaticMeshGetAABB(mesh);
+        Transform expandedAABB = CombineAABBs(meshAABB, probe->transform);
 
         if (!probe)
             continue;
@@ -53,14 +72,14 @@ void SetCubemaps()
         mesh->material.texCubemap2 = probe->octTexture2;
         mesh->material.texCubemap3 = probe->octTexture3;
         mesh->material.texCubemap4 = probe->octTexture4;
-        mesh->material.cubemapPosition = probe->transform.position;
-        mesh->material.cubemapSize = probe->transform.scale;
+        mesh->material.cubemapPosition = expandedAABB.position;
+        mesh->material.cubemapSize = expandedAABB.scale;
     }
 
     for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
     {
         ReflectionProbe* probe = (ReflectionProbe*)GetClosestEntityByType(float3(0, 0, 0), EntityType_ReflectionProbe);
-
+    
         haven->sceneMaterials[i]->texCubemap0 = probe->octTexture0;
         haven->sceneMaterials[i]->texCubemap1 = probe->octTexture1;
         haven->sceneMaterials[i]->texCubemap2 = probe->octTexture2;
@@ -126,9 +145,7 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
 
         if (haven->selectedEntity == (Entity*)self)
         {
-            Transform box = self->transform;
-            box.scale *= 0.5;
-            Drawing::DrawBox(box);
+            Drawing::DrawBox(self->transform);
         }
     }
 
@@ -142,8 +159,8 @@ void ReflectionProbeUpdate(ReflectionProbe* self, int i)
         Rendering::Downsize4x(self->octTexture2, self->octTexture3, 400);
         Rendering::Downsize4x(self->octTexture3, self->octTexture4, 0);
         self->rendered = true;
-        SetCubemaps(); // update global cubemap assignments
     }
+    SetCubemaps(); // update global cubemap assignments
 
 }
 

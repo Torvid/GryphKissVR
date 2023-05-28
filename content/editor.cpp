@@ -83,82 +83,6 @@ namespace Editor
         return screenPos;
     }
 
-    bool local = false;
-    bool gizmoCenteredOnBounds = false;
-    float3 GetGizmoClickPoint(float2 mousePos, int ID, Transform axes)
-    {
-        // TODO: when pulling something far away, this breaks because the vector is pointing the wrong way
-        float3 ray = ScreenPointToRay(mousePos);
-        if (ID == 1)
-            return ClosestRayApproach(haven->spectatorCamera.position, ray, axes.position, axes.right);
-        else if (ID == 2)
-            return ClosestRayApproach(haven->spectatorCamera.position, ray, axes.position, axes.forward);
-        else if (ID == 3)
-            return ClosestRayApproach(haven->spectatorCamera.position, ray, axes.position, axes.up);
-        return float3(0, 0, 0);
-    }
-    float3 GetRotateGizmoClickPoint(float2 mousePos, int ID, Transform axes)
-    {
-        float3 ray = ScreenPointToRay(mousePos);
-        if (ID == 1)
-            return RayPlaneIntersectWorldSpace(haven->spectatorCamera.position, ray, axes.position, axes.right);
-        else if (ID == 2)
-            return RayPlaneIntersectWorldSpace(haven->spectatorCamera.position, ray, axes.position, axes.forward);
-        else if (ID == 3)
-            return RayPlaneIntersectWorldSpace(haven->spectatorCamera.position, ray, axes.position, axes.up);
-        return float3(0, 0, 0);
-    }
-
-    void GizmoMove(Entity* entity)
-    {
-        Transform axes = transform(entity->transform.position, float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1), float3(1, 1, 1));
-        if (local)
-            axes = entity->transform;
-
-        int axis = 0;
-        float dist0 = DistanceToLine2D(PointToScreenPos(axes.position), PointToScreenPos(axes.position + axes.right), input->mousePos);
-        float dist1 = DistanceToLine2D(PointToScreenPos(axes.position), PointToScreenPos(axes.position + axes.forward), input->mousePos);
-        float dist2 = DistanceToLine2D(PointToScreenPos(axes.position), PointToScreenPos(axes.position + axes.up), input->mousePos);
-        if (min(dist0, dist1, dist2) == dist0 && dist0 < 25)
-            axis = 1;
-        else if (min(dist0, dist1, dist2) == dist1 && dist1 < 25)
-            axis = 2;
-        else if (min(dist0, dist1, dist2) == dist2 && dist2 < 25)
-            axis = 3;
-
-        float3 arrow0Color = float3(1, 0, 0);
-        float3 arrow1Color = float3(0, 1, 0);
-        float3 arrow2Color = float3(0, 0, 1);
-        if(axis == 1)
-            arrow0Color = float3(1, 1, 0);
-        else if(axis == 2)
-            arrow1Color = float3(1, 1, 0);
-        else if (axis == 3)
-            arrow2Color = float3(1, 1, 0);
-
-        if (input->mouseLeftDown)
-        {
-            haven->gizmoAxis = axis;
-        }
-        if (input->mouseLeftUp)
-        {
-            haven->gizmoAxis = 0;
-        }
-
-        float3 lastClickPoint = GetGizmoClickPoint(input->mousePos - input->mousePosDelta, haven->gizmoAxis, axes);
-        float3 clickPoint = GetGizmoClickPoint(input->mousePos, haven->gizmoAxis, axes);
-        Drawing::DrawPoint(clickPoint, 0.5f, float3(1, 1, 1), 1, false);
-
-        Drawing::DrawArrow(axes.position, axes.position + axes.right     , 0.02, arrow0Color, 1, false, false);
-        Drawing::DrawArrow(axes.position, axes.position + axes.forward   , 0.02, arrow1Color, 1, false, false);
-        Drawing::DrawArrow(axes.position, axes.position + axes.up        , 0.02, arrow2Color, 1, false, false);
-
-        if (input->mouseLeft)
-        {
-            entity->transform.position += clickPoint - lastClickPoint;
-        }
-    }
-
     float DistanceToCircle(float3 center, float3 normal, float radius, float2 testPos)
     {
         float3 direction = normalize(normal);
@@ -176,29 +100,94 @@ namespace Editor
             float3 offsetEnd = AngleToVector(angleEnd, left, right);
             float3 start = center + offsetStart * radius;
             float3 end = center + offsetEnd * radius;
-            
             float2 start2D = PointToScreenPos(start);
             float2 end2D = PointToScreenPos(end);
-            smallestDistance = min(smallestDistance, DistanceToLine2D(start2D, end2D, input->mousePos));
+            float dist = DistanceToLine2D(start2D, end2D, input->mousePos);
+            smallestDistance = min(smallestDistance, dist);
         }
         return smallestDistance;
     }
+    float3 GetGizmoClickPoint(float2 mousePos, int ID, Transform axes)
+    {
+        // TODO: when pulling something far away, this breaks because the vector is pointing the wrong way
+        float3 ray = ScreenPointToRay(mousePos);
+        if (ID == 1) return ClosestRayApproach(haven->spectatorCamera.position, ray, axes.position, axes.right);
+        if (ID == 2) return ClosestRayApproach(haven->spectatorCamera.position, ray, axes.position, axes.forward);
+        if (ID == 3) return ClosestRayApproach(haven->spectatorCamera.position, ray, axes.position, axes.up);
+        return float3(0, 0, 0);
+    }
+    float3 GetRotateGizmoClickPoint(float2 mousePos, int ID, Transform axes)
+    {
+        float3 ray = ScreenPointToRay(mousePos);
+        if (ID == 1) return RayPlaneIntersectWorldSpace(haven->spectatorCamera.position, ray, axes.position, axes.right);
+        if (ID == 2) return RayPlaneIntersectWorldSpace(haven->spectatorCamera.position, ray, axes.position, axes.forward);
+        if (ID == 3) return RayPlaneIntersectWorldSpace(haven->spectatorCamera.position, ray, axes.position, axes.up);
+        return float3(0, 0, 0);
+    }
+
+    bool local = false;
+    bool gizmoCenteredOnBounds = true;
+
+    void GizmoMove(Entity* entity)
+    {
+        Transform axes = transform(entity->transform.position, float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1), float3(1, 1, 1));
+        if (local)
+            axes = entity->transform;
+        if (gizmoCenteredOnBounds && entity->type == EntityType_StaticMesh)
+            axes.position = StaticMeshGetLocalBoundsTransform((StaticMesh*)entity).position;
+
+        int axis = 0;
+        float dist0 = DistanceToLine2D(PointToScreenPos(axes.position), PointToScreenPos(axes.position + axes.right), input->mousePos);
+        float dist1 = DistanceToLine2D(PointToScreenPos(axes.position), PointToScreenPos(axes.position + axes.forward), input->mousePos);
+        float dist2 = DistanceToLine2D(PointToScreenPos(axes.position), PointToScreenPos(axes.position + axes.up), input->mousePos);
+        if (min(dist0, dist1, dist2) == dist0 && dist0 < 25) axis = 1;
+        if (min(dist0, dist1, dist2) == dist1 && dist1 < 25) axis = 2;
+        if (min(dist0, dist1, dist2) == dist2 && dist2 < 25) axis = 3;
+
+        float3 arrow0Color = float3(1, 0, 0);
+        float3 arrow1Color = float3(0, 1, 0);
+        float3 arrow2Color = float3(0, 0, 1);
+        if(axis == 1) arrow0Color = float3(1, 1, 0);
+        if(axis == 2) arrow1Color = float3(1, 1, 0);
+        if (axis == 3) arrow2Color = float3(1, 1, 0);
+
+        if (input->mouseLeftDown)
+        {
+            haven->gizmoAxis = axis;
+        }
+        if (input->mouseLeftUp)
+        {
+            haven->gizmoAxis = 0;
+        }
+
+        float3 lastClickPoint = GetGizmoClickPoint(input->mousePos - input->mousePosDelta, haven->gizmoAxis, axes);
+        float3 clickPoint = GetGizmoClickPoint(input->mousePos, haven->gizmoAxis, axes);
+
+        Drawing::DrawArrow(axes.position, axes.position + axes.right     , 0.02, arrow0Color, 1, false, false);
+        Drawing::DrawArrow(axes.position, axes.position + axes.forward   , 0.02, arrow1Color, 1, false, false);
+        Drawing::DrawArrow(axes.position, axes.position + axes.up        , 0.02, arrow2Color, 1, false, false);
+
+        if (input->mouseLeft)
+        {
+            entity->transform.position += clickPoint - lastClickPoint;
+        }
+    }
+
     void GizmoRotate(Entity* entity)
     {
         Transform axes = transform(entity->transform.position, float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1), float3(1, 1, 1));
         if (local)
             axes = entity->transform;
+        if (gizmoCenteredOnBounds && entity->type == EntityType_StaticMesh)
+            axes.position = StaticMeshGetLocalBoundsTransform((StaticMesh*)entity).position;
 
         float dist0 = DistanceToCircle(axes.position, axes.right,     0.5, input->mousePos);
         float dist1 = DistanceToCircle(axes.position, axes.forward,   0.5, input->mousePos);
         float dist2 = DistanceToCircle(axes.position, axes.up,        0.5, input->mousePos);
         int axis = 0;
-        if (min(dist0, dist1, dist2) == dist0 && dist0 < 25)
-            axis = 1;
-        else if (min(dist0, dist1, dist2) == dist1 && dist1 < 25)
-            axis = 2;
-        else if (min(dist0, dist1, dist2) == dist2 && dist2 < 25)
-            axis = 3;
+        if (min(dist0, dist1, dist2) == dist0 && dist0 < 50) axis = 1;
+        if (min(dist0, dist1, dist2) == dist1 && dist1 < 50) axis = 2;
+        if (min(dist0, dist1, dist2) == dist2 && dist2 < 50) axis = 3;
 
         if (input->mouseLeftDown)
         {
@@ -212,36 +201,67 @@ namespace Editor
         float3 arrow0Color = float3(1, 0, 0);
         float3 arrow1Color = float3(0, 1, 0);
         float3 arrow2Color = float3(0, 0, 1);
-        if (axis == 1)
-            arrow0Color = float3(1, 1, 0);
-        else if (axis == 2)
-            arrow1Color = float3(1, 1, 0);
-        else if (axis == 3)
-            arrow2Color = float3(1, 1, 0);
+        if (axis == 1) arrow0Color = float3(1, 1, 0);
+        if (axis == 2) arrow1Color = float3(1, 1, 0);
+        if (axis == 3) arrow2Color = float3(1, 1, 0);
 
         float3 lastClickPoint = GetRotateGizmoClickPoint(input->mousePos - input->mousePosDelta, haven->gizmoAxis, axes);
         float3 clickPoint = GetRotateGizmoClickPoint(input->mousePos, haven->gizmoAxis, axes);
 
-
-        Drawing::DrawCircle(axes.position, axes.right     , 0.5, 0.02, arrow0Color, 1, false);
-        Drawing::DrawCircle(axes.position, axes.forward, 0.5, 0.02, arrow1Color, 1, false);
-        Drawing::DrawCircle(axes.position, axes.up, 0.5, 0.02, arrow2Color, 1, false);
+        Drawing::DrawCircle(axes.position, axes.right   , 0.5, 0.02, arrow0Color, 1, false);
+        Drawing::DrawCircle(axes.position, axes.forward , 0.5, 0.02, arrow1Color, 1, false);
+        Drawing::DrawCircle(axes.position, axes.up      , 0.5, 0.02, arrow2Color, 1, false);
         
         if (input->mouseLeft)
         {
             Drawing::DrawLine(axes.position, axes.position+ normalize(clickPoint - axes.position) * 0.5, 0.05, float3(1, 1, 1), 1, false);
-            entity->transform = rotate(entity->transform, lastClickPoint - entity->transform.position, clickPoint - entity->transform.position);
+            entity->transform = rotateAboutPoint(entity->transform, axes.position, lastClickPoint - axes.position, clickPoint - axes.position);
         }
     }
+    
     void GizmoScale(Entity* entity)
     {
         Transform axes = transform(entity->transform.position, float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1), float3(1, 1, 1));
         if (local)
             axes = entity->transform;
+        if (gizmoCenteredOnBounds && entity->type == EntityType_StaticMesh)
+            axes.position = StaticMeshGetLocalBoundsTransform((StaticMesh*)entity).position;
 
-        Drawing::DrawArrow(axes.position, axes.position + axes.right     , 0.02, float3(1, 0, 0), 1, false, true);
-        Drawing::DrawArrow(axes.position, axes.position + axes.forward   , 0.02, float3(0, 1, 0), 1, false, true);
-        Drawing::DrawArrow(axes.position, axes.position + axes.up        , 0.02, float3(0, 0, 1), 1, false, true);
+        int axis = 0;
+        float dist0 = DistanceToLine2D(PointToScreenPos(axes.position), PointToScreenPos(axes.position + axes.right), input->mousePos);
+        float dist1 = DistanceToLine2D(PointToScreenPos(axes.position), PointToScreenPos(axes.position + axes.forward), input->mousePos);
+        float dist2 = DistanceToLine2D(PointToScreenPos(axes.position), PointToScreenPos(axes.position + axes.up), input->mousePos);
+        if (min(dist0, dist1, dist2) == dist0 && dist0 < 25) axis = 1;
+        if (min(dist0, dist1, dist2) == dist1 && dist1 < 25) axis = 2;
+        if (min(dist0, dist1, dist2) == dist2 && dist2 < 25) axis = 3;
+
+        float3 arrow0Color = float3(1, 0, 0);
+        float3 arrow1Color = float3(0, 1, 0);
+        float3 arrow2Color = float3(0, 0, 1);
+        if (axis == 1) arrow0Color = float3(1, 1, 0);
+        if (axis == 2) arrow1Color = float3(1, 1, 0);
+        if (axis == 3) arrow2Color = float3(1, 1, 0);
+
+        if (input->mouseLeftDown)
+        {
+            haven->gizmoAxis = axis;
+        }
+        if (input->mouseLeftUp)
+        {
+            haven->gizmoAxis = 0;
+        }
+
+        float3 lastClickPoint = GetGizmoClickPoint(input->mousePos - input->mousePosDelta, haven->gizmoAxis, axes);
+        float3 clickPoint = GetGizmoClickPoint(input->mousePos, haven->gizmoAxis, axes);
+
+        Drawing::DrawArrow(axes.position, axes.position + axes.right     , 0.02, arrow0Color, 1, false, true);
+        Drawing::DrawArrow(axes.position, axes.position + axes.forward   , 0.02, arrow1Color, 1, false, true);
+        Drawing::DrawArrow(axes.position, axes.position + axes.up        , 0.02, arrow2Color, 1, false, true);
+
+        if (input->mouseLeft)
+        {
+            entity->transform.scale += clickPoint - lastClickPoint;
+        }
     }
     void Update()
     {
@@ -256,7 +276,8 @@ namespace Editor
         }
 
         float3 pickColor = float3(0.05f, 0.05f, 0.15f);
-        float3 selectedColor = float3(0.25f, 0.25f, 0.5f);
+        //float3 selectedColor = float3(0.25f, 0.25f, 0.5f);
+        float3 selectedColor = float3(0.0, 0.0, 0.0);
 
         if (haven->editor)
         {
@@ -290,7 +311,14 @@ namespace Editor
                 //Transform t = transform();
                 //float3 a = RotateAroundAxis(float3(0, 0, 1), float3(0, 1, 0), 0.25);
                 //haven->selectedEntity->transform = rotate(t, float3(0.5, 0, 0.5), a);
-
+                int idx = -1;
+                for (int i = 0; i < ArrayCount(haven->entities); i++)
+                {
+                    if (haven->selectedEntity == haven->entities[i])
+                    {
+                        idx = i;
+                    }
+                }
 
                 EntityType type = (EntityType)haven->selectedEntity->type;
 
@@ -304,7 +332,12 @@ namespace Editor
                     Drawing::DrawBox(scale(haven->selectedEntity->transform, float3(0.25, 0.25, 0.25)));
                 }
                 Clear((uint8*)text, tempStringSize);
+                StringAppend(text, "Selected Entity: \n");
+                StringAppend(text, "Index: ");
+                StringAppend(text, idx);
+                StringAppend(text, "\nType: ");
                 StringAppend(text, EntityTypeToString((EntityType)haven->selectedEntity->type));
+                StringAppend(text, "\nPosition: ", haven->selectedEntity->transform.position);
                 Drawing::DrawText(text);
                 
                 if (haven->gizmoState == 0)

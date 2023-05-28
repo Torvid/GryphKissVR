@@ -1466,18 +1466,34 @@ Transform rotate(Transform t, float3 start, float3 end)
     if (aligned(start, end))
         return t;
 
-    //if (distance(start == end))
-    //    return t;
+    start = normalize(start);
+    end = normalize(end);
+    float3 axis = normalize(cross(start, end));
+    float angle = AngleBetweenVectors(start, end);
+    if(!isnormal(angle))
+        return t;
+    t = rotate(t, axis, angle);
+    return t;
+}
+Transform rotateAboutPoint(Transform t, float3 pivot, float3 start, float3 end)
+{
+    if (aligned(start, end))
+        return t;
 
     start = normalize(start);
     end = normalize(end);
     float3 axis = normalize(cross(start, end));
-    float theta = AngleBetweenVectors(start, end);
-    if(!isnormal(theta))
+    float angle = AngleBetweenVectors(start, end);
+    if (!isnormal(angle))
         return t;
-    t = rotate(t, axis, theta);
+
+    t.position -= pivot;
+    t.position = RotateAroundAxis(t.position, axis, angle);
+    t.position += pivot;
+    t = rotate(t, axis, angle);
     return t;
 }
+
 Transform lerp(Transform a, Transform b, float t)
 {
     Transform result = a;
@@ -1489,17 +1505,17 @@ Transform lerp(Transform a, Transform b, float t)
     return result;
 }
 
-Transform rotateAboutPoint(Transform t, float3 pivot, float3 Axis, float angle)
+Transform rotateAboutPoint(Transform t, float3 pivot, float3 axis, float angle)
 {
     t.position -= pivot;
-    t.position = RotateAroundAxis(t.position, Axis, angle);
+    t.position = RotateAroundAxis(t.position, axis, angle);
     t.position += pivot;
-    t = rotate(t, Axis, angle);
+    t = rotate(t, axis, angle);
     return t;
 }
-Transform rotateAboutPoint(float3 pivot, float3 Axis, float angle)
+Transform rotateAboutPoint(float3 pivot, float3 axis, float angle)
 {
-    return rotateAboutPoint(transform(), pivot, Axis, angle);
+    return rotateAboutPoint(transform(), pivot, axis, angle);
 }
 Transform LookRotation(Transform t, float3 forward, float3 up)
 {
@@ -1512,6 +1528,7 @@ Transform LookRotation(float3 forward, float3 up)
 {
     return LookRotation(transform(), forward, up);
 }
+
 
 float2 rotate90CW(float2 a)
 {

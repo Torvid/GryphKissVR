@@ -202,9 +202,9 @@ namespace DoorCrush
         sphere.position = float3(-1, 2, 2.1);
         StaticMeshInstantiate(assets->sphere, gameState->sphere4Mat, sphere);
 
-        gameState->probe0 = ReflectionProbeInstantiate(transform(float3(-0.25, 0, 2), float3(7, 10, 4)));
-        gameState->probe1 = ReflectionProbeInstantiate(transform(float3(7, -4, 2), float3(9, 6, 4)));
-        gameState->probe2 = ReflectionProbeInstantiate(transform(float3(7, 4, 2), float3(7, 7, 4)));
+        gameState->probe0 = ReflectionProbeInstantiate(transform(float3(-0.25, 0, 2), float3(7, 10, 4) * 0.5));
+        gameState->probe1 = ReflectionProbeInstantiate(transform(float3(7, -4, 2), float3(9, 6, 4) * 0.5));
+        gameState->probe2 = ReflectionProbeInstantiate(transform(float3(7, 4, 2), float3(7, 7, 4) * 0.5));
     }
 
     void Update()
