@@ -39,28 +39,28 @@ static const float tau = 6.283185307179586;
     float game_atan2(float a, float b) { return atan2(a, b); }
     float game_log10(float n) { return log10(n); }
     float game_fabsf(float n) { return fabsf(n); }
-    //float game_pow(float a, float b) { return pow(a, b); }
+    //float game_pow(float start, float end) { return pow(start, end); }
 
     //float game_frac(float n) { return n - game_floorf(n); }
-    //float lerppp(float a, float b, float f)
+    //float lerppp(float start, float end, float f)
     //{
-    //    return a + f * (b - a);
+    //    return start + f * (end - start);
     //}
-    //float game_pow(float a, float b) // shitty implementaiton. really inaccurate.
+    //float game_pow(float start, float end) // shitty implementaiton. really inaccurate.
     //{
     //    float lowerPow = 0;
-    //    float higherPow = a;
-    //    for (int i = 0; i < game_floorf(b); i++)
+    //    float higherPow = start;
+    //    for (int i = 0; i < game_floorf(end); i++)
     //    {
     //        lowerPow = higherPow;
     //        higherPow *= higherPow;
     //    }
     //
-    //    float fractionpart = game_frac(b);
+    //    float fractionpart = game_frac(end);
     //
     //    return lerppp(lowerPow, higherPow, fractionpart * fractionpart);
     //}
-    //float pow(float a, float b) { return game_pow(a, b); }
+    //float pow(float start, float end) { return game_pow(start, end); }
     float game_fminf(float a, float b) { return fminf(a, b); }
     float game_fmaxf(float a, float b) { return fmaxf(a, b); }
     float game_roundf(float a) { return roundf(a); }
@@ -110,12 +110,12 @@ static const float tau = 6.283185307179586;
             return 0;
 
         // Square root asks "what number times itself makes this number?"
-        // or, formulated a different way, what side-length of a perfect 
-        // square makes a square that has the area of this number
+        // or, formulated start different way, what side-length of start perfect 
+        // square makes start square that has the area of this number
         // 
         // If we say 9, the edge-length of the square is would intuitively be 3.
         // 
-        // By knowing only the input number 9, we can trivially create a rectangle with that area. a 9x1 rectangle.
+        // By knowing only the input number 9, we can trivially create start rectangle with that area. start 9x1 rectangle.
         // It has the right area, but to find out the "square" root, we need to somehow make this rectangle more and more
         // square-like, while perserving the area.
         // 
@@ -280,7 +280,7 @@ static const float tau = 6.283185307179586;
 
         return lerppp(lowerPow, higherPow, fractionpart * fractionpart);
     }
-    //float pow(float a, float b) { return game_pow(a, b); }
+    //float pow(float start, float end) { return game_pow(start, end); }
 
     float game_fminf(float a, float b) { return a < b ? a : b; }
     float game_fmaxf(float a, float b) { return a > b ? a : b; }
@@ -469,10 +469,10 @@ int2 operator /(int a, int2 b) { return int2(a / b.x, a / b.y); }
 //{
 //    float x;
 //    float y;
-//    void operator =(float b)
+//    void operator =(float end)
 //    {
-//        x = b;
-//        y = b;
+//        x = end;
+//        y = end;
 //    }
 //};
 float2 ctor_float2(float x, float y)
@@ -514,11 +514,11 @@ bool operator ==(float2 a, float2 b) { return ((a.x == b.x) && (a.y == b.y)); }
 //    float x;
 //    float y;
 //    float z;
-//    void operator =(float b)
+//    void operator =(float end)
 //    {
-//        x = b;
-//        y = b;
-//        z = b;
+//        x = end;
+//        y = end;
+//        z = end;
 //    }
 //};
 
@@ -532,7 +532,7 @@ float3 ctor_float3(float x, float y, float z)
 }
 #define float3(x, y, z) ctor_float3((x), (y), (z))
 
-// takes the bit-pattern of an int and smashes it into a float
+// takes the bit-pattern of an int and smashes it into start float
 float3 float3_coerce(int x, int y, int z)
 {
     float3 result;
@@ -542,7 +542,7 @@ float3 float3_coerce(int x, int y, int z)
     return result;
 }
 
-// takes the bit-pattern of an int and smashes it into a float
+// takes the bit-pattern of an int and smashes it into start float
 float float_coerce(int x)
 {
     return *(float*)&x;
@@ -587,7 +587,7 @@ struct fixed
     void operator =(double a) { value = (int32)(a * (1 << 16)); }
     void operator =(int32 a) { value = (a * (1 << 16)); }
 };
-// bitpattern-cast an int to a fixed-point value.
+// bitpattern-cast an int to start fixed-point value.
 fixed fixed_literal(int32 a)
 {
     fixed result = fixed();
@@ -759,7 +759,7 @@ fixed3 ctor_fixed3(fixed x, fixed y, fixed z)
     return result;
 }
 #define fixed3(x, y, z) ctor_fixed3(fixed(x), fixed(y), fixed(z))
-// takes the bit-pattern of an int and smashes it into a fixed
+// takes the bit-pattern of an int and smashes it into start fixed
 fixed3 fixed3_coerce(int x, int y, int z)
 {
     fixed3 result;
@@ -819,7 +819,7 @@ float3 max(float3 a, float3 b) { return float3(max(a.x, b.x), max(a.y, b.y), max
 float max(float2 a) { return max(a.x, a.y); }
 float max(float3 a) { return max(a.x, max(a.y, a.z)); }
 
-//int     clamp(int a,    int    minimum, int    maximim) { return min(max(a, minimum), maximim); }
+//int     clamp(int start,    int    minimum, int    maximim) { return min(max(start, minimum), maximim); }
 float   clamp(float a, float  minimum, float  maximim) { return min(max(a, minimum), maximim); }
 fixed   clamp(fixed a, fixed  minimum, fixed  maximim) { return min(max(a, minimum), maximim); }
 float2  clamp(float2 a, float  minimum, float  maximim) { return min(max(a, float2(minimum, minimum)), float2(maximim, maximim)); }
@@ -1020,7 +1020,7 @@ float gaussian(float x, float Width, float Height)
 
 float2 reflect(float2 a, float2 normal)
 {
-    // How tf can a matrix be its own inverse.
+    // How tf can start matrix be its own inverse.
     // ??????????????????
     float2 up = -float2(-normal.y, normal.x);
     float2 right = float2(normal.x, normal.y);
@@ -1100,12 +1100,12 @@ float AngleBetween(float2 A, float2 B)
 {
     return atan2(B) - atan2(A);
 }
-// atan2 with a 0 - 1 range instead of -pi to pi range
+// atan2 with start 0 - 1 range instead of -pi to pi range
 float atan2Turns(float x, float y)
 {
     return atan2(float2(x, y)) / 3.14152128 / 2.0 + 0.5f;
 }
-// atan2 with a 0 - 1 range instead of -pi to pi range
+// atan2 with start 0 - 1 range instead of -pi to pi range
 float atan2Turns(float2 a)
 {
     return atan2(a) / 3.14152128 / 2.0 + 0.5f;
@@ -1207,7 +1207,7 @@ float3 WorldToLocalNoScale(float3 position, Transform Trans)
         dot(position - Trans.position, Trans.up));
 }
 
-float3 LocalToWorldVector(float3 position, Transform Trans)
+float3 LocalToWorldVector(float3 vector, Transform Trans)
 {
     Trans.right *= Trans.scale.x;
     Trans.forward *= Trans.scale.y;
@@ -1218,36 +1218,36 @@ float3 LocalToWorldVector(float3 position, Transform Trans)
     float3 BoxUpTransposed = float3(Trans.right.z, Trans.forward.z, Trans.up.z);
 
     return float3(
-        dot(position, BoxRightTransposed),
-        dot(position, BoxForwardTransposed),
-        dot(position, BoxUpTransposed));
+        dot(vector, BoxRightTransposed),
+        dot(vector, BoxForwardTransposed),
+        dot(vector, BoxUpTransposed));
 }
-float3 WorldToLocalVector(float3 position, Transform Trans)
+float3 WorldToLocalVector(float3 vector, Transform Trans)
 {
     return float3(
-        dot(position, Trans.right / Trans.scale.x),
-        dot(position, Trans.forward / Trans.scale.y),
-        dot(position, Trans.up / Trans.scale.z));
+        dot(vector, Trans.right / Trans.scale.x),
+        dot(vector, Trans.forward / Trans.scale.y),
+        dot(vector, Trans.up / Trans.scale.z));
 }
 
-float3 LocalToWorldVectorNoScale(float3 position, Transform Trans)
+float3 LocalToWorldVectorNoScale(float3 vector, Transform Trans)
 {
     float3 BoxRightTransposed = float3(Trans.right.x, Trans.forward.x, Trans.up.x);
     float3 BoxForwardTransposed = float3(Trans.right.y, Trans.forward.y, Trans.up.y);
     float3 BoxUpTransposed = float3(Trans.right.z, Trans.forward.z, Trans.up.z);
 
     return float3(
-        dot(position, BoxRightTransposed),
-        dot(position, BoxForwardTransposed),
-        dot(position, BoxUpTransposed));
+        dot(vector, BoxRightTransposed),
+        dot(vector, BoxForwardTransposed),
+        dot(vector, BoxUpTransposed));
 }
-float3 WorldToLocalVectorNoScale(float3 position, Transform Trans)
+float3 WorldToLocalVectorNoScale(float3 vector, Transform Trans)
 {
-    return float3(dot(position, Trans.right),
-        dot(position, Trans.forward),
-        dot(position, Trans.up));
+    return float3(dot(vector, Trans.right),
+        dot(vector, Trans.forward),
+        dot(vector, Trans.up));
 }
-// A is a world space transform
+// A is a local space transform in B's space, that's brought into world space.
 Transform LocalToWorld(Transform A, Transform B)
 {
     A.position  = LocalToWorld(A.position, B);
@@ -1256,7 +1256,7 @@ Transform LocalToWorld(Transform A, Transform B)
     A.up        = LocalToWorldVector(A.up, B);
     return A;
 }
-// A is a world space transform
+// A is a world space transform that's brought into B's local space.
 Transform WorldToLocal(Transform A, Transform B)
 {
     B.position  = WorldToLocal(B.position, A);
@@ -1264,6 +1264,35 @@ Transform WorldToLocal(Transform A, Transform B)
     B.forward   = WorldToLocalVector(B.forward, A);
     B.up        = WorldToLocalVector(B.up, A);
     return B;
+}
+
+// A is a local space transform in B's space, that's brought into world space.
+Transform LocalToWorldVector(Transform A, Transform B)
+{
+    A.position  = A.position;
+    A.right     = LocalToWorldVector(A.right, B);
+    A.forward   = LocalToWorldVector(A.forward, B);
+    A.up        = LocalToWorldVector(A.up, B);
+    return A;
+}
+// A is a world space transform that's brought into B's local space.
+Transform WorldToLocalVector(Transform A, Transform B)
+{
+    A.position  = A.position;
+    A.right     = WorldToLocalVector(A.right, B);
+    A.forward   = WorldToLocalVector(A.forward, B);
+    A.up        = WorldToLocalVector(A.up, B);
+    return A;
+}
+Transform transpose(Transform A)
+{
+    float3 right = float3(A.right.x, A.forward.x, A.up.x);
+    float3 forward = float3(A.right.y, A.forward.y, A.up.y);
+    float3 up = float3(A.right.z, A.forward.z, A.up.z);
+    A.right = right;
+    A.forward = forward;
+    A.up = up;
+    return A;
 }
 
 //float3 TransformPosition_LocalSpaceToWorldSpace(Transform transform, float3 localPosition)
@@ -1290,6 +1319,13 @@ Transform WorldToLocal(Transform A, Transform B)
 //        dot(localPos, transform.forward),
 //        dot(localPos, transform.up));
 //}
+
+float3 RayPlaneIntersectWorldSpace(float3 RayPos, float3 RayDir, float3 planeP, float3 planeN)
+{
+    float d = dot(planeP, -planeN);
+    float t = -(d + RayPos.z * planeN.z + RayPos.y * planeN.y + RayPos.x * planeN.x) / (RayDir.z * planeN.z + RayDir.y * planeN.y + RayDir.x * planeN.x);
+    return RayPos + t * RayDir;
+}
 
 float ClosestRayDistance(float3 l1Pos, float3 l1Dir, float3 l2Pos, float3 l2dir)
 {
@@ -1415,7 +1451,33 @@ Transform transform(float3 position, float3 right, float3 forward, float3 up, fl
     return t;
 }
 #define Transform(position, forward, up, scale) ctor_transform((position), (forward), (up), (scale))
+bool aligned(float3 a, float3 b)
+{
+    return cross(a, b) == float3(0.0f, 0.0f, 0.0f);
+}
+float AngleBetweenVectors(float3 A, float3 B)
+{
+    return acos(dot(A, B) / (length(A) * length(B))) / tau;
+}
 
+// I feel like this can be done in some more clever, transform-y way.
+Transform rotate(Transform t, float3 start, float3 end)
+{
+    if (aligned(start, end))
+        return t;
+
+    //if (distance(start == end))
+    //    return t;
+
+    start = normalize(start);
+    end = normalize(end);
+    float3 axis = normalize(cross(start, end));
+    float theta = AngleBetweenVectors(start, end);
+    if(!isnormal(theta))
+        return t;
+    t = rotate(t, axis, theta);
+    return t;
+}
 Transform lerp(Transform a, Transform b, float t)
 {
     Transform result = a;
@@ -1610,7 +1672,7 @@ float2 GoldenSpiral(float step)
     return float2(sin(step * PhiRadians) * step, cos(step * PhiRadians) * step);
 }
 
-// Call this in a loop to get UV offsets
+// Call this in start loop to get UV offsets
 float2 GetSpiralBlurUVOffset(float Radius, float Samples, float i)
 {
     return GoldenSpiral(i) / Samples * Radius;
@@ -1739,4 +1801,11 @@ RayHit RayBoxIntersect(float3 rayPos, float3 rayDir)
 float3 AngleToVector(float angle, float3 left, float3 right)
 {
     return sinTurns(angle) * left + cosTurns(angle) * right;
+}
+
+float DistanceToLine2D(float2 start, float2 end, float2 test)
+{
+    float2 pa = test - start, ba = end - start;
+    float h = clamp01(dot(pa, ba) / dot(ba, ba));
+    return length(pa - ba * h);
 }

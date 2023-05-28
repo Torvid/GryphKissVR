@@ -75,129 +75,137 @@ float2 GetFontPos(int index)
     return float2(index % 32, index / 32);
 }
 
-void AppendQuadToUI3D(float3 pivot, float3 position, float3 size, float2 UVpos, float2 UVsize, float3 color, float opacity, int texture = 0)
+void AppendQuadToUI3D(float3 pivot, float3 position, float3 size, float2 UVpos, float2 UVsize, float3 color, float opacity, bool depthTest, int texture = 0)
 {
-    int quadCount = haven->uiMeshData->quadCount;
+    UIMeshData* data = depthTest ? haven->uiMeshData : haven->uiMeshNoDepthData;
 
-    haven->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0,  0,  0) * size + position, color, pivot, float2(0, 0) * UVsize + UVpos, float2(opacity, 2), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1,  0,  0) * size + position, color, pivot, float2(1, 0) * UVsize + UVpos, float2(opacity, 2), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(1,  0,  1) * size + position, color, pivot, float2(1, 1) * UVsize + UVpos, float2(opacity, 2), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(0,  0,  1) * size + position, color, pivot, float2(0, 1) * UVsize + UVpos, float2(opacity, 2), texture };
+    int quadCount = data->quadCount;
 
-    haven->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
-    haven->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+    data->vertexes[quadCount * 4 + 0] = { float3(0,  0,  0) * size + position, color, pivot, float2(0, 0) * UVsize + UVpos, float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 1] = { float3(1,  0,  0) * size + position, color, pivot, float2(1, 0) * UVsize + UVpos, float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 2] = { float3(1,  0,  1) * size + position, color, pivot, float2(1, 1) * UVsize + UVpos, float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 3] = { float3(0,  0,  1) * size + position, color, pivot, float2(0, 1) * UVsize + UVpos, float2(opacity, 2), texture };
 
-    haven->uiMeshData->quadCount++;
+    data->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    data->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
 
-    Assert(haven->uiMeshData->quadCount < quadCountMax);
+    data->quadCount++;
+
+    Assert(data->quadCount < quadCountMax);
 }
 
-void AppendQuadToUI3DCameraFacing(float3 pivot, float3 position, float3 size, float2 UVpos, float2 UVsize, float3 color, float opacity, int texture = 0)
+void AppendQuadToUI3DCameraFacing(float3 pivot, float3 position, float3 size, float2 UVpos, float2 UVsize, float3 color, float opacity, bool depthTest, int texture = 0)
 {
-    int quadCount = haven->uiMeshData->quadCount;
+    UIMeshData* data = depthTest ? haven->uiMeshData : haven->uiMeshNoDepthData;
 
-    haven->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0,  0,  0) * size + position, color, pivot, float2(0, 0) * UVsize + UVpos, float2(opacity, 1), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1,  0,  0) * size + position, color, pivot, float2(1, 0) * UVsize + UVpos, float2(opacity, 1), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(1,  0,  1) * size + position, color, pivot, float2(1, 1) * UVsize + UVpos, float2(opacity, 1), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(0,  0,  1) * size + position, color, pivot, float2(0, 1) * UVsize + UVpos, float2(opacity, 1), texture };
+    int quadCount = data->quadCount;
 
-    haven->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
-    haven->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+    data->vertexes[quadCount * 4 + 0] = { float3(0,  0,  0) * size + position, color, pivot, float2(0, 0) * UVsize + UVpos, float2(opacity, 1), texture };
+    data->vertexes[quadCount * 4 + 1] = { float3(1,  0,  0) * size + position, color, pivot, float2(1, 0) * UVsize + UVpos, float2(opacity, 1), texture };
+    data->vertexes[quadCount * 4 + 2] = { float3(1,  0,  1) * size + position, color, pivot, float2(1, 1) * UVsize + UVpos, float2(opacity, 1), texture };
+    data->vertexes[quadCount * 4 + 3] = { float3(0,  0,  1) * size + position, color, pivot, float2(0, 1) * UVsize + UVpos, float2(opacity, 1), texture };
 
-    haven->uiMeshData->quadCount++;
+    data->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    data->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
 
-    Assert(haven->uiMeshData->quadCount < quadCountMax);
+    data->quadCount++;
+
+    Assert(data->quadCount < quadCountMax);
 }
 
-void AppendQuadToUI(float2 position, float2 size, float2 UVpos, float2 UVsize, float3 color, float opacity, int texture = 0)
+void AppendQuadToUI(float2 position, float2 size, float2 UVpos, float2 UVsize, float3 color, float opacity, bool depthTest, int texture = 0)
 {
-    int quadCount = haven->uiMeshData->quadCount;
+    UIMeshData* data = depthTest ? haven->uiMeshData : haven->uiMeshNoDepthData;
+    int quadCount = data->quadCount;
 
-    haven->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(0, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(0, 0) * UVsize + UVpos, float2(opacity, 0), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(1, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(1, 0) * UVsize + UVpos, float2(opacity, 0), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(1, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(1, 1) * UVsize + UVpos, float2(opacity, 0), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(0, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(0, 1) * UVsize + UVpos, float2(opacity, 0), texture };
+    data->vertexes[quadCount * 4 + 0] = { float3(0, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(0, 0) * UVsize + UVpos, float2(opacity, 0), texture };
+    data->vertexes[quadCount * 4 + 1] = { float3(1, 0, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(1, 0) * UVsize + UVpos, float2(opacity, 0), texture };
+    data->vertexes[quadCount * 4 + 2] = { float3(1, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(1, 1) * UVsize + UVpos, float2(opacity, 0), texture };
+    data->vertexes[quadCount * 4 + 3] = { float3(0, 1, 0) * float3(size.x, size.y, 0) + float3(position.x, position.y, 0), color, float3(0, 0, 0), float2(0, 1) * UVsize + UVpos, float2(opacity, 0), texture };
 
-    haven->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
-    haven->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+    data->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    data->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
 
-    haven->uiMeshData->quadCount++;
+    data->quadCount++;
 
-    Assert(haven->uiMeshData->quadCount < quadCountMax);
+    Assert(data->quadCount < quadCountMax);
 }
 
-void AppendSquareShapetoUI3D(float3 pos0, float3 pos1, float3 pos2, float3 pos3, float3 color, float opacity, int texture = 0)
+void AppendSquareShapetoUI3D(float3 pos0, float3 pos1, float3 pos2, float3 pos3, float3 color, float opacity, bool depthTest, int texture = 0)
 {
-    int quadCount = haven->uiMeshData->quadCount;
+    UIMeshData* data = depthTest ? haven->uiMeshData : haven->uiMeshNoDepthData;
+    int quadCount = data->quadCount;
 
-    haven->uiMeshData->vertexes[quadCount * 4 + 0] = { pos0, color, float3(1, 0, 0), float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 1] = { pos1, color, float3(1, 0, 0), float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 2] = { pos2, color, float3(1, 0, 0), float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 3] = { pos3, color, float3(1, 0, 0), float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 0] = { pos0, color, float3(1, 0, 0), float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 1] = { pos1, color, float3(1, 0, 0), float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 2] = { pos2, color, float3(1, 0, 0), float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 3] = { pos3, color, float3(1, 0, 0), float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 2), texture };
 
-    haven->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
-    haven->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+    data->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    data->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
 
-    haven->uiMeshData->quadCount++;
+    data->quadCount++;
 
-    Assert(haven->uiMeshData->quadCount < quadCountMax);
+    Assert(data->quadCount < quadCountMax);
 }
 
-void AppendSquareShapetoUI3D(float3 pos0, float3 pos1, float3 pos2, float3 pos3, float2 uv0, float2 uv1, float2 uv2, float2 uv3, float3 color, float opacity, int texture = 0)
+void AppendSquareShapetoUI3D(float3 pos0, float3 pos1, float3 pos2, float3 pos3, float2 uv0, float2 uv1, float2 uv2, float2 uv3, float3 color, float opacity, bool depthTest, int texture = 0)
 {
-    int quadCount = haven->uiMeshData->quadCount;
+    UIMeshData* data = depthTest ? haven->uiMeshData : haven->uiMeshNoDepthData;
+    int quadCount = data->quadCount;
 
-    haven->uiMeshData->vertexes[quadCount * 4 + 0] = { pos0, color, float3(1, 0, 0), uv0, float2(opacity, 2), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 1] = { pos1, color, float3(1, 0, 0), uv1, float2(opacity, 2), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 2] = { pos2, color, float3(1, 0, 0), uv2, float2(opacity, 2), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 3] = { pos3, color, float3(1, 0, 0), uv3, float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 0] = { pos0, color, float3(1, 0, 0), uv0, float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 1] = { pos1, color, float3(1, 0, 0), uv1, float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 2] = { pos2, color, float3(1, 0, 0), uv2, float2(opacity, 2), texture };
+    data->vertexes[quadCount * 4 + 3] = { pos3, color, float3(1, 0, 0), uv3, float2(opacity, 2), texture };
 
-    haven->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
-    haven->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+    data->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    data->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
 
-    haven->uiMeshData->quadCount++;
+    data->quadCount++;
 
-    Assert(haven->uiMeshData->quadCount < quadCountMax);
+    Assert(data->quadCount < quadCountMax);
 }
-void AppendSquareShapetoUI(float2 pos0, float2 pos1, float2 pos2, float2 pos3, float3 color, float opacity, int texture = 0)
+void AppendSquareShapetoUI(float2 pos0, float2 pos1, float2 pos2, float2 pos3, float3 color, float opacity, bool depthTest, int texture = 0)
 {
-    int quadCount = haven->uiMeshData->quadCount;
+    UIMeshData* data = depthTest ? haven->uiMeshData : haven->uiMeshNoDepthData;
+    int quadCount = data->quadCount;
 
-    haven->uiMeshData->vertexes[quadCount * 4 + 0] = { float3(pos0.x, pos0.y, 0), color, float3(1, 0, 0), float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 1] = { float3(pos1.x, pos1.y, 0), color, float3(1, 0, 0), float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 2] = { float3(pos2.x, pos2.y, 0), color, float3(1, 0, 0), float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), texture };
-    haven->uiMeshData->vertexes[quadCount * 4 + 3] = { float3(pos3.x, pos3.y, 0), color, float3(1, 0, 0), float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), texture };
+    data->vertexes[quadCount * 4 + 0] = { float3(pos0.x, pos0.y, 0), color, float3(1, 0, 0), float2(0, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), texture };
+    data->vertexes[quadCount * 4 + 1] = { float3(pos1.x, pos1.y, 0), color, float3(1, 0, 0), float2(1, 0) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), texture };
+    data->vertexes[quadCount * 4 + 2] = { float3(pos2.x, pos2.y, 0), color, float3(1, 0, 0), float2(1, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), texture };
+    data->vertexes[quadCount * 4 + 3] = { float3(pos3.x, pos3.y, 0), color, float3(1, 0, 0), float2(0, 1) * float2(0.01, 0.1) + float2(0.95, 0.01), float2(opacity, 0), texture };
 
-    haven->uiMeshData->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
-    haven->uiMeshData->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
-    haven->uiMeshData->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
-    haven->uiMeshData->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
+    data->indexes[quadCount * 6 + 0] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 1] = quadCount * 4 + 1;
+    data->indexes[quadCount * 6 + 2] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 3] = quadCount * 4 + 0;
+    data->indexes[quadCount * 6 + 4] = quadCount * 4 + 2;
+    data->indexes[quadCount * 6 + 5] = quadCount * 4 + 3;
 
-    haven->uiMeshData->quadCount++;
+    data->quadCount++;
 
-    Assert(haven->uiMeshData->quadCount < quadCountMax);
+    Assert(data->quadCount < quadCountMax);
 }
 
 Glyph* GetGlyph(Font* font, char c)
@@ -378,7 +386,7 @@ float GetLineWidth(char* text2, Font* font, float2 pos, float2 startPos, float s
 
 namespace Drawing
 {
-    void DrawText3D(char* text, float3 position, float scale = 1.0f, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawText3D(char* text, float3 position, float scale = 1.0f, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
         int newlineCount = 1;
         float2 offset = float2(0, 0);
@@ -402,13 +410,13 @@ namespace Drawing
             }
             float3 size = float3(glyphSize.x, 0, glyphSize.y) * 0.01f * scale;
             float3 offsetSize = float3(offset.x - totalLength * 0.5f, 0, offset.y - 0.5f);
-            AppendQuadToUI3DCameraFacing(position, (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
-            //AppendQuadToUI3D(position, position + (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity);
-
+            AppendQuadToUI3DCameraFacing(position, (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity, depthTest);
+            //AppendQuadToUI3D(position, position + (offsetSize * size), size, (pos / atlasSize), float2(1, 1) / atlasSize, color, opacity, depthTest);
+            
             offset.x++;
         }
     }
-    void DrawText(char* text, float2* position, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawText(char* text, float2* position, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
         int newlineCount = 1;
         float2 offset = float2(0, 0);
@@ -425,26 +433,26 @@ namespace Drawing
                 continue;
             }
             float2 fontResolutionInv = 1.0f / float2(192, 52);
-            AppendQuadToUI(offset * glyphSize + floor(*position), glyphSize - float2(0, 1), pos / (atlasSize), float2(1, 1) / (atlasSize)-float2(0, fontResolutionInv.y), color, opacity);
+            AppendQuadToUI(offset * glyphSize + floor(*position), glyphSize - float2(0, 1), pos / (atlasSize), float2(1, 1) / (atlasSize)-float2(0, fontResolutionInv.y), color, opacity, depthTest);
 
             offset.x++;
         }
 
         *position += float2(0, newlineCount * 13 * fontScale);
     }
-    void DrawText(char* text, float2 position, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawText(char* text, float2 position, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
-        DrawText(text, &position, color, opacity);
+        DrawText(text, &position, color, opacity, depthTest);
     }
-    void DrawText(char* text, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawText(char* text, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
-        DrawText(text, &haven->uiPos, color, opacity);
+        DrawText(text, &haven->uiPos, color, opacity, depthTest);
     }
-    void DrawBox2D(float2 position, float2 size, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawBox2D(float2 position, float2 size, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
-        AppendQuadToUI(position, size, float2(0.95, 0.01), float2(0.01, 0.1), color, opacity);
+        AppendQuadToUI(position, size, float2(0.95, 0.01), float2(0.01, 0.1), color, opacity, depthTest);
     }
-    void DrawLine2D(float2 start, float2 end, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawLine2D(float2 start, float2 end, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
         float2 side = normalize(rotate90CW(start - end)) * width * 0.5f;
 
@@ -453,7 +461,7 @@ namespace Drawing
         float2 pos2 = end + side;
         float2 pos3 = end - side;
 
-        AppendSquareShapetoUI(pos0, pos1, pos2, pos3, color, opacity);
+        AppendSquareShapetoUI(pos0, pos1, pos2, pos3, color, opacity, depthTest);
     }
     void DrawFontMain(char* text, Transform transform, float inScale, float maxLineWidth, HAlign hAlign, VAlign vAlign, bool screenspace, bool faceCamera)
     {
@@ -609,6 +617,7 @@ namespace Drawing
 
             PivotOffset += alignmentOffset;
 
+            bool depthTest = true;
 
             int textureIndex = 1;
             if (currentFont == assets->FontDataBold)
@@ -617,7 +626,7 @@ namespace Drawing
                 textureIndex = 3;
             if (screenspace)
             {
-                AppendQuadToUI(pos + PivotOffset, UVsize * scale, UVposition, UVsize, color, opacity, textureIndex);
+                AppendQuadToUI(pos + PivotOffset, UVsize * scale, UVposition, UVsize, color, opacity, depthTest, textureIndex);
             }
             else
             {
@@ -627,7 +636,7 @@ namespace Drawing
                         float3(pos.x, 0, pos.y) + float3(PivotOffset.x, 0, PivotOffset.y),
                         float3(UVsize.x, 0, UVsize.y) * scale,
                         UVposition,
-                        UVsize, color, opacity, textureIndex);
+                        UVsize, color, opacity, depthTest, textureIndex);
                 }
                 else 
                 {
@@ -639,16 +648,11 @@ namespace Drawing
                     float3 pos2 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * s.x + normalize(transform.up) * -s.y;
                     float3 pos3 = transform.position + transform.right * (p.x) - transform.up * (p.y) + normalize(transform.right) * 0   + normalize(transform.up) * -s.y;
 
-                    //float2 uv0 = UVposition + float2(0, 0) * UVsize;
-                    //float2 uv1 = UVposition + float2(1, 0) * UVsize;
-                    //float2 uv2 = UVposition + float2(1, 1) * UVsize;
-                    //float2 uv3 = UVposition + float2(0, 1) * UVsize;
-                
                     float2 uv0 = UVposition + float2(0, 0) * UVsize;
                     float2 uv1 = UVposition + float2(1, 0) * UVsize;
                     float2 uv2 = UVposition + float2(1, 1) * UVsize;
                     float2 uv3 = UVposition + float2(0, 1) * UVsize;
-                    AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, uv0, uv1, uv2, uv3, color, opacity, textureIndex);
+                    AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, uv0, uv1, uv2, uv3, color, opacity, depthTest, textureIndex);
                 }
             }
 
@@ -728,7 +732,7 @@ namespace Drawing
     {
         return DrawButton(text, &haven->uiPos);
     }
-    void DrawLine(float3 start, float3 end, float width = 0.01f, float3 color = {1, 1, 1}, float opacity = 1)
+    void DrawLine(float3 start, float3 end, float width = 0.01f, float3 color = {1, 1, 1}, float opacity = 1, bool depthTest = true)
     {
         float3 direction = (end - start);
         float3 q = cross(direction, float3(0, 0, 1));
@@ -737,24 +741,58 @@ namespace Drawing
         float3 left = normalize(cross(right, direction)) * width * 0.5;
 
         float3 pos0 = end + left;
-        float3 pos1 = start + left; 
+        float3 pos1 = start + left;
         float3 pos2 = start - left;
-        float3 pos3 = end - left; 
-
-        AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
+        float3 pos3 = end - left;
+        AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity, depthTest);
 
         pos0 = end + right;
         pos1 = start + right;
         pos2 = start - right;
         pos3 = end - right;
-        AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
+        AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity, depthTest);
 
     }
-    void DrawRay(float3 start, float3 direction, float len, float width = 0.01f, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawBox(Transform transform, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
-        DrawLine(start, start + normalize(direction) * len, width, color, opacity);
+        DrawLine(LocalToWorld(float3(1, 1, 1), transform), LocalToWorld(float3(1, 1, -1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(-1, 1, 1), transform), LocalToWorld(float3(-1, 1, -1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(1, -1, 1), transform), LocalToWorld(float3(1, -1, -1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(-1, -1, 1), transform), LocalToWorld(float3(-1, -1, -1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(1, 1, 1), transform), LocalToWorld(float3(1, -1, 1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(-1, 1, 1), transform), LocalToWorld(float3(-1, -1, 1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(1, 1, -1), transform), LocalToWorld(float3(1, -1, -1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(-1, 1, -1), transform), LocalToWorld(float3(-1, -1, -1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(1, 1, 1), transform), LocalToWorld(float3(-1, 1, 1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(1, -1, 1), transform), LocalToWorld(float3(-1, -1, 1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(1, 1, -1), transform), LocalToWorld(float3(-1, 1, -1), transform), width, color, opacity, depthTest);
+        DrawLine(LocalToWorld(float3(1, -1, -1), transform), LocalToWorld(float3(-1, -1, -1), transform), width, color, opacity, depthTest);
     }
-    void DrawCircle(float3 center, float3 normal, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, int detail = 32)
+    void DrawArrow(float3 start, float3 end, float width = 0.01f, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true, bool box = false)
+    {
+        float3 zAxis = (end - start);
+        float3 xAxis = normalize(cross(zAxis, float3(0, 0.01, 1.01)));
+        float3 yAxis = normalize(cross(zAxis, xAxis));
+
+        Drawing::DrawLine(start, end, width, color, opacity, depthTest);
+        if (box)
+        {
+            Transform t = transform(end, xAxis, yAxis, normalize(zAxis), float3(0.1, 0.1, 0.1) * 0.25);
+            Drawing::DrawBox(t, width, color, opacity, depthTest);
+        }
+        else
+        {
+            Drawing::DrawLine(start + zAxis * 0.8f + xAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
+            Drawing::DrawLine(start + zAxis * 0.8f - xAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
+            Drawing::DrawLine(start + zAxis * 0.8f - yAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
+            Drawing::DrawLine(start + zAxis * 0.8f + yAxis * 0.05f, start + zAxis, width, color, opacity, depthTest);
+        }
+    }
+    void DrawRay(float3 start, float3 direction, float len, float width = 0.01f, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
+    {
+        DrawLine(start, start + normalize(direction) * len, width, color, opacity, depthTest);
+    }
+    void DrawCircle(float3 center, float3 normal, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true, int detail = 32)
     {
         float3 direction = normalize(normal);
         float3 offangle = direction == float3(0, 0, 1) ? float3(0, 1, 0) : float3(0, 0, 1);
@@ -774,80 +812,65 @@ namespace Drawing
             float3 pos1 = center + offsetEnd   * radius - offsetStart * width;
             float3 pos2 = center + offsetEnd   * radius + offsetEnd   * width;
             float3 pos3 = center + offsetStart * radius + offsetStart * width;
-            AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
+            AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity, depthTest);
 
             pos0 = center + offsetStart * radius - direction * width;
             pos1 = center + offsetEnd   * radius - direction * width;
             pos2 = center + offsetEnd   * radius + direction * width;
             pos3 = center + offsetStart * radius + direction * width;
-            AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity);
+            AppendSquareShapetoUI3D(pos0, pos1, pos2, pos3, color, opacity, depthTest);
         }
     }
-    void DrawSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
         for (int i = 0; i < 8; i++)
         {
             float3 a = AngleToVector(i / 8.0f, float3(1, 0, 0), float3(0, 1, 0));
-            DrawCircle(center, a, radius, width, color, opacity, 8);
+            DrawCircle(center, a, radius, width, color, opacity, depthTest, 8);
         }
-        DrawCircle(center + float3(0, 0, radius * 0.707), float3(0, 0, 1), radius* 0.707, width, color, opacity, 8);
-        DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, 8);
-        DrawCircle(center + float3(0, 0, -radius * 0.707), float3(0, 0, 1), radius * 0.707, width, color, opacity, 8);
+        DrawCircle(center + float3(0, 0, radius * 0.707), float3(0, 0, 1), radius* 0.707, width, color, opacity, depthTest, 8);
+        DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, depthTest, 8);
+        DrawCircle(center + float3(0, 0, -radius * 0.707), float3(0, 0, 1), radius * 0.707, width, color, opacity, depthTest, 8);
     }
-    void DrawAxisSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawAxisSphere(float3 center, float radius, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
-        DrawCircle(center, float3(1, 0, 0), radius, width, color, opacity, 24);
-        DrawCircle(center, float3(0, 1, 0), radius, width, color, opacity, 24);
-        DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, 24);
+        DrawCircle(center, float3(1, 0, 0), radius, width, color, opacity, depthTest, 24);
+        DrawCircle(center, float3(0, 1, 0), radius, width, color, opacity, depthTest, 24);
+        DrawCircle(center, float3(0, 0, 1), radius, width, color, opacity, depthTest, 24);
     }
-    void DrawTransform(Transform transform, float width = 0.01)
+    void DrawTransform(Transform transform, float width = 0.05)
     {
         DrawRay(transform.position, transform.right,   transform.scale.x, width, float3(1, 0, 0));
         DrawRay(transform.position, transform.forward, transform.scale.y, width, float3(0, 1, 0));
         DrawRay(transform.position, transform.up,      transform.scale.z, width, float3(0, 0, 1));
     }
-    void DrawPoint(float3 position, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawPoint(float3 position, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
-        DrawLine(position - float3(width * 0.5, 0, 0), position + float3(width * 0.5, 0, 0), width, color, opacity);
-        DrawLine(position - float3(0, width * 0.5, 0), position + float3(0, width * 0.5, 0), width, color, opacity);
+        DrawLine(position - float3(width * 0.5, 0, 0), position + float3(width * 0.5, 0, 0), width, color, opacity, depthTest);
+        DrawLine(position - float3(0, width * 0.5, 0), position + float3(0, width * 0.5, 0), width, color, opacity, depthTest);
     }
-    void DrawAABB(float3 center, float3 size, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawAABB(float3 center, float3 size, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
-        DrawLine(center + size * float3( 1,  1,  1), center + size * float3( 1,  1, -1), width, color, opacity);
-        DrawLine(center + size * float3(-1,  1,  1), center + size * float3(-1,  1, -1), width, color, opacity);
-        DrawLine(center + size * float3( 1, -1,  1), center + size * float3( 1, -1, -1), width, color, opacity);
-        DrawLine(center + size * float3(-1, -1,  1), center + size * float3(-1, -1, -1), width, color, opacity);
+        DrawLine(center + size * float3( 1,  1,  1), center + size * float3( 1,  1, -1), width, color, opacity, depthTest);
+        DrawLine(center + size * float3(-1,  1,  1), center + size * float3(-1,  1, -1), width, color, opacity, depthTest);
+        DrawLine(center + size * float3( 1, -1,  1), center + size * float3( 1, -1, -1), width, color, opacity, depthTest);
+        DrawLine(center + size * float3(-1, -1,  1), center + size * float3(-1, -1, -1), width, color, opacity, depthTest);
 
-        DrawLine(center + size * float3( 1,  1,  1), center + size * float3( 1, -1,  1), width, color, opacity);
-        DrawLine(center + size * float3(-1,  1,  1), center + size * float3(-1, -1,  1), width, color, opacity);
-        DrawLine(center + size * float3( 1,  1, -1), center + size * float3( 1, -1, -1), width, color, opacity);
-        DrawLine(center + size * float3(-1,  1, -1), center + size * float3(-1, -1, -1), width, color, opacity);
+        DrawLine(center + size * float3( 1,  1,  1), center + size * float3( 1, -1,  1), width, color, opacity, depthTest);
+        DrawLine(center + size * float3(-1,  1,  1), center + size * float3(-1, -1,  1), width, color, opacity, depthTest);
+        DrawLine(center + size * float3( 1,  1, -1), center + size * float3( 1, -1, -1), width, color, opacity, depthTest);
+        DrawLine(center + size * float3(-1,  1, -1), center + size * float3(-1, -1, -1), width, color, opacity, depthTest);
 
-        DrawLine(center + size * float3(1,  1,   1), center + size * float3(-1,  1,  1), width, color, opacity);
-        DrawLine(center + size * float3(1, -1,   1), center + size * float3(-1, -1,  1), width, color, opacity);
-        DrawLine(center + size * float3(1,  1,  -1), center + size * float3(-1,  1, -1), width, color, opacity);
-        DrawLine(center + size * float3(1, -1,  -1), center + size * float3(-1, -1, -1), width, color, opacity);
+        DrawLine(center + size * float3(1,  1,   1), center + size * float3(-1,  1,  1), width, color, opacity, depthTest);
+        DrawLine(center + size * float3(1, -1,   1), center + size * float3(-1, -1,  1), width, color, opacity, depthTest);
+        DrawLine(center + size * float3(1,  1,  -1), center + size * float3(-1,  1, -1), width, color, opacity, depthTest);
+        DrawLine(center + size * float3(1, -1,  -1), center + size * float3(-1, -1, -1), width, color, opacity, depthTest);
     }
-    void DrawAABBMinMax(float3 minPos, float3 maxPos, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
+    void DrawAABBMinMax(float3 minPos, float3 maxPos, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1, bool depthTest = true)
     {
         float3 center = (minPos + maxPos) * 0.5;
         float3 size = abs(minPos - maxPos) * 0.5;
-        DrawAABB(center, size, width, color, opacity);
-    }
-    void DrawBox(Transform transform, float width = 0.01, float3 color = { 1, 1, 1 }, float opacity = 1)
-    {
-        DrawLine(LocalToWorld(float3( 1,  1,  1), transform), LocalToWorld(float3( 1,  1, -1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3(-1,  1,  1), transform), LocalToWorld(float3(-1,  1, -1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3( 1, -1,  1), transform), LocalToWorld(float3( 1, -1, -1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3(-1, -1,  1), transform), LocalToWorld(float3(-1, -1, -1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3( 1,  1,  1), transform), LocalToWorld(float3( 1, -1,  1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3(-1,  1,  1), transform), LocalToWorld(float3(-1, -1,  1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3( 1,  1, -1), transform), LocalToWorld(float3( 1, -1, -1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3(-1,  1, -1), transform), LocalToWorld(float3(-1, -1, -1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3( 1,  1,  1), transform), LocalToWorld(float3(-1,  1,  1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3( 1, -1,  1), transform), LocalToWorld(float3(-1, -1,  1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3( 1,  1, -1), transform), LocalToWorld(float3(-1,  1, -1), transform), width, color, opacity);
-        DrawLine(LocalToWorld(float3( 1, -1, -1), transform), LocalToWorld(float3(-1, -1, -1), transform), width, color, opacity);
+        DrawAABB(center, size, width, color, opacity, depthTest);
     }
 
 }

@@ -95,7 +95,7 @@ namespace Gryphkiss
         
         gameState->tonk = StaticMeshInstantiate(assets->tonk, gameState->barnWallMat, transform(float3(2, 3, 0), float3(0.1, 0.2, 0.1)));
 
-
+#if 1
         // left wall
         for (int x = 0; x < 5; x++)
         {
@@ -177,12 +177,9 @@ namespace Gryphkiss
                 StaticMeshInstantiate(assets->BarnCeiling01, gameState->barnWallCleanMat, transform(float3(-x * 0.704f, y * 2, x * 0.704f) + float3(5, 0, 3), 0, -0.125, -0.25));
             }
         }
-
-        //StaticMeshInstantiate(assets->sphere, gameState->barnWallCleanMat, transform(float3(4,4,4), float3(3, 3, 3)));
-    
+#endif
 
         StaticMeshInstantiate(assets->skydome, gameState->skydomeMat, transform(float3(0, 0, 0), float3(80, 80, 80)));
-
     }
 
     void Update()

@@ -100,8 +100,6 @@ struct EngineState
 
     ArrayCreate(Material_defaultlit*, sceneMaterials, 100);
 
-    Mesh* stringMesh;
-
     // ripple sim
     Texture* SwapBuffer;
     Texture* waterRipples0;
@@ -153,7 +151,10 @@ struct EngineState
 
     ProfilingData* profilingData;
 
+    Mesh* uiMesh;
+    Mesh* uiMeshNoDepth;
     UIMeshData* uiMeshData;
+    UIMeshData* uiMeshNoDepthData;
 
     int coutner;
     float2 uiPos;
@@ -167,6 +168,8 @@ struct EngineState
     int currentScene = 0;
     Entity* pickedEntity;
     Entity* selectedEntity;
+    int gizmoState;
+    int gizmoAxis;
 };
 static EngineState* haven;
 static Input* input;
@@ -268,15 +271,24 @@ enum ComposeTexturesMode
     ComposeTexturesMode_Overwrite,
 };
 
-enum EntityType
-{
-    EntityType_Hand,
-    EntityType_Player,
-    EntityType_StaticMesh,
-    EntityType_LightBaker,
-    EntityType_ReflectionProbe,
-    EntityType_Max,
-};
+//enum EntityType
+//{
+//    EntityType_Hand,
+//    EntityType_Player,
+//    EntityType_StaticMesh,
+//    EntityType_LightBaker,
+//    EntityType_ReflectionProbe,
+//    EntityType_Max,
+//};
+
+// Example 2
+#define EntityTypeTable(n, X) \
+    X(n, Hand) \
+    X(n, Player) \
+    X(n, StaticMesh) \
+    X(n, LightBaker) \
+    X(n, ReflectionProbe)
+MakeEnum(EntityType, EntityTypeTable);
 
 #define structs 1
 #include "entities/entities.cpp"
@@ -799,6 +811,7 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
         
         haven->profilingData = ArenaPushStruct(&haven->arenaEngineState, ProfilingData, "Profiling Data");
         haven->uiMeshData = ArenaPushStruct(&haven->arenaEngineState, UIMeshData, "UI Mesh Data");
+        haven->uiMeshNoDepthData = ArenaPushStruct(&haven->arenaEngineState, UIMeshData, "UI Mesh Data No Depth");
 
         for (int i = 0; i < ArrayCapacity(haven->soundChannels); i++)
         {
@@ -829,7 +842,8 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
         haven->SwapBuffer = Rendering::CreateFramebufferTarget(engineState, true);
 
-        haven->stringMesh = ArrayAddNew(haven->meshes);
+        haven->uiMesh = ArrayAddNew(haven->meshes);
+        haven->uiMeshNoDepth = ArrayAddNew(haven->meshes);
 
         haven->spectatorCamera = Transform(float3(-2, -2, 0), float3(0.5, 0.5, -0.5), vectorUp, vectorOne);
 
@@ -944,24 +958,20 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
 
 
     // Draw the UI
-    UpdateMesh(haven->stringMesh,
+    UpdateMesh(haven->uiMesh,
         haven->uiMeshData->vertexes,
         haven->uiMeshData->quadCount * 4, 
         haven->uiMeshData->indexes, 
         haven->uiMeshData->quadCount * 6);
 
-
     CreateMaterialLocal(uiCommand, assets->UIShader, UIShader);
-    uiCommand->mesh = haven->stringMesh;
+    uiCommand->mesh = haven->uiMesh;
     uiCommand->transform = transformIdentity;
     uiCommand->BackFaceCulling = false;
-    //command->Wireframe = false;
-    //command->DisableDepthTest = true;
+    uiCommand->DisableDepthTest = false;
     uiCommand->blendMode = BlendMode_Alpha;
     uiCommand->SpriteFont = assets->SpriteFont;
     uiCommand->FontTexture = assets->FontTexture;
-    //uiCommand->FontBoldTexture = assets->font;
-    
     uiCommand->VRCameraPosition = input->head.position;
     uiCommand->VRCameraForward = input->head.forward;
     uiCommand->VRCameraUp = input->head.up;
@@ -972,9 +982,22 @@ extern "C" __declspec(dllexport) void gameUpdateAndRender(GameMemory* gameMemory
     uiCommand->SpectatorCameraUp = haven->spectatorCamera.up;
     uiCommand->SpectatorCameraRight = haven->spectatorCamera.right;
 
-    // Clear depth so UI is drawn on top.
     Rendering::DrawMesh(uiCommand);
     haven->uiMeshData->quadCount = 0;
+
+
+    // Draw UI that shows up on top of everything
+    UpdateMesh(haven->uiMeshNoDepth,
+        haven->uiMeshNoDepthData->vertexes,
+        haven->uiMeshNoDepthData->quadCount * 4,
+        haven->uiMeshNoDepthData->indexes,
+        haven->uiMeshNoDepthData->quadCount * 6);
+    uiCommand->mesh = haven->uiMeshNoDepth;
+    uiCommand->DisableDepthTest = true;
+    
+    Rendering::DrawMesh(uiCommand);
+    haven->uiMeshNoDepthData->quadCount = 0;
+    
 
     ProfilerEndSample("GryphKissVR");
     
