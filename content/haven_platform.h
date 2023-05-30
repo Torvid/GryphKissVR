@@ -5,11 +5,7 @@
 #define Assert1(expression)      if(!(expression)) { *(int*)0 = 0; }
 #define Assert2(expression, msg) if(!(expression)) { const char* message = msg; *(int*)0 = 0; }
 
-//#define Assert(expression)         if(!(expression)) { *(int*)0 = 0; }
-//#define AssertMsg(expression, msg) if(!(expression)) { const char* message = msg; *(int*)0 = 0; }
-
 #define ArrayCapacity(Array) (sizeof(Array) / sizeof((Array)[0]))
-
 
 typedef signed char int8;
 typedef signed short int16;
@@ -25,7 +21,6 @@ typedef unsigned long long uint64;
 #define Megabytes(x) ((Kilobytes(x)) * (1024LL))
 #define Gigabytes(x) ((Megabytes(x)) * (1024LL))
 #define Terabytes(x) ((Gigabytes(x)) * (1024LL))
-
 
 typedef struct 
 {
@@ -340,7 +335,6 @@ typedef struct
     byte4 boneIndexes;
 } VertexSkinned;
 
-//struct Bone;
 typedef struct Bone Bone;
 
 struct Bone
@@ -625,7 +619,6 @@ typedef struct
 } GameMemory;
 
 typedef void UpdateAndRenderTemplate(GameMemory* memory);
-
 
 typedef struct 
 {

@@ -117,7 +117,6 @@ bool StartsWithIngoreWhitespace(char* inputString, const char* checkString)
     // Loop through string to check if the ending matches
     for (int i = 0; i < checkStringSize; i++)
     {
-        
         if (checkString[i] != inputString[i])
         {
             return false;
@@ -167,62 +166,15 @@ bool StringEquals(char* stringA, char* stringB)
     return true;
 }
 
-void CatStrings(int SourceACount, const char* SourceA,
-    int SourceBCount, const char* SourceB,
-    int DestCount, char* Dest)
-{
-    char* DestCounter = Dest;
-    for (int i = 0; i < SourceACount; i++)
-    {
-        *DestCounter++ = *SourceA++;
-    }
-
-    for (int i = 0; i < SourceBCount; i++)
-    {
-        *DestCounter++ = *SourceB++;
-    }
-
-    *DestCounter++ = 0;
-}
-void CatStrings3(int SourceACount, const char* SourceA,
-    int SourceBCount, const char* SourceB,
-    int SourceCCount, const char* SourceC,
-    int DestCount, char* Dest)
-{
-    char* DestCounter = Dest;
-    for (int i = 0; i < SourceACount; i++)
-    {
-        *DestCounter++ = *SourceA++;
-    }
-
-    for (int i = 0; i < SourceBCount; i++)
-    {
-        *DestCounter++ = *SourceB++;
-    }
-
-    for (int i = 0; i < SourceCCount; i++)
-    {
-        *DestCounter++ = *SourceC++;
-    }
-
-    *DestCounter++ = 0;
-}
-char* StringAppend(char* str, const char* value)
+char* _StringAppend(char* str, const char* value)
 {
     int current_length = StringLength(str);
     int newstring_length = StringLength(value);
     for (int i = 0; i < newstring_length; i++)
     {
-        //if (current_length + i >= max)
-        //    break;
         str[current_length + i] = value[i];
     }
     return str;
-}
-void StringAppend(char* str, char* str1, const char* str2)
-{
-    StringAppend(str, str1);
-    StringAppend(str, str2);
 }
 char* StringAppendMax(char* str, const char* value, int max)
 {
@@ -243,7 +195,6 @@ int iabs(int a)
         return -a;
     return a;
 }
-
 void ToString(char* result, int a)
 {
     if (a == 0 || ((*(uint32*)&a) == 2147483648))
@@ -293,14 +244,13 @@ void ToString(char* result, bool value)
 {
     if (value != 0)
     {
-        StringAppend(result, "true");
+        _StringAppend(result, "true");
     }
     else
     {
-        StringAppend(result, "false");
+        _StringAppend(result, "false");
     }
 }
-
 int pow10(int count)
 {
     int current_number = 1;
@@ -322,7 +272,6 @@ int digitCount(int a)
     } while (num != 0);
     return digits;
 }
-
 void ToString(char* result, float a, int precision = 4)
 {
     if (a == 0)
@@ -356,178 +305,73 @@ void ToString(char* result, float a, int precision = 4)
         ToString(intigerPartString, intigerPart);
     ToString(decimalPartString, decimalPart);
 
-    CatStrings3(digits, intigerPartString, 
-        1, ".", 
-        precision, decimalPartString, 
-        digits + 1 + precision, result);
+    _StringAppend(result, intigerPartString);
+    _StringAppend(result, ".");
+    _StringAppend(result, decimalPartString);
 }
 
-char* StringAppend(char* str, int value)
+char* _StringAppend(char* str, bool value)
 {
     char convertedString[100] = {};
     ToString(convertedString, value);
-    StringAppend(str, convertedString);
+    _StringAppend(str, convertedString);
     return str;
 }
-void StringAppend(char* str, char* str2, int value)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-}
-void StringAppend(char* str, char* str2, char* str3, int value)
-{
-    StringAppend(str, str2);
-    StringAppend(str, str3);
-    StringAppend(str, value);
-}
-void StringAppend(char* str, char* str2, int value, char* str3)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-    StringAppend(str, str3);
-}
-
-char* StringAppend(char* str, bool value)
+char* _StringAppend(char* str, int value)
 {
     char convertedString[100] = {};
     ToString(convertedString, value);
-    StringAppend(str, convertedString);
+    _StringAppend(str, convertedString);
     return str;
 }
-void StringAppend(char* str, char* str2, bool value)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-}
-void StringAppend(char* str, char* str2, bool value, char* str3)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-    StringAppend(str, str3);
-}
-
-char* StringAppend(char* str, float value)
+void _StringAppend(char* str, float value)
 {
     char convertedString[100] = {};
     ToString(convertedString, value);
-    StringAppend(str, convertedString);
-    return str;
+    _StringAppend(str, convertedString);
 }
-void StringAppend(char* str, float value, char* str2)
-{
-    StringAppend(str, value);
-    StringAppend(str, str2);
-}
-void StringAppend(char* str, char* str2, float value)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-}
-void StringAppend(char* str, char* str2, float value, char* str3)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-    StringAppend(str, str3);
-}
-
-char* StringAppend(char* str, float3 value)
+char* _StringAppend(char* str, float2 value)
 {
     char convertedString[100] = {};
     ToString(convertedString, value.x);
-    StringAppend(str, "(");
+    _StringAppend(str, "(");
     ToString(convertedString, value.x);
-    StringAppend(str, convertedString);
-    StringAppend(str, ", ");
+    _StringAppend(str, convertedString);
+    _StringAppend(str, ", ");
     ToString(convertedString, value.y);
-    StringAppend(str, convertedString);
-    StringAppend(str, ", ");
+    _StringAppend(str, convertedString);
+    _StringAppend(str, ")");
+    return str;
+}
+char* _StringAppend(char* str, float3 value)
+{
+    char convertedString[100] = {};
+    ToString(convertedString, value.x);
+    _StringAppend(str, "(");
+    ToString(convertedString, value.x);
+    _StringAppend(str, convertedString);
+    _StringAppend(str, ", ");
+    ToString(convertedString, value.y);
+    _StringAppend(str, convertedString);
+    _StringAppend(str, ", ");
     ToString(convertedString, value.z);
-    StringAppend(str, convertedString);
-    StringAppend(str, ")");
-    return str;
-}
-void StringAppend(char* str, char* str2, float3 value)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-}
-void StringAppend(char* str, char* str2, float3 value, char* str3)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-    StringAppend(str, str3);
-}
-
-char* StringAppend(char* str, float2 value)
-{
-    char convertedString[100] = {};
-    ToString(convertedString, value.x);
-    StringAppend(str, "(");
-    ToString(convertedString, value.x);
-    StringAppend(str, convertedString);
-    StringAppend(str, ", ");
-    ToString(convertedString, value.y);
-    StringAppend(str, convertedString);
-    StringAppend(str, ")");
-    return str;
-}
-void StringAppend(char* str, char* str2, float2 value)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-}
-void StringAppend(char* str, char* str2, float2 value, char* str3)
-{
-    StringAppend(str, str2);
-    StringAppend(str, value);
-    StringAppend(str, str3);
-}
-// Takes the bit-pattern of a float and smashes it to an int.
-char* CoerceStringAppend(char* str, float3 value)
-{
-    if (value.x == 0)
-        value.x = 0;
-    if (value.y == 0)
-        value.y = 0;
-    if (value.z == 0)
-        value.z = 0;
-    char convertedString[100] = {};
-    StringAppend(str, "float3_coerce(");
-    StringAppend(str, *(int*)&value.x);
-    StringAppend(str, ", ");
-    StringAppend(str, *(int*)&value.y);
-    StringAppend(str, ", ");
-    StringAppend(str, *(int*)&value.z);
-    StringAppend(str, ")");
-    return str;
-}
-// Takes the bit-pattern of a float and smashes it to an int.
-char* CoerceStringAppend(char* str, float value)
-{
-    char convertedString[100] = {};
-    StringAppend(str, "float_coerce(");
-    StringAppend(str, *(int*)&value);
-    StringAppend(str, ")");
+    _StringAppend(str, convertedString);
+    _StringAppend(str, ")");
     return str;
 }
 
-struct string
-{
-    // strings are 100 chars long.
-    // you don't need more than this :)
-    int length;
-    char data[101];
-};
-namespace String
-{
-    string make(const char* str)
-    {
-        string result = {};
-        StringCopyLength(result.data, str, 100);
-        result.data[100] = 0;
-        result.length = StringLength(result.data);
-        return result;
-    }
-}
+#define GET_MACRO3(_1, _2, _3, _4, NAME, ...) NAME
+#define StringAppend(...) GET_MACRO3(__VA_ARGS__, StringAppend4, StringAppend3, StringAppend2, StringAppend1, "dummy")(__VA_ARGS__)
 
-#define string(a) String::make(a);
+#define StringAppend2(str, value1) \
+    _StringAppend(str, value1); 
+
+#define StringAppend3(str, value1, value2) \
+    _StringAppend(str, value1); \
+    _StringAppend(str, value2);
+
+#define StringAppend4(str, value1, value2, value3) \
+    _StringAppend(str, value1); \
+    _StringAppend(str, value2); \
+    _StringAppend(str, value3);
+
