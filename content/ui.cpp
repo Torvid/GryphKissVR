@@ -678,10 +678,9 @@ namespace Debug
     }
     bool DrawToggle(char* text, float2* position, bool value)
     {
-        char wat[100] = "[";
-        StringAppend(wat, text);
-        StringAppend(wat, value);
-        StringAppend(wat, "]");
+        char wat[100] = {};
+        StringAppend(wat, "[", text, value, "]");
+
         float2 textSize = GetTextSize(wat);
 
         if (input->mousePos.x > position->x && input->mousePos.y > position->y &&
@@ -706,9 +705,8 @@ namespace Debug
     }
     bool DrawButton(char* text, float2* position)
     {
-        char wat[100] = "[";
-        StringAppend(wat, text);
-        StringAppend(wat, "]");
+        char wat[100] = {};
+        StringAppend(wat, "[", text, "]");
         float2 textSize = GetTextSize(wat);
 
         if (input->mousePos.x > position->x && input->mousePos.y > position->y &&

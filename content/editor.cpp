@@ -331,13 +331,12 @@ namespace Editor
                 {
                     Debug::DrawBox(scale(haven->selectedEntity->transform, float3(0.25, 0.25, 0.25)));
                 }
+
                 Clear((uint8*)text, tempStringSize);
-                StringAppend(text, "Selected Entity: \n");
-                StringAppend(text, "Index: ");
-                StringAppend(text, idx);
-                StringAppend(text, "\nType: ");
-                StringAppend(text, EntityTypeToString((EntityType)haven->selectedEntity->type));
-                StringAppend(text, "\nPosition: ", haven->selectedEntity->transform.position);
+                StringAppend(text, "\nSelected Entity:",
+                    "\n    Index: ", idx, 
+                    "\n    Type: ", EntityTypeToString((EntityType)haven->selectedEntity->type), 
+                    "\n    Position: ", haven->selectedEntity->transform.position);
                 Debug::DrawText(text);
                 
                 if (haven->gizmoState == 0)
@@ -371,25 +370,25 @@ namespace Editor
             }
 
             Clear((uint8*)text, tempStringSize);
-            StringAppend(text, "\n\nINPUT: ");
-            StringAppend(text, "\n    Mouse pos: ", input->mousePos);
-            StringAppend(text, "\n    Spectator pos: ", haven->spectatorCamera.position);
+            StringAppend(text, "\n\nINPUT: ",
+                "\n    Mouse pos: ", input->mousePos,
+                "\n    Spectator pos: ", haven->spectatorCamera.position);
             Debug::DrawText(text);
 
             Clear((uint8*)text, tempStringSize);
-            StringAppend(text, "    Left Controller:\n");
-            StringAppend(text, "        Pos: ", input->handLeft.position);
-            StringAppend(text, "\n        Trigger: ", input->triggerLeft);
-            StringAppend(text, "\n        Thumbstick: ", input->thumbstickLeft);
-            StringAppend(text, "\n        Face Button: ", input->faceButtonLeft);
+            StringAppend(text, "    Left Controller:",
+                "\n        Pos: ", input->handLeft.position,
+                "\n        Trigger: ", input->triggerLeft,
+                "\n        Thumbstick: ", input->thumbstickLeft,
+                "\n        Face Button: ", input->faceButtonLeft);
             Debug::DrawText(text);
 
             Clear((uint8*)text, tempStringSize);
-            StringAppend(text, "    Right Controller:\n");
-            StringAppend(text, "        Pos: ", input->handRight.position);
-            StringAppend(text, "\n        Trigger: ", input->triggerRight);
-            StringAppend(text, "\n        Thumbstick: ", input->thumbstickRight);
-            StringAppend(text, "\n        Face Button: ", input->faceButtonRight);
+            StringAppend(text, "    Right Controller:",
+                "\n        Pos: ", input->handRight.position,
+                "\n        Trigger: ", input->triggerRight,
+                "\n        Thumbstick: ", input->thumbstickRight,
+                "\n        Face Button: ", input->faceButtonRight);
             Debug::DrawText(text);
 
             //haven->headsetView = DrawToggle(input, "Headset View: ", haven->headsetView);
@@ -424,9 +423,9 @@ namespace Editor
 
                 if (channel->playing)
                 {
-                    StringAppend(text, "    ", (int)i, ", ");
-                    StringAppend(text, channel->sound->filename, ", ");
-                    StringAppend(text, ((float)channel->currentSample / (float)channel->sound->sampleCount), "\n");
+                    StringAppend(text, "    ", (int)i, ", ",
+                        channel->sound->filename, ", ",
+                        ((float)channel->currentSample / (float)channel->sound->sampleCount), "\n");
                 }
             }
             Debug::DrawText(text);

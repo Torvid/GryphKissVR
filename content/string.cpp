@@ -310,13 +310,13 @@ void ToString(char* result, float a, int precision = 4)
     _StringAppend(result, decimalPartString);
 }
 
-char* _StringAppend(char* str, bool value)
-{
-    char convertedString[100] = {};
-    ToString(convertedString, value);
-    _StringAppend(str, convertedString);
-    return str;
-}
+//char* _StringAppend(char* str, bool value)
+//{
+//    char convertedString[100] = {};
+//    ToString(convertedString, value);
+//    _StringAppend(str, convertedString);
+//    return str;
+//}
 char* _StringAppend(char* str, int value)
 {
     char convertedString[100] = {};
@@ -360,18 +360,40 @@ char* _StringAppend(char* str, float3 value)
     return str;
 }
 
-#define GET_MACRO3(_1, _2, _3, _4, NAME, ...) NAME
-#define StringAppend(...) GET_MACRO3(__VA_ARGS__, StringAppend4, StringAppend3, StringAppend2, StringAppend1, "dummy")(__VA_ARGS__)
+#define GET_MACRO3(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, NAME, ...) NAME
+#define StringAppend(...) GET_MACRO3(__VA_ARGS__, \
+    StringAppend17, \
+    StringAppend16, \
+    StringAppend15, \
+    StringAppend14, \
+    StringAppend13, \
+    StringAppend12, \
+    StringAppend11, \
+    StringAppend10, \
+    StringAppend9, \
+    StringAppend8, \
+    StringAppend7, \
+    StringAppend6, \
+    StringAppend5, \
+    StringAppend4, \
+    StringAppend3, \
+    StringAppend2, \
+    StringAppend1, \
+    "dummy")(__VA_ARGS__)
 
-#define StringAppend2(str, value1) \
-    _StringAppend(str, value1); 
-
-#define StringAppend3(str, value1, value2) \
-    _StringAppend(str, value1); \
-    _StringAppend(str, value2);
-
-#define StringAppend4(str, value1, value2, value3) \
-    _StringAppend(str, value1); \
-    _StringAppend(str, value2); \
-    _StringAppend(str, value3);
-
+#define StringAppend2(str, value1) _StringAppend(str, value1); 
+#define StringAppend3(str, value1, value2) _StringAppend(str, value1); StringAppend2(str, value2);
+#define StringAppend4(str, value1, ...)  _StringAppend(str, value1); StringAppend3(str, __VA_ARGS__);
+#define StringAppend5(str, value1, ...)  _StringAppend(str, value1); StringAppend4(str, __VA_ARGS__);
+#define StringAppend6(str, value1, ...)  _StringAppend(str, value1); StringAppend5(str, __VA_ARGS__);
+#define StringAppend7(str, value1, ...)  _StringAppend(str, value1); StringAppend6(str, __VA_ARGS__);
+#define StringAppend8(str, value1, ...)  _StringAppend(str, value1); StringAppend7(str, __VA_ARGS__);
+#define StringAppend9(str, value1, ...)  _StringAppend(str, value1); StringAppend8(str, __VA_ARGS__);
+#define StringAppend10(str, value1, ...) _StringAppend(str, value1); StringAppend9(str, __VA_ARGS__);
+#define StringAppend11(str, value1, ...) _StringAppend(str, value1); StringAppend10(str, __VA_ARGS__);
+#define StringAppend12(str, value1, ...) _StringAppend(str, value1); StringAppend11(str, __VA_ARGS__);
+#define StringAppend13(str, value1, ...) _StringAppend(str, value1); StringAppend12(str, __VA_ARGS__);
+#define StringAppend14(str, value1, ...) _StringAppend(str, value1); StringAppend13(str, __VA_ARGS__);
+#define StringAppend15(str, value1, ...) _StringAppend(str, value1); StringAppend14(str, __VA_ARGS__);
+#define StringAppend16(str, value1, ...) _StringAppend(str, value1); StringAppend15(str, __VA_ARGS__);
+#define StringAppend17(str, value1, ...) _StringAppend(str, value1); StringAppend16(str, __VA_ARGS__);

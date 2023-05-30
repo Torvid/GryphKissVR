@@ -46,12 +46,10 @@ void DrawArena(float2* pos,  MemoryArena* arena)
     const int tempStringSize = 2500;
     char text[tempStringSize] = {};
     Clear((uint8*)text, tempStringSize);
-    
-    //StringAppend(text, arena->name, " Used: ", (int)(arena->used * 100.0f) / 1024 / 1024);
-    //float u = ((int)arena->used * 100.0f) / 1024 / 1024;
-    //StringAppend(text, arena->name, " Used: ", u);
-    StringAppend(text, "/", (int)arena->size / 1024 / 1024);
-    StringAppend(text, " MB - ", (int)(arena->usedPercentage*100.0f), "%");
+
+    StringAppend(text, 
+        "/", (int)arena->size / 1024 / 1024,
+        " MB - ", (int)(arena->usedPercentage * 100.0f), "%");
     bool checkedEntries[ArrayCapacity(arena->memoryArenaEntrys)] = {};
 
     Debug::DrawText(text, pos);
@@ -86,9 +84,7 @@ void DrawArena(float2* pos,  MemoryArena* arena)
         if (kbSize < 5)
             continue;
 
-        StringAppend(text, "    ", kbSize, "KB, ");
-        StringAppend(text, entry->name);
-        StringAppend(text, "\n");
+        StringAppend(text, "    ", kbSize, "KB, ", entry->name, "\n");
         if (StringLength(text) > (tempStringSize - 500))
         {
             Debug::DrawText(text, pos);
@@ -306,8 +302,7 @@ void ProfilerDrawTimeChart(ProfilingData* data)
 
     float fpscurrentheight = haven->Resolution.y - (SmoothedTime)*HeightMultiplier;
     char text[100] = {};
-    StringAppend(text, TotalTimeDelta * 1000);
-    StringAppend(text, "ms");
+    StringAppend(text, TotalTimeDelta * 1000, "ms");
     Debug::DrawText(text, float2(200, fpscurrentheight));
 }
 
@@ -333,13 +328,13 @@ void profilerUpdate()
         //DrawArena(&pos, &haven->arenaDrawCommands);
         ProfilerDrawTimeChart(haven->profilingData);
         ProfilerDrawFlameChart(haven->profilingData);
-        StringAppend(text, "\nPERFORMANCE:");
-        StringAppend(text, "\n    Time: ", input->time);
-        StringAppend(text, "\n    FPS: ", 1.0f / input->deltaTime);
-        StringAppend(text, "\n    Internal Time: ", (int)haven->internalTime, " microseconds");
-        StringAppend(text, "\n    External Time: ", (int)haven->externalTime, " microseconds");
-        StringAppend(text, "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds");
-        StringAppend(text, "\n    Drawcalls: ", (int)(haven->arenaDrawCommands.memoryArenaEntrys_count), " ");
+        StringAppend(text, "\nPERFORMANCE:",
+            "\n    Time: ", input->time,
+            "\n    FPS: ", 1.0f / input->deltaTime,
+            "\n    Internal Time: ", (int)haven->internalTime, " microseconds",
+            "\n    External Time: ", (int)haven->externalTime, " microseconds",
+            "\n    Total frame time: ", (int)(input->deltaTime * 1000), " milliseconds",
+            "\n    Drawcalls: ", (int)(haven->arenaDrawCommands.memoryArenaEntrys_count));
         Debug::DrawText(text);
 
         Clear((uint8*)text, tempStringSize);
