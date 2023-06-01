@@ -31,22 +31,6 @@ void ClearCubemaps(bool clear = false)
     }
 }
 
-Transform CombineAABBs(Transform A, Transform B)
-{
-    float3 aMin = A.position - A.scale;
-    float3 bMin = B.position - B.scale;
-    float3 aMax = A.position + A.scale;
-    float3 bMax = B.position + B.scale;
-
-    float3 rMin = min(aMin, bMin);
-    float3 rMax = max(aMax, bMax);
-
-    Transform result = transform();
-    result.position = (rMin + rMax) * 0.5;
-    result.scale = abs(rMin - rMax) * 0.5;
-    return result;
-}
-
 void SetCubemaps()
 {
     for (int i = 0; i < ArrayCount(haven->entities); i++)
@@ -73,7 +57,7 @@ void SetCubemaps()
         mesh->material.texCubemap3 = probe->octTexture3;
         mesh->material.texCubemap4 = probe->octTexture4;
         mesh->material.cubemapPosition = expandedAABB.position;
-        mesh->material.cubemapSize = expandedAABB.scale;
+        mesh->material.cubemapSize = expandedAABB.scale + float3(0.01, 0.01, 0.01);
     }
 
     for (int i = 0; i < ArrayCount(haven->sceneMaterials); i++)
@@ -86,7 +70,7 @@ void SetCubemaps()
         haven->sceneMaterials[i]->texCubemap3 = probe->octTexture3;
         haven->sceneMaterials[i]->texCubemap4 = probe->octTexture4;
         haven->sceneMaterials[i]->cubemapPosition = probe->transform.position;
-        haven->sceneMaterials[i]->cubemapSize = probe->transform.scale;
+        haven->sceneMaterials[i]->cubemapSize = probe->transform.scale + float3(0.01, 0.01, 0.01);
     }
 }
 

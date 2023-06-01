@@ -166,7 +166,7 @@ bool StringEquals(char* stringA, char* stringB)
     return true;
 }
 
-char* _StringAppend(char* str, const char* value)
+void _StringAppend(char* str, const char* value)
 {
     int current_length = StringLength(str);
     int newstring_length = StringLength(value);
@@ -174,7 +174,6 @@ char* _StringAppend(char* str, const char* value)
     {
         str[current_length + i] = value[i];
     }
-    return str;
 }
 char* StringAppendMax(char* str, const char* value, int max)
 {
@@ -317,12 +316,11 @@ void ToString(char* result, float a, int precision = 4)
 //    _StringAppend(str, convertedString);
 //    return str;
 //}
-char* _StringAppend(char* str, int value)
+void _StringAppend(char* str, int value)
 {
     char convertedString[100] = {};
     ToString(convertedString, value);
     _StringAppend(str, convertedString);
-    return str;
 }
 void _StringAppend(char* str, float value)
 {
@@ -330,7 +328,7 @@ void _StringAppend(char* str, float value)
     ToString(convertedString, value);
     _StringAppend(str, convertedString);
 }
-char* _StringAppend(char* str, float2 value)
+void _StringAppend(char* str, float2 value)
 {
     char convertedString[100] = {};
     ToString(convertedString, value.x);
@@ -341,9 +339,8 @@ char* _StringAppend(char* str, float2 value)
     ToString(convertedString, value.y);
     _StringAppend(str, convertedString);
     _StringAppend(str, ")");
-    return str;
 }
-char* _StringAppend(char* str, float3 value)
+void _StringAppend(char* str, float3 value)
 {
     char convertedString[100] = {};
     ToString(convertedString, value.x);
@@ -357,7 +354,6 @@ char* _StringAppend(char* str, float3 value)
     ToString(convertedString, value.z);
     _StringAppend(str, convertedString);
     _StringAppend(str, ")");
-    return str;
 }
 
 #define GET_MACRO3(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, NAME, ...) NAME

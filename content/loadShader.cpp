@@ -127,8 +127,8 @@ void LoadShader(Shader* shader)
     
     const char* pixelAppend = "#version 320 es\n#define pixelShader 1\n#define Cpp 0\n";
     const char* vertexAppend = "#version 320 es\n#define vertexShader 1\n#define Cpp 0\n";
-    pixelShader = StringAppend(pixelShader, pixelAppend);
-    vertexShader = StringAppend(vertexShader, vertexAppend);
+    StringAppend(pixelShader, pixelAppend);
+    StringAppend(vertexShader, vertexAppend);
 
     ShaderReadFile(shader, pixelShader  + StringLength(pixelAppend), scratchBuffer, shader->filename, pixelShader, true);
     ShaderReadFile(shader, vertexShader + StringLength(vertexAppend), scratchBuffer, shader->filename, vertexShader, false);

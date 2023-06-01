@@ -1826,3 +1826,20 @@ float DistanceToLine2D(float2 start, float2 end, float2 test)
     float h = clamp01(dot(pa, ba) / dot(ba, ba));
     return length(pa - ba * h);
 }
+
+
+Transform CombineAABBs(Transform A, Transform B)
+{
+    float3 aMin = A.position - A.scale;
+    float3 bMin = B.position - B.scale;
+    float3 aMax = A.position + A.scale;
+    float3 bMax = B.position + B.scale;
+
+    float3 rMin = min(aMin, bMin);
+    float3 rMax = max(aMax, bMax);
+
+    Transform result = transform();
+    result.position = (rMin + rMax) * 0.5;
+    result.scale = abs(rMin - rMax) * 0.5;
+    return result;
+}

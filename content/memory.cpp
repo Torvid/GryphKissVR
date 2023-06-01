@@ -2,11 +2,11 @@
 #include "haven.cpp"
 #include "haven_platform.h"
 #include "string.cpp"
+
 // Arrays
 
 #define ArrayCount(name) name##_count
 
-//#define ArrayCreate(name) {}; int name##_count = 0;
 #define ArrayCreate(type, name, capacity) type name[capacity] = {}; int name##_count = 0;
 bool IndexIsInArray(int index, int size)
 {
@@ -31,14 +31,6 @@ bool IndexIsInArray(int index, int size)
     name[ArrayCount(name)-1] = {}; \
 }
 
-// Add a new element without clearing the memory already there.
-#define ArrayAddNewNoClear(name) &name[ArrayCount(name)]; \
-{ \
-    ArrayCount(name)++; \
-    Assert(IsInArray(name, ArrayCount(name) - 1), "Array is out of capacity."); \
-}
-
-
 // scan backwards, moving items to the right by one, then insert.
 #define ArrayInsert(name, var, index) \
 { \
@@ -49,11 +41,18 @@ bool IndexIsInArray(int index, int size)
     } \
     name[index] = var; \
 } \
-//void _ArrayInsert()
-//{
-//
-//}
 
+// loop over the array, swapping each element with a random one
+#define ArrayShuffle(name) \
+{ \
+    for (int _itter = ArrayCount(name); _itter >= index; _itter--) \
+    { \
+        int _rand_index = Random(0, ArrayCount(name)-1); \
+        name[ArrayCount(name)] = name[_itter]; \
+        name[_itter] = name[_rand_index]; \
+        name[_rand_index] = name[ArrayCount(name)]; \
+    } \
+} \
 
 #define ArrayAddIndex(name) (&(name[ArrayCount(name)])); \
 { \
@@ -63,6 +62,7 @@ bool IndexIsInArray(int index, int size)
 
 #define ArrayGetLast(name) (&(name[ArrayCount(name)-1]));
 
+// Take the last item and swap paste it over the one we want to remove.
 #define ArrayRemove(name, index) \
 { \
     Assert(IsInArray(name, index)); \
@@ -72,7 +72,6 @@ bool IndexIsInArray(int index, int size)
 
 #define ArrayClear(name) ArrayCount(name) = 0;
 
-// AddRange
 #define ArrayAddRange(name, other) \
 { \
     int RemainingCapacity = ArrayCapacity(name) - ArrayCount(name); \
@@ -83,62 +82,14 @@ bool IndexIsInArray(int index, int size)
         ArrayAdd(name, other[_itter]); \
     } \
 } \
-// Resize
 
 #define ArrayFilledPercentage(name) (((float)ArrayCount(name)) / ((float)ArrayCapacity(name)))
 
-//void _ArrayAdd(uint8* array, uint8* var, int itemsize, int* length, int capacity)
-//{
-//    (*length)++;
-//    bool in = IndexIsInArray((*length) - 1, capacity);
-//    Assert(in, "Array is out of capacity.");
-//    Copy(var, &array[((*length) - 1) * itemsize], itemsize);
-//}
-//
-//#define ArrayAdd(name, var) { \
-//    auto local = var; \
-//    _ArrayAdd((uint8*)&name, (uint8*)&local, sizeof(name[0]), &ArrayCount(name), ArrayCapacity(name)); \
-//} \
-
-
-//#define ArrayRemove(name, var) \
-//{ \
-//    bool found = false; \
-//    for (int i = 0; i < ArrayCount(name); i++) \
-//    { \
-//        if(name[i] == var && !found) \
-//            found = true; \
-//        if (found) \
-//            name[i] = name[i + 1]; \
-//    } \
-//    if(found) \
-//        ArrayCount(name)--;\
-//} \
-//
-
-//void _ArrayRemove(uint8* array, uint8* item, int itemsize, int* length)
-//{
-//    bool found = false;
-//    for (int i = 0; i < ((*length) * itemsize); i += itemsize)
-//    {
-//        if (equals(&(array[i]), item, itemsize) && !found)
-//            found = true;
-//        if (found)
-//            copy(&array[i], &array[i * itemsize], itemsize);
-//    }
-//    if (found)
-//        (*length)--;
-//}
-
-/*
-
-void array_test(GameMemory* memory)
+void array_test()
 {
-    //ArrayCreate(int, Test, 100);
-
     ArrayCreate(int, test, 32)
-        ArrayCreate(int, test2, 16)
-        ArrayAdd(test2, 100);
+    ArrayCreate(int, test2, 16)
+    ArrayAdd(test2, 100);
     ArrayAdd(test2, 101);
     ArrayAdd(test2, 102);
     ArrayAdd(test2, 103);
@@ -158,19 +109,35 @@ void array_test(GameMemory* memory)
 
     ArrayAddRange(test, test2);
 
-
     for (int i = 0; i < ArrayCount(test); i++)
     {
         test[i] *= 2;
     }
+    ArrayCreate(int, my_array, 100);
+
+    ArrayAdd(my_array, 1);
+    ArrayAdd(my_array, 2);
+    ArrayAdd(my_array, 1337);
+    ArrayAdd(my_array, 9);
+
+    int thing = my_array[2]; // 1337
+
+    int count = ArrayCount(my_array); // 4
+
+    bool full = ArrayFull(my_array); // false
+
+    // add a new element without setting it, and return a pointer to it.
+    int* newElement = ArrayAddNew(my_array);
+
+    ArrayClear(my_array);
+
+    count = ArrayCount(my_array); // 0
 
 }
-*/
 
 
 
 // Utilities
-
 
 // Checks if two blocks of memory are the same
 bool Equals(uint8* a, uint8* b, int size)
